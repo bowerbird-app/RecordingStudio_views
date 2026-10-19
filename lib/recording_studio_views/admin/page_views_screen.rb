@@ -53,7 +53,8 @@ module RecordingStudioViews
         filter :visit_kind, options: -> { Queries.visit_kind_filter_options }, apply: VISIT_KIND_FILTER
         column :occurred_at, title: "Time", value: ->(row, context) { Queries.occurred_at_value(row, context) }
         column :root, title: "Root", sortable: false, value: ->(row, context) { Queries.root_value(row, context) }
-        column :page_key, title: "Page", sortable: false, value: ->(row, context) { Queries.page_key_value(row, context) }
+        column :page_key, title: "Page", sortable: false,
+                          value: ->(row, context) { Queries.page_key_value(row, context) }
         column :resource_type, title: "Resource type", sortable: false,
                                value: ->(row, context) { Queries.resource_type_value(row, context) }
         column :path, title: "Path", sortable: false, value: ->(row, context) { Queries.path_value(row, context) }
