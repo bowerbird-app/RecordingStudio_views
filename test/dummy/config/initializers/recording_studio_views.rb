@@ -1,24 +1,24 @@
 # frozen_string_literal: true
 
 RecordingStudioViews.configure do |config|
-  # config.api_key = "..."
+  config.site_tracking_enabled = true
 
-  # Opaque anonymous device key from root_switchable. Views does not read that gem.
-  config.visitor_id_resolver = lambda do |controller|
-    next unless controller.respond_to?(:current_root_device_key)
+  config.tracking_access_policy = lambda do |_request, context, actor|
+    next :deny if context.skipped?
+    next :allow if context.site?
+    next :allow if actor.present?
 
-    controller.current_root_device_key
+    studio = Workspace.find_by(name: "Studio Workspace")
+    next :deny unless studio && context.kind == :recording
+
+    root = RecordingStudio.root_recording_for(studio)
+    context.root_recording_id.to_s == root.id.to_s ? :allow : :deny
   end
 
-  config.user_id_resolver = lambda do |controller|
-    next unless controller.respond_to?(:current_user)
-
-    controller.current_user&.id
+  config.consent_predicate = lambda do |request|
+    page_path = request.params[:path].presence || request.path
+    !page_path.to_s.start_with?("/no-consent")
   end
 
-  config.root_recording_id_resolver = lambda do |controller|
-    next unless controller.respond_to?(:current_root_recording)
-
-    controller.current_root_recording&.id
-  end
+  config.skip_paths += [%r{\A/skipped(?:/|\z)}]
 end

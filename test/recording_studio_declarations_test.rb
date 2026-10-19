@@ -82,15 +82,14 @@ class RecordingStudioDeclarationsTest < ActiveSupport::TestCase
     assert_equal "Page cannot be recorded under Page", error.message
   end
 
-  test "accessible is enabled on workspace and example mixin stays opt-in" do
+  test "accessible is enabled on workspace and viewable stays opt-in on page" do
     assert RecordingStudio.capability_enabled?(:accessible, for: "Workspace")
     refute RecordingStudio.capability_enabled?(:accessible, for: "Folder")
     refute RecordingStudio.capability_enabled?(:accessible, for: "Page")
 
-    assert RecordingStudio.capability_enabled?(:example, for: "Workspace")
-    refute RecordingStudio.capability_enabled?(:example, for: "Folder")
-    refute RecordingStudio.capability_enabled?(:example, for: "Page")
-    assert_equal({ label: "dummy workspace" }, RecordingStudio.capability_options(:example, for: "Workspace"))
+    assert RecordingStudio.capability_enabled?(:viewable, for: "Page")
+    refute RecordingStudio.capability_enabled?(:viewable, for: "Folder")
+    refute RecordingStudio.capability_enabled?(:viewable, for: "Workspace")
   end
 
   private

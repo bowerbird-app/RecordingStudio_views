@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_19_021800) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_070002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -153,29 +153,40 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_021800) do
     t.index ["root_recording_id"], name: "idx_rs_root_switchable_root_recording"
   end
 
-  create_table "recording_studio_views_page_view_summaries", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+  create_table "recording_studio_views_daily_view_summaries", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.date "day", null: false
     t.uuid "root_recording_id"
-    t.string "resource_type", null: false
+    t.uuid "recording_id"
+    t.string "resource_type", limit: 128
+    t.string "page_key", limit: 128, null: false
     t.integer "views", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["day", "root_recording_id", "resource_type"], name: "index_rs_views_page_view_summaries_identity", unique: true, nulls_not_distinct: true
+    t.index ["day", "root_recording_id", "recording_id", "resource_type", "page_key"], name: "index_rs_views_daily_view_summaries_identity", unique: true, nulls_not_distinct: true
   end
 
-  create_table "recording_studio_views_page_views", primary_key: ["id", "occurred_at"], options: "PARTITION BY RANGE (occurred_at)", force: :cascade do |t|
-    t.uuid "id", default: -> { "gen_random_uuid()" }, null: false
+  create_table "recording_studio_views_view_logs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "occurred_at", null: false
     t.datetime "arrived_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
-    t.string "resource_type", null: false
     t.uuid "root_recording_id"
     t.uuid "recording_id"
-    t.text "path", null: false
-    t.uuid "user_id"
-    t.text "visitor_id"
-    t.text "referrer"
-    t.jsonb "query_params", default: {}, null: false
-    t.index ["root_recording_id", "occurred_at"], name: "index_recording_studio_views_page_views_on_root_recording_id_oc"
+    t.string "resource_type", limit: 128
+    t.string "page_key", limit: 128, null: false
+    t.string "path", limit: 2048, null: false
+    t.string "actor_type", limit: 128
+    t.string "actor_id", limit: 64
+    t.string "visitor_token_digest", limit: 64
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["root_recording_id", "occurred_at"], name: "index_recording_studio_views_view_logs_on_root_recording_id_occ"
+  end
+
+  create_table "recording_studio_views_view_receipts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "target_fingerprint", limit: 64, null: false
+    t.datetime "accepted_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["accepted_at"], name: "index_rs_views_view_receipts_on_accepted_at"
   end
 
   create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

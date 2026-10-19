@@ -3,6 +3,6 @@
 module RecordingStudioViews
   class ApplicationController < ActionController::Base
     protect_from_forgery with: :exception
-    layout "application"
+    layout false
   end
 end

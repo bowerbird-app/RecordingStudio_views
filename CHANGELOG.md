@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-19
+
+### Added
+- Shared layout helper `recording_studio_track_views` and a small Turbo Drive collector. Installing the gem does not start tracking. Hosts enable `RecordingStudio::Capabilities::Viewable.to` per recordable type and mount the ingestion engine.
+- Signed page-context tokens, same-origin CSRF-protected `POST /recording_studio_views/views`, and `RecordingStudioViews::WriteView` with a 24 hour receipt table for event UUID dedup.
+- Default ordinary `recording_studio_views_view_logs` table (`partition_interval` nil) plus an explicit `rails generate recording_studio_views:migrations --partitioned` path. Daily summary `views/page_views` on `DailyViewSummary`. Raw retention 90 UTC days.
+
+### Removed
+- `record_page_view`, `RecordingStudioViews::PageView`, referrer and query-param storage, and the conversions-oriented `page_view.recorded.recording_studio_views` payload.
+
+### Upgrade notes
+- This is a breaking collector change. Remove `include RecordingStudioViews::PageViewRecording` and per-action `record_page_view` calls.
+- Generate migrations (ordinary table by default), mount `RecordingStudioViews::Engine`, add the layout helper, pin the collector, and enable `:viewable` on types you want tracked.
+- Set `tracking_access_policy`. Private tracking fails closed. Anonymous public tracking needs an explicit allow.
+- Schedule Logs aggregation, reconciliation, retention, and `RecordingStudioViews::ReceiptCleanupJob`. Drop the old `recording_studio_views_page_views` table after cutover.
+- Pin `recording_studio_logs` `~> 0.4.0`. Views works without Metrics.
+
 ## [0.3.0] - 2026-10-19
 
 ### Added
@@ -127,5 +144,6 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/pull/1
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/pull/3
+[0.4.0]: https://github.com/bowerbird-app/RecordingStudio_views/pull/3
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_views/pull/1

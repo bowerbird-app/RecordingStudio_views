@@ -24,6 +24,17 @@ Rails.application.routes.draw do
   get "docs/gem_views", to: "docs#gem_views", as: :docs_gem_views
   get "docs/methods", to: "docs#methods", as: :docs_methods
 
+  mount RecordingStudioViews::Engine, at: "/recording_studio_views"
+
+  resources :pages, only: [:show]
+  resources :folders, only: [:show]
+  get "public/pages/:id", to: "public_pages#show", as: :public_page
+  get "workspaces/:id/search", to: "workspace_searches#show", as: :workspace_search
+  get "site/about", to: "site_pages#show", as: :site_about
+  get "skipped", to: "skipped_pages#show", as: :skipped_page
+  get "no-consent/:id", to: "no_consent#show", as: :no_consent_page
+
   # Defines the root path route ("/")
   root "home#index"
 end
+
