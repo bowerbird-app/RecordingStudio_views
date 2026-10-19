@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-module GemTemplate
+module RecordingStudioViews
   class Configuration
-    attr_accessor :api_key, :enable_feature_x, :timeout
+    attr_accessor :api_key, :enable_feature_x, :timeout,
+                  :visitor_id_resolver, :user_id_resolver, :root_recording_id_resolver
     attr_reader :hooks
 
     def initialize
-      @api_key = ENV.fetch("GEM_TEMPLATE_API_KEY", nil)
+      @api_key = ENV.fetch("RECORDING_STUDIO_VIEWS_API_KEY", nil)
       @enable_feature_x = false
       @timeout = 5
       @hooks = RecordingStudio::Hooks.new

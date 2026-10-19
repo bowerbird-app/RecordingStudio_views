@@ -1,6 +1,68 @@
-# GemTemplate
+# RecordingStudioViews
 
-Internal template for building Rails engine addons on top of Recording Studio 4.x.
+RecordingStudioViews records page views for a Recording Studio host and emits a provider-neutral page-view event. RecordingStudio Conversions can subscribe to that event. This gem does not depend on Conversions, Attachable, Library, or Root Switchable.
+
+## Page views
+
+Include the controller helper and record a view from the action:
+
+```ruby
+class ApplicationController < ActionController::Base
+  include RecordingStudioViews::PageViewRecording
+end
+
+class PressKitsController < ApplicationController
+  def show
+    record_page_view(resource_type: "PressKit", recording_id: @kit.recording_id)
+  end
+end
+```
+
+`record_page_view` reads `request.path`, the referrer, and UTM/click-id query params. Pass `path:` to override the path. `resource_type` defaults to `"Page"`.
+
+### Storage
+
+High-volume rows go through Recording Studio Logs, the same partitioned-log pattern as the Logs dummy `site_views` table. Views registers `RecordingStudioViews::PageView` on `recording_studio_views_page_views` (`occurred_at`, monthly partitions, 30-day retention). Columns follow that demonstration: `resource_type`, `root_recording_id`, `recording_id`, plus the event fields below. New ids are UUIDs. Recording ids passed in are stored as given.
+
+Install the table with `bin/rails generate recording_studio_views:migrations`.
+
+### Visitor id
+
+`visitor_id` is an opaque string from the host. Views does not create a cookie. Point the resolver at root_switchable's existing anonymous device key (`current_root_device_key`) from the host app:
+
+```ruby
+RecordingStudioViews.configure do |config|
+  config.visitor_id_resolver = ->(controller) { controller.current_root_device_key }
+  config.user_id_resolver = ->(controller) { controller.current_user&.id }
+  config.root_recording_id_resolver = ->(controller) { controller.current_root_recording&.id }
+end
+```
+
+Explicit `visitor_id:`, `user_id:`, and `root_recording_id:` arguments win over the resolvers. A missing resolver stores `nil`.
+
+### Event
+
+After the row commits, Views emits ActiveSupport::Notifications event `page_view.recorded.recording_studio_views`.
+
+Payload schema version **1**:
+
+| Key | Value |
+| --- | --- |
+| `schema_version` | `1` |
+| `occurred_at` | ISO 8601 timestamp |
+| `path` | Request path, without the query string |
+| `root_recording_id` | Root recording UUID, or `nil` |
+| `user_id` | Signed-in user UUID, or `nil` |
+| `visitor_id` | Opaque host visitor id, or `nil` |
+| `referrer` | Request referrer, or `nil` |
+| `query_params` | Allowlisted UTM and click ids (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `utm_id`, `gclid`, `gbraid`, `wbraid`, `dclid`, `fbclid`, `msclkid`, `ttclid`, `twclid`, `li_fat_id`) |
+
+```ruby
+ActiveSupport::Notifications.subscribe("page_view.recorded.recording_studio_views") do |*, payload|
+  payload[:schema_version] # => 1
+  payload[:visitor_id]
+end
+```
 
 ## What's Included
 
@@ -170,4 +232,4 @@ The dummy Gemfile keeps `github:` sources so Bundler can fetch those gems. The g
 
 ## Documentation
 
-The original gem template documentation is preserved in `docs/gem_template/` as architectural reference material. Use it as background on the engine conventions; this README and the dummy app are the source of truth for the Recording Studio addon workflow.
+The original gem template documentation is preserved in `docs/recording_studio_views/` as architectural reference material. Use it as background on the engine conventions; this README and the dummy app are the source of truth for the Recording Studio addon workflow.

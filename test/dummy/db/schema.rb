@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_12_044328) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_021600) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -129,6 +129,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_12_044328) do
     t.index ["actor_type", "actor_id", "device_key", "scope_key"], name: "idx_rs_root_switchable_actor_device_scope", unique: true, where: "(actor_id IS NOT NULL)"
     t.index ["device_key", "scope_key"], name: "idx_rs_root_switchable_anonymous_device_scope", unique: true, where: "(actor_id IS NULL)"
     t.index ["root_recording_id"], name: "idx_rs_root_switchable_root_recording"
+  end
+
+  create_table "recording_studio_views_page_views", primary_key: ["id", "occurred_at"], options: "PARTITION BY RANGE (occurred_at)", force: :cascade do |t|
+    t.uuid "id", default: -> { "gen_random_uuid()" }, null: false
+    t.datetime "occurred_at", null: false
+    t.datetime "arrived_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.string "resource_type", null: false
+    t.uuid "root_recording_id"
+    t.uuid "recording_id"
+    t.string "path", null: false
+    t.uuid "user_id"
+    t.string "visitor_id"
+    t.text "referrer"
+    t.jsonb "query_params", default: {}, null: false
+    t.index ["root_recording_id", "occurred_at"], name: "index_recording_studio_views_page_views_on_root_recording_id_oc"
   end
 
   create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

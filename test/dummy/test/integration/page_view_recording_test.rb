@@ -1,0 +1,86 @@
+# frozen_string_literal: true
+
+require "test_helper"
+require "devise/test/integration_helpers"
+
+class PageViewRecordingTest < ActionDispatch::IntegrationTest
+  include Devise::Test::IntegrationHelpers
+
+  setup do
+    @user = User.find_or_create_by!(email: "page-view-test@example.com") do |record|
+      record.password = "Password123!"
+      record.password_confirmation = "Password123!"
+    end
+    sign_in @user
+
+    @root_recording_id = "33333333-3333-4333-8333-333333333333"
+    @configuration = RecordingStudioViews.configuration
+    @original_visitor = @configuration.visitor_id_resolver
+    @original_user = @configuration.user_id_resolver
+    @original_root = @configuration.root_recording_id_resolver
+    @configuration.visitor_id_resolver = ->(_controller) { "opaque-device-key" }
+    @configuration.user_id_resolver = ->(controller) { controller.current_user&.id }
+    @configuration.root_recording_id_resolver = ->(_controller) { @root_recording_id }
+  end
+
+  teardown do
+    @configuration.visitor_id_resolver = @original_visitor
+    @configuration.user_id_resolver = @original_user
+    @configuration.root_recording_id_resolver = @original_root
+  end
+
+  test "a page view is recorded and the event fires after commit" do
+    events = []
+    subscriber = ActiveSupport::Notifications.subscribe(RecordingStudioViews::PAGE_VIEW_RECORDED) do |*, payload|
+      events << payload
+    end
+
+    workspace = Workspace.create!(name: "Page View Workspace")
+    root = RecordingStudio.root_recording_for(workspace)
+    root_id_before = root.id
+
+    assert_difference -> { RecordingStudioViews::PageView.count }, 1 do
+      get root_path, params: { utm_source: "newsletter", utm_medium: "email", gclid: "click-1", q: "ignore" },
+                     headers: { "HTTP_REFERER" => "https://press.example/kit" }
+    end
+
+    assert_response :success
+    assert_equal 1, events.size
+
+    view = RecordingStudioViews::PageView.order(:occurred_at).last
+    payload = events.first
+
+    assert_equal view.event_payload, payload
+    assert_equal 1, payload[:schema_version]
+    assert_equal "/", payload[:path]
+    assert_equal @root_recording_id, payload[:root_recording_id]
+    assert_equal @user.id, payload[:user_id]
+    assert_equal "opaque-device-key", payload[:visitor_id]
+    assert_equal "https://press.example/kit", payload[:referrer]
+    assert_equal({ "utm_source" => "newsletter", "utm_medium" => "email", "gclid" => "click-1" }, payload[:query_params])
+    assert_equal payload[:occurred_at], view.occurred_at.iso8601
+    assert_equal "Page", view.resource_type
+    assert view.id.present?
+    assert_equal root_id_before, root.reload.id
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  test "a rolled back page view does not emit the event" do
+    events = []
+    subscriber = ActiveSupport::Notifications.subscribe(RecordingStudioViews::PAGE_VIEW_RECORDED) do |*, payload|
+      events << payload
+    end
+
+    assert_no_difference -> { RecordingStudioViews::PageView.count } do
+      RecordingStudioViews::PageView.transaction do
+        RecordingStudioViews.record_page_view(path: "/rolled-back", visitor_id: "opaque-device-key")
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    assert_empty events
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+end
