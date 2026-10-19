@@ -9,6 +9,8 @@ module RecordingStudioViews
     end
 
     def perform
+      return success(nil) unless RequestGate.allow?(@controller)
+
       attributes = page_view_attributes
       return failure("path is required") if attributes[:path].blank?
 
@@ -27,16 +29,16 @@ module RecordingStudioViews
         resource_type: resource_type,
         recording_id: attribute(:recording_id),
         root_recording_id: chosen(:root_recording_id, context.root_recording_id),
-        user_id: chosen(:user_id, context.user_id),
+        user_id: UuidValue.cast(chosen(:user_id, context.user_id)),
         visitor_id: visitor_id_for(context)
       }
     end
 
     def request_attributes(context)
       {
-        path: chosen(:path, context.path),
+        path: TextLimit.clip(chosen(:path, context.path), TextLimit::PATH),
         occurred_at: attribute(:occurred_at) || Time.current,
-        referrer: chosen(:referrer, context.referrer),
+        referrer: Referrer.scrub(chosen(:referrer, context.referrer)),
         query_params: query_params_for(context)
       }
     end
@@ -125,8 +127,7 @@ module RecordingStudioViews
     def self.present(value)
       return if value.nil?
 
-      text = value.to_s
-      text unless text.empty?
+      TextLimit.clip(value, TextLimit::VISITOR_ID)
     end
   end
 end

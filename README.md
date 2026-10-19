@@ -20,13 +20,25 @@ class PressKitsController < ApplicationController
 end
 ```
 
-`record_page_view` reads `request.path`, the referrer, and UTM/click-id query params. Pass `path:` to override the path. `resource_type` defaults to `"Page"`.
+`record_page_view` reads `request.path`, the referrer, and UTM/click-id query params. Pass `path:` to override the path. `resource_type` defaults to `"Page"`. The insert is synchronous on the request. A failure is reported with `Rails.error.report(error, handled: true)` and the method returns `nil`. It does not raise, so a subscriber, a resolver, or the insert cannot turn the host response into a 500.
+
+Only GET requests are recorded. HEAD and other methods are skipped. Prefetch is skipped when `Sec-Purpose`, `Purpose`, `X-Sec-Purpose`, or `X-Purpose` contains `prefetch` (including Turbo prefetch). Set `config.skip_if` to a callable that receives the controller and returns truthy to skip other traffic, such as bots.
 
 ### Storage
 
-High-volume rows go through Recording Studio Logs, the same partitioned-log pattern as the Logs dummy `site_views` table. Views registers `RecordingStudioViews::PageView` on `recording_studio_views_page_views` (`occurred_at`, monthly partitions, 30-day retention). Columns follow that demonstration: `resource_type`, `root_recording_id`, `recording_id`, plus the event fields below. New ids are UUIDs. Recording ids passed in are stored as given.
+High-volume rows go through Recording Studio Logs, the same partitioned-log pattern as the Logs dummy `site_views` table. Views registers `RecordingStudioViews::PageView` on `recording_studio_views_page_views` (`occurred_at`, monthly partitions). Columns follow that demonstration: `resource_type`, `root_recording_id`, `recording_id`, plus the event fields below. New ids are UUIDs. Recording ids passed in are stored as given.
 
-Install the table with `bin/rails generate recording_studio_views:migrations`.
+The primary key is `(id, occurred_at)` because the table is partitioned on `occurred_at`. `page_view_id` is that `id` UUID. It is practically unique, and consumers should key on `page_view_id`. `RecordingStudioViews::PageView` is required from `lib` and is not a reloadable autoloaded model.
+
+`user_id` is a UUID column. A UUID string is stored. An integer id, or any other non-UUID value, is stored as `nil`.
+
+`path` and `visitor_id` are clipped to 2048 characters. `referrer` is reduced to origin and path (scheme, host, optional port, and path) and clipped to 2048 characters. Query keys are matched case-insensitively and stored in lowercase.
+
+Install the page-view and summary tables with `bin/rails generate recording_studio_views:migrations`. Install the Logs run tables with `bin/rails generate recording_studio_logs:migrations`, then `bin/rails db:migrate`.
+
+Retention is 30 days. Months drop only after the whole month is older than that and the daily aggregation `recording_studio_views/page_views` has succeeded for every UTC day in the month. Because partitions are monthly, a row can remain until its month is fully expired, about 30 to 61 days.
+
+Schedule these jobs in the host. Views does not start a cron runner. `RecordingStudioLogs::PartitionMaintenanceJob` should run so requests do not create partitions. Logs keeps the previous month through `months_ahead` (default 2). Also schedule `RecordingStudioLogs::DailyAggregationJob`, `RecordingStudioLogs::ReconciliationJob`, and `RecordingStudioLogs::RetentionCleanupJob`. Without the daily aggregation succeeding, retention blocks every month.
 
 ### Visitor id
 
@@ -55,11 +67,11 @@ Payload schema version **1**:
 | `path` | Request path, without the query string |
 | `root_recording_id` | Root recording UUID, or `nil` |
 | `recording_id` | Viewed recording UUID when known, or `nil` |
-| `page_view_id` | Stored row UUID. Stable and unique per view |
-| `user_id` | Signed-in user UUID, or `nil` |
-| `visitor_id` | Opaque host visitor id, or `nil` |
-| `referrer` | Request referrer, or `nil` |
-| `query_params` | Allowlisted UTM and click ids (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `utm_id`, `gclid`, `gbraid`, `wbraid`, `dclid`, `fbclid`, `msclkid`, `ttclid`, `twclid`, `li_fat_id`) |
+| `page_view_id` | Stored row UUID. The primary key is `(id, occurred_at)`. Consumers key on this UUID, which is practically unique per view |
+| `user_id` | Signed-in user UUID, or `nil`. Integer ids become `nil` |
+| `visitor_id` | Opaque host visitor id, clipped to 2048 characters, or `nil` |
+| `referrer` | Origin and path only, clipped to 2048 characters, or `nil` |
+| `query_params` | Allowlisted UTM and click ids, matched case-insensitively (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `utm_id`, `gclid`, `gbraid`, `wbraid`, `dclid`, `fbclid`, `msclkid`, `ttclid`, `twclid`, `li_fat_id`) |
 
 ```ruby
 ActiveSupport::Notifications.subscribe("page_view.recorded.recording_studio_views") do |*, payload|

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_19_021600) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_021900) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -95,6 +95,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_021600) do
     t.index ["recording_id"], name: "index_recording_studio_events_on_recording_id"
   end
 
+  create_table "recording_studio_logs_aggregation_runs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "aggregation_name", null: false
+    t.date "day", null: false
+    t.string "status", null: false
+    t.text "error_message"
+    t.datetime "finished_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["aggregation_name", "day"], name: "index_rs_logs_aggregation_runs_on_name_and_day", unique: true
+  end
+
+  create_table "recording_studio_logs_maintenance_runs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "task", null: false
+    t.string "subject", null: false
+    t.string "status", null: false
+    t.text "details"
+    t.datetime "finished_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["task", "subject", "finished_at"], name: "index_rs_logs_maintenance_runs_on_task_and_subject"
+  end
+
   create_table "recording_studio_recordings", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.uuid "parent_recording_id"
@@ -131,6 +153,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_021600) do
     t.index ["root_recording_id"], name: "idx_rs_root_switchable_root_recording"
   end
 
+  create_table "recording_studio_views_page_view_summaries", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.date "day", null: false
+    t.uuid "root_recording_id"
+    t.string "resource_type", null: false
+    t.integer "views", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["day", "root_recording_id", "resource_type"], name: "index_rs_views_page_view_summaries_identity", unique: true, nulls_not_distinct: true
+  end
+
   create_table "recording_studio_views_page_views", primary_key: ["id", "occurred_at"], options: "PARTITION BY RANGE (occurred_at)", force: :cascade do |t|
     t.uuid "id", default: -> { "gen_random_uuid()" }, null: false
     t.datetime "occurred_at", null: false
@@ -138,9 +170,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_021600) do
     t.string "resource_type", null: false
     t.uuid "root_recording_id"
     t.uuid "recording_id"
-    t.string "path", null: false
+    t.text "path", null: false
     t.uuid "user_id"
-    t.string "visitor_id"
+    t.text "visitor_id"
     t.text "referrer"
     t.jsonb "query_params", default: {}, null: false
     t.index ["root_recording_id", "occurred_at"], name: "index_recording_studio_views_page_views_on_root_recording_id_oc"

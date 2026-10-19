@@ -16,8 +16,7 @@ module RecordingStudioViews
       value = resolver.call(controller)
       return if value.nil?
 
-      text = value.to_s
-      text unless text.empty?
+      TextLimit.clip(value, TextLimit::VISITOR_ID)
     end
   end
 end

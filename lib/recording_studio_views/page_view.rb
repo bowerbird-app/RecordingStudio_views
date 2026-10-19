@@ -57,6 +57,8 @@ module RecordingStudioViews
 
     def publish_recorded_event
       ActiveSupport::Notifications.instrument(PAGE_VIEW_RECORDED, event_payload)
+    rescue StandardError => e
+      Failure.report(e)
     end
   end
 end

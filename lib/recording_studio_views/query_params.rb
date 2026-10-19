@@ -19,7 +19,7 @@ module RecordingStudioViews
         scalar = scalar_value(value)
         next if scalar.nil?
 
-        result[key.to_s] = scalar
+        result[key.to_s.downcase] = scalar
       end
     end
 

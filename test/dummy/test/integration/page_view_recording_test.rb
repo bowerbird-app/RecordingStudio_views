@@ -18,6 +18,7 @@ class PageViewRecordingTest < ActionDispatch::IntegrationTest
     @original_visitor = @configuration.visitor_id_resolver
     @original_user = @configuration.user_id_resolver
     @original_root = @configuration.root_recording_id_resolver
+    @original_skip = @configuration.skip_if
     @configuration.visitor_id_resolver = ->(_controller) { "opaque-device-key" }
     @configuration.user_id_resolver = ->(controller) { controller.current_user&.id }
     @configuration.root_recording_id_resolver = ->(_controller) { @root_recording_id }
@@ -27,6 +28,7 @@ class PageViewRecordingTest < ActionDispatch::IntegrationTest
     @configuration.visitor_id_resolver = @original_visitor
     @configuration.user_id_resolver = @original_user
     @configuration.root_recording_id_resolver = @original_root
+    @configuration.skip_if = @original_skip
   end
 
   test "a page view is recorded and the event fires after commit" do
@@ -85,5 +87,105 @@ class PageViewRecordingTest < ActionDispatch::IntegrationTest
     assert_empty events
   ensure
     ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  test "a raising subscriber still returns 200 and keeps the row" do
+    subscriber = ActiveSupport::Notifications.subscribe(RecordingStudioViews::PAGE_VIEW_RECORDED) do
+      raise "subscriber failed"
+    end
+
+    assert_difference -> { RecordingStudioViews::PageView.count }, 1 do
+      get root_path
+    end
+
+    assert_response :success
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  test "a failing insert still returns 200" do
+    RecordingStudioViews::PageView.define_singleton_method(:create!) { raise ActiveRecord::StatementInvalid, "insert failed" }
+
+    assert_no_difference -> { RecordingStudioViews::PageView.count } do
+      get root_path
+    end
+
+    assert_response :success
+  ensure
+    RecordingStudioViews::PageView.singleton_class.remove_method(:create!)
+  end
+
+  test "a raising resolver still returns 200" do
+    @configuration.visitor_id_resolver = ->(*) { raise "resolver failed" }
+
+    assert_no_difference -> { RecordingStudioViews::PageView.count } do
+      get root_path
+    end
+
+    assert_response :success
+  end
+
+  test "partition ddl failure still returns 200" do
+    maintainer = RecordingStudioLogs::Partitioning::Maintainer.singleton_class
+    maintainer.alias_method :ensure_without_failure!, :ensure!
+    maintainer.define_method(:ensure!) { |*| raise ActiveRecord::StatementInvalid, "ddl failed" }
+
+    assert_no_difference -> { RecordingStudioViews::PageView.count } do
+      get root_path
+    end
+
+    assert_response :success
+  ensure
+    maintainer.alias_method :ensure!, :ensure_without_failure!
+    maintainer.remove_method :ensure_without_failure!
+  end
+
+  test "head and prefetch requests are not recorded" do
+    assert_no_difference -> { RecordingStudioViews::PageView.count } do
+      head root_path
+      get root_path, headers: { "Sec-Purpose" => "prefetch" }
+      get root_path, headers: { "Purpose" => "prefetch" }
+    end
+
+    assert_response :success
+  end
+
+  test "skip_if skips the view" do
+    @configuration.skip_if = ->(controller) { controller.request.path == "/" }
+
+    assert_no_difference -> { RecordingStudioViews::PageView.count } do
+      get root_path
+    end
+
+    assert_response :success
+  end
+
+  test "uppercase query keys and a query-bearing referrer are normalized" do
+    get root_path, params: { UTM_SOURCE: "Newsletter" }, headers: { "HTTP_REFERER" => "https://press.example/kit?secret=1#x" }
+
+    view = RecordingStudioViews::PageView.order(:occurred_at).last
+
+    assert_response :success
+    assert_equal({ "utm_source" => "Newsletter" }, view.query_params)
+    assert_equal "https://press.example/kit", view.referrer
+  end
+
+  test "an integer user id is stored as nil" do
+    view = RecordingStudioViews.record_page_view(path: "/integer-user", user_id: 42, visitor_id: "opaque")
+
+    assert_nil view.user_id
+  end
+
+  test "cleanup_retention dry run drops an expired month" do
+    month = Time.utc(2020, 1, 15)
+    RecordingStudioViews.record_page_view(path: "/old", occurred_at: month, visitor_id: "opaque")
+    name = "recording_studio_views_page_views_2020_01"
+    Date.new(2020, 1, 1).upto(Date.new(2020, 1, 31)) { |day| RecordingStudioLogs.aggregate_day!(day) }
+
+    preview = RecordingStudioLogs.cleanup_retention!(dry_run: true)
+
+    assert_includes preview.dropped, name
+    assert RecordingStudioLogs::Partitioning::Catalog.exists?("recording_studio_views_page_views", name)
+    assert RecordingStudioViews::PageView.where(path: "/old").exists?
   end
 end

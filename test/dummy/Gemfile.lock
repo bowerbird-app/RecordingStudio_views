@@ -84,7 +84,7 @@ PATH
     recording_studio_views (0.3.0)
       rails (~> 8.1.0)
       recording_studio (~> 4.2)
-      recording_studio_logs (~> 0.4)
+      recording_studio_logs (~> 0.4.0)
 
 GEM
   remote: https://rubygems.org/

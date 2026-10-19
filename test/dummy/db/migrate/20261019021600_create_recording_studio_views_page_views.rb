@@ -22,9 +22,9 @@ class CreateRecordingStudioViewsPageViews < ActiveRecord::Migration[8.1]
     table.string :resource_type, null: false
     table.uuid :root_recording_id
     table.uuid :recording_id
-    table.string :path, null: false
+    table.text :path, null: false
     table.uuid :user_id
-    table.string :visitor_id
+    table.text :visitor_id
     table.text :referrer
     table.jsonb :query_params, null: false, default: {}
   end

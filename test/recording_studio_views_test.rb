@@ -15,6 +15,7 @@ class RecordingStudioViewsTest < Minitest::Test
     gemspec = File.read(File.expand_path("../recording_studio_views.gemspec", __dir__))
 
     assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.2"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio_logs", "~> 0.4.0"'
   end
 
   def test_gemspec_excludes_cursor_config

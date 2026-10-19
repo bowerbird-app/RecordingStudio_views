@@ -82,6 +82,51 @@ class PageViewTest < Minitest::Test
     assert_equal({}, payload[:query_params])
   end
 
+  def test_query_params_match_keys_case_insensitively
+    extracted = RecordingStudioViews::QueryParams.extract(
+      "UTM_SOURCE" => "Newsletter",
+      "Gclid" => "AbC",
+      "Q" => "secret"
+    )
+
+    assert_equal({ "utm_source" => "Newsletter", "gclid" => "AbC" }, extracted)
+  end
+
+  def test_referrer_keeps_origin_and_path_within_2048_characters
+    scrubbed = RecordingStudioViews::Referrer.scrub("https://user:pw@press.example:8443/kit?utm_source=x#section")
+    long = RecordingStudioViews::Referrer.scrub("https://press.example/#{'a' * 3000}")
+
+    assert_equal "https://press.example:8443/kit", scrubbed
+    assert_nil RecordingStudioViews::Referrer.scrub("not a url")
+    assert_equal 2048, long.length
+  end
+
+  def test_path_and_visitor_id_are_clipped
+    assert_equal 2048, RecordingStudioViews::TextLimit.clip("p" * 3000, RecordingStudioViews::TextLimit::PATH).length
+    assert_equal 2048, RecordingStudioViews::VisitorId.resolve(capped_visitor_controller).length
+  end
+
+  def test_integer_user_ids_are_dropped
+    assert_nil RecordingStudioViews::UuidValue.cast(42)
+    assert_equal "22222222-2222-4222-8222-222222222222",
+                 RecordingStudioViews::UuidValue.cast("22222222-2222-4222-8222-222222222222")
+  end
+
+  def test_a_raising_resolver_or_blank_path_returns_nil
+    @configuration.visitor_id_resolver = ->(*) { raise "resolver down" }
+
+    assert_nil RecordingStudioViews.record_page_view(path: "/safe", controller: Object.new)
+    assert_nil RecordingStudioViews.record_page_view(path: " ")
+  end
+
+  def test_a_failing_insert_returns_nil
+    RecordingStudioViews::PageView.define_singleton_method(:create!) { raise StandardError, "insert failed" }
+
+    assert_nil RecordingStudioViews.record_page_view(path: "/safe")
+  ensure
+    RecordingStudioViews::PageView.singleton_class.remove_method(:create!)
+  end
+
   def test_query_params_keep_utm_and_click_ids_only
     extracted = RecordingStudioViews::QueryParams.extract(
       "utm_source" => "newsletter",
@@ -142,5 +187,13 @@ class PageViewTest < Minitest::Test
     assert_equal :occurred_at, log.timestamp_column
     assert_equal :root_recording_id, log.root_column
     assert_equal "Recording Studio Views", log.owner
+    assert_equal 30.days, log.retention
+    names = RecordingStudioLogs.registry.aggregations_for(log).map(&:name)
+    assert_includes names, RecordingStudioViews::PAGE_VIEW_AGGREGATION
+  end
+
+  def capped_visitor_controller
+    @configuration.visitor_id_resolver = ->(*) { "v" * 3000 }
+    Object.new
   end
 end
