@@ -5,7 +5,7 @@ Page views for Recording Studio apps. Installing the gem does not start tracking
 V1 records page views only. It does not create sessions, funnels, conversions, unique visitors, or engagement duration. It never writes a Recording, revision, or timeline Event per view.
 
 ```ruby
-gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.4.0"
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.5.0"
 gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.4.0"
 ```
 
@@ -70,6 +70,18 @@ Daily summary `RecordingStudioViews::DailyViewSummary`, aggregation name `views/
 
 When Metrics is installed, Logs registers eligible rooted count summaries. Views does not patch Metrics. You can read summary models directly without Metrics. Site pages (NULL root) need a separate reporting definition. The rooted Metrics bridge will not expose those rows.
 
+## Admin
+
+If the host already mounts Recording Studio Admin, Views registers a `views` section during `to_prepare`. Enable it on the admin root:
+
+```ruby
+recording_studio_admin_sections do
+  section :views
+end
+```
+
+The hub shows a UTC daily chart from `DailyViewSummary` (`views/page_views`) and a total from `ViewLog`. Page views is a table of `ViewLog` rows. Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
+
 ## Retention and deletion
 
 Raw cleanup is Logs in both storage modes. Non-partitioned deletes expired rows only for UTC days with a successful covering aggregation. Partitioned drops a month only when the whole month is expired and covered. Use `RecordingStudioLogs.delete_for_root` through the host deletion lifecycle. Cancelling a subscription does not delete analytics.
@@ -93,7 +105,7 @@ Render only target context into shared caches. Token expiry must fit the cache l
 
 ## Dummy app
 
-The dummy host at `test/dummy` proves the gem. It has two trackable pages under different workspace roots, shared-layout tracking, a named workspace search page, an explicit site page, anonymous public views, and an authenticated private page. Operation is non-partitioned by default. Partitioned insert coverage lives in the test suite.
+The dummy host at `test/dummy` proves the gem. It has two trackable pages under different workspace roots, shared-layout tracking, a named workspace search page, an explicit site page, anonymous public views, and an authenticated private page. It mounts Recording Studio Admin at `/admin` with the Views section enabled. Operation is non-partitioned by default. Partitioned insert coverage lives in the test suite.
 
 Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Password`.
 
@@ -120,6 +132,7 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 - `/public/pages/:id` — anonymous public Page
 - `/workspaces/:id/search` — named root page
 - `/site/about` — explicit site page
+- `/admin` — Views admin section (sign in first)
 
 ## Tech Stack
 
@@ -134,7 +147,8 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 | Trashable       | dummy GitHub tag `v0.11.0` (`require: false`; query-only via Accessible) |
 | Root Switchable | dummy GitHub tag `v0.9.0` |
 | Logs            | dummy GitHub tag `v0.4.0` |
-| FlatPack        | dummy GitHub tag `v0.1.196` |
+| Admin           | dummy GitHub tag `v2.3.0` (optional for hosts) |
+| FlatPack        | dummy GitHub tag `v0.1.213` |
 | Devise          | latest  |
 
 ## Documentation

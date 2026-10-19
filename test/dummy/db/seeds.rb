@@ -2,6 +2,17 @@
 # development, test). The code here should be idempotent so that it can be executed at any point in every environment.
 # The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
 
+bootstrap_owner_access = lambda do |recording, actor|
+  current_role = RecordingStudioAccessible.role_for(actor: actor, recording: recording)
+  next if current_role == :admin
+
+  result = RecordingStudioAccessible.bootstrap_owner_access!(
+    recording: recording,
+    actor: actor
+  )
+  raise "Failed to bootstrap owner access: #{result.error}" if result.failure?
+end
+
 find_or_record_child = lambda do |recordable, root_recording, parent_recording|
   RecordingStudio::Recording.where(RecordingStudio::Recording.recording_studio_trashable_kept_sql).find_by(
     root_recording: root_recording,
@@ -42,6 +53,10 @@ begin
 
   find_or_record_child.call(page, root_recording, folder_recording)
   find_or_record_child.call(client_page, accessible_root_recording, accessible_root_recording)
+
+  admin_root = AdminRoot.find_or_create_by!(name: "Admin")
+  admin_root_recording = RecordingStudio.root_recording_for(admin_root)
+  bootstrap_owner_access.call(admin_root_recording, user)
 ensure
   Current.actor = previous_actor
 end

@@ -1,22 +1,19 @@
 module ApplicationHelper
-  def dummy_page_nav(title:, back_url: nil, back_label: "Home")
-    recording_studio_page_nav(
-      title: title,
-      page_nav_back_url: back_url,
-      page_nav_back_label: back_label
-    )
+  include DummyLayoutHelper
 
-    recording_studio_page_nav_right do
-      concat recording_studio_root_switch_dropdown(style: :ghost, size: :md)
-      concat render(
-        FlatPack::Button::Component.new(
-          text: "Sign out",
-          style: :ghost,
-          size: :md,
-          url: main_app.destroy_user_session_path,
-          data: { turbo_method: :delete }
-        )
+  def dummy_page_nav(title:, back_url: nil, back_label: "Home")
+    content_for(:title, title) if title.present?
+    concat render(
+      FlatPack::PageNav::Component.new(
+        back_tooltip: back_label,
+        secondary_anchor_href: back_url
       )
-    end
+    )
+  end
+
+  def dummy_sidebar_pages
+    recordings = RecordingStudio::Recording.where(recordable_type: "Page")
+    recordings = recordings.where(RecordingStudio::Recording.recording_studio_trashable_kept_sql)
+    recordings.filter_map(&:recordable).sort_by { |page| page.title.to_s.downcase }
   end
 end

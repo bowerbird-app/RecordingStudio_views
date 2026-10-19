@@ -121,6 +121,15 @@ module RecordingStudioViews
       config.to_prepare { RecordingStudioViews.register_view_log! }
     end
 
+    initializer "recording_studio_views.admin" do
+      config.to_prepare do
+        next unless defined?(::RecordingStudioAdmin)
+
+        require "recording_studio_views/admin"
+        RecordingStudioViews::Admin.register!
+      end
+    end
+
     initializer "recording_studio_views.apply_controller_extensions" do
       config.to_prepare do
         next unless defined?(ActionController::Base)

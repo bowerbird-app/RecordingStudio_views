@@ -6,6 +6,8 @@ Rails.application.routes.draw do
   get "/recording_studio", to: redirect("/"), as: nil
   mount RecordingStudio::Engine, at: "/recording_studio"
   mount RecordingStudioRootSwitchable::Engine, at: "/recording_studio_root_switchable"
+  mount RecordingStudioAccessible::Engine, at: "/admin/access"
+  recording_studio_admin_for :admin, at: "/admin", root_section: :views
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
@@ -26,7 +28,7 @@ Rails.application.routes.draw do
 
   mount RecordingStudioViews::Engine, at: "/recording_studio_views"
 
-  resources :pages, only: [:show]
+  resources :pages
   resources :folders, only: [:show]
   get "public/pages/:id", to: "public_pages#show", as: :public_page
   get "workspaces/:id/search", to: "workspace_searches#show", as: :workspace_search

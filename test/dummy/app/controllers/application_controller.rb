@@ -1,6 +1,5 @@
 class ApplicationController < ActionController::Base
   include RecordingStudio::RootSwitchable::ControllerSupport
-  include RecordingStudio::UsesDefaultLayout
 
   allow_browser versions: :modern
 
@@ -11,6 +10,8 @@ class ApplicationController < ActionController::Base
   before_action :authenticate_user!
   before_action :set_current_actor
 
+  helper DummyLayoutHelper
+  helper RecordingStudio::LayoutHelper
   helper_method :current_recording, :current_root_page, :current_site_page, :current_actor
 
   def current_recording
@@ -40,7 +41,7 @@ class ApplicationController < ActionController::Base
   private
 
   def application_layout
-    devise_controller? ? "application" : "recording_studio/default_layout"
+    devise_controller? ? "application" : "flat_pack_sidebar"
   end
 
   def set_current_actor

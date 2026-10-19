@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-19
+
+### Added
+- Recording Studio Admin section `views` when Admin is loaded. Hub widgets: page views over time (daily UTC series from `views/page_views`) and total ViewLog rows. Screen `views_page_views` lists ViewLog rows with date range, root, resource type, page key, and public/private filters. Registration matches Support (`to_prepare`, `defined?(::RecordingStudioAdmin)`). Authorization is the host Admin access recording. The dummy host mounts Admin, enables `section :views`, and grants the seeded user on that admin root.
+
+### Changed
+- Dummy FlatPack GitHub tag `v0.1.196` → `v0.1.213` so dummy can load Admin `v2.3.0`.
+
+### Upgrade notes
+- This gem still does not depend on `recording_studio_admin`. Hosts that already mount Admin should add `section :views` on the admin root recordable. Point dummy (or any host that wants the demo Admin) at Admin `v2.3.0` and FlatPack `v0.1.213`.
+- No new tables, columns, or tracking. Chart series reads `DailyViewSummary`. The table and total count read `ViewLog`.
+
 ## [0.4.0] - 2026-10-19
 
 ### Added

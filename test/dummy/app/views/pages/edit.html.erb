@@ -1,0 +1,8 @@
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Edit page",
+    variant: :h1
+  ) %>
+
+  <%= render "form", page: @page %>
+</div>

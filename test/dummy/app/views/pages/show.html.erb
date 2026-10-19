@@ -1,7 +1,23 @@
-<% dummy_page_nav(title: @page.title, back_url: root_path) %>
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: @page.title,
+    subtitle: "Private recordable page",
+    variant: :h1
+  ) %>
 
-<%= render FlatPack::PageTitle::Component.new(
-  title: @page.title,
-  subtitle: "Private recordable page",
-  variant: :h1
-) %>
+  <div class="flex flex-wrap gap-3">
+    <%= render FlatPack::Button::Component.new(
+      text: "Edit",
+      style: :secondary,
+      size: :md,
+      href: edit_page_path(@page)
+    ) %>
+    <%= render FlatPack::Button::Component.new(
+      text: "Delete",
+      style: :danger,
+      size: :md,
+      href: page_path(@page),
+      data: { turbo_method: :delete }
+    ) %>
+  </div>
+</div>
