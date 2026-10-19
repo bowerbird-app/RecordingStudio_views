@@ -4,18 +4,33 @@ require "securerandom"
 
 module RecordingStudioViews
   module PageViewPayload
+    KEYS = %i[
+      schema_version
+      occurred_at
+      path
+      root_recording_id
+      recording_id
+      page_view_id
+      user_id
+      visitor_id
+      referrer
+      query_params
+    ].freeze
+
     def self.build(view)
-      {
-        schema_version: PAYLOAD_SCHEMA_VERSION,
-        occurred_at: view.occurred_at&.iso8601,
-        path: view.path,
-        root_recording_id: view.root_recording_id,
-        user_id: view.user_id,
-        visitor_id: view.visitor_id,
-        referrer: view.referrer,
-        query_params: QueryParams.extract(view.query_params)
-      }
+      KEYS.index_with { |key| value_for(view, key) }
     end
+
+    def self.value_for(view, key)
+      case key
+      when :schema_version then PAYLOAD_SCHEMA_VERSION
+      when :occurred_at then view.occurred_at&.iso8601
+      when :page_view_id then view.id
+      when :query_params then QueryParams.extract(view.query_params)
+      else view.public_send(key)
+      end
+    end
+    private_class_method :value_for
   end
 
   # Partitioned page-view row. Column shape follows the Logs site_views

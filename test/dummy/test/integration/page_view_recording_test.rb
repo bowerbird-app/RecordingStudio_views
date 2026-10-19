@@ -54,6 +54,9 @@ class PageViewRecordingTest < ActionDispatch::IntegrationTest
     assert_equal 1, payload[:schema_version]
     assert_equal "/", payload[:path]
     assert_equal @root_recording_id, payload[:root_recording_id]
+    assert_nil payload[:recording_id]
+    assert_equal view.id, payload[:page_view_id]
+    assert_equal RecordingStudioViews::PageViewPayload::KEYS, payload.keys
     assert_equal @user.id, payload[:user_id]
     assert_equal "opaque-device-key", payload[:visitor_id]
     assert_equal "https://press.example/kit", payload[:referrer]

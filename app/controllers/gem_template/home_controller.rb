@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module RecordingStudioViews
+module GemTemplate
   class HomeController < ApplicationController
     def index
       head :ok

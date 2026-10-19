@@ -1,6 +1,8 @@
-# RecordingStudioViews
+# GemTemplate
 
-RecordingStudioViews records page views for a Recording Studio host and emits a provider-neutral page-view event. RecordingStudio Conversions can subscribe to that event. This gem does not depend on Conversions, Attachable, Library, or Root Switchable.
+Internal template for building Rails engine addons on top of Recording Studio 4.x.
+
+RecordingStudioViews, loaded with this gem, records page views and emits a provider-neutral page-view event. RecordingStudio Conversions can subscribe. This code does not depend on Conversions, Attachable, Library, or Root Switchable.
 
 ## Page views
 
@@ -24,7 +26,7 @@ end
 
 High-volume rows go through Recording Studio Logs, the same partitioned-log pattern as the Logs dummy `site_views` table. Views registers `RecordingStudioViews::PageView` on `recording_studio_views_page_views` (`occurred_at`, monthly partitions, 30-day retention). Columns follow that demonstration: `resource_type`, `root_recording_id`, `recording_id`, plus the event fields below. New ids are UUIDs. Recording ids passed in are stored as given.
 
-Install the table with `bin/rails generate recording_studio_views:migrations`.
+Install the table with `bin/rails generate gem_template:migrations`.
 
 ### Visitor id
 
@@ -52,6 +54,8 @@ Payload schema version **1**:
 | `occurred_at` | ISO 8601 timestamp |
 | `path` | Request path, without the query string |
 | `root_recording_id` | Root recording UUID, or `nil` |
+| `recording_id` | Viewed recording UUID when known, or `nil` |
+| `page_view_id` | Stored row UUID. Stable and unique per view |
 | `user_id` | Signed-in user UUID, or `nil` |
 | `visitor_id` | Opaque host visitor id, or `nil` |
 | `referrer` | Request referrer, or `nil` |
@@ -60,9 +64,12 @@ Payload schema version **1**:
 ```ruby
 ActiveSupport::Notifications.subscribe("page_view.recorded.recording_studio_views") do |*, payload|
   payload[:schema_version] # => 1
-  payload[:visitor_id]
+  payload[:page_view_id]
+  payload[:recording_id]
 end
 ```
+
+`RecordingStudioViews::PageViewPayload.build` is the contract builder for fixtures. `PageViewPayload::KEYS` is that key list, in order. Schema version stays `1`.
 
 ## What's Included
 
@@ -232,4 +239,4 @@ The dummy Gemfile keeps `github:` sources so Bundler can fetch those gems. The g
 
 ## Documentation
 
-The original gem template documentation is preserved in `docs/recording_studio_views/` as architectural reference material. Use it as background on the engine conventions; this README and the dummy app are the source of truth for the Recording Studio addon workflow.
+The original gem template documentation is preserved in `docs/gem_template/` as architectural reference material. Use it as background on the engine conventions; this README and the dummy app are the source of truth for the Recording Studio addon workflow.

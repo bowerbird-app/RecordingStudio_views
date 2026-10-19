@@ -24,9 +24,11 @@ class PageViewTest < Minitest::Test
   def test_payload_documents_the_versioned_fields
     occurred_at = Time.utc(2026, 10, 19, 2, 3, 4)
     view = payload_view(
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       occurred_at: occurred_at,
       path: "/kits/1",
       root_recording_id: "11111111-1111-4111-8111-111111111111",
+      recording_id: "33333333-3333-4333-8333-333333333333",
       user_id: "22222222-2222-4222-8222-222222222222",
       visitor_id: "opaque-device-key",
       referrer: "https://press.example/from",
@@ -39,6 +41,8 @@ class PageViewTest < Minitest::Test
         occurred_at: occurred_at.iso8601,
         path: "/kits/1",
         root_recording_id: "11111111-1111-4111-8111-111111111111",
+        recording_id: "33333333-3333-4333-8333-333333333333",
+        page_view_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
         user_id: "22222222-2222-4222-8222-222222222222",
         visitor_id: "opaque-device-key",
         referrer: "https://press.example/from",
@@ -46,6 +50,20 @@ class PageViewTest < Minitest::Test
       },
       RecordingStudioViews::PageViewPayload.build(view)
     )
+  end
+
+  def test_payload_keys_match_the_contract
+    view = payload_view(
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      occurred_at: Time.utc(2026, 10, 19, 2, 0, 0),
+      path: "/",
+      recording_id: nil
+    )
+    payload = RecordingStudioViews::PageViewPayload.build(view)
+
+    assert_equal RecordingStudioViews::PageViewPayload::KEYS, payload.keys
+    assert_equal "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", payload[:page_view_id]
+    assert_nil payload[:recording_id]
   end
 
   def test_payload_keeps_absent_identity_keys
@@ -91,7 +109,7 @@ class PageViewTest < Minitest::Test
   end
 
   def test_views_does_not_depend_on_conversions_attachable_library_or_root_switchable
-    gemspec = File.read(File.expand_path("../recording_studio_views.gemspec", __dir__))
+    gemspec = File.read(File.expand_path("../gem_template.gemspec", __dir__))
     source = Dir[File.expand_path("../lib/recording_studio_views.rb", __dir__),
                  File.expand_path("../lib/recording_studio_views/**/*.rb", __dir__)].map { |path| File.read(path) }.join
 
@@ -110,8 +128,8 @@ class PageViewTest < Minitest::Test
 
   def payload_view(**attributes)
     defaults = {
-      occurred_at: nil, path: nil, root_recording_id: nil, user_id: nil,
-      visitor_id: nil, referrer: nil, query_params: {}
+      id: nil, occurred_at: nil, path: nil, root_recording_id: nil, recording_id: nil,
+      user_id: nil, visitor_id: nil, referrer: nil, query_params: {}
     }
     Struct.new(*defaults.keys, keyword_init: true).new(defaults.merge(attributes))
   end

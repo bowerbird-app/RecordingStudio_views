@@ -231,14 +231,7 @@ class RenameVerificationTest < Minitest::Test
 
     ruby_files = Dir.glob(File.join(@root, "**", "*.rb"))
     # Exclude test files and this verification test itself
-    # Identity test names the template homepages the rename script still rewrites.
-    # Shared dummy credentials keep the gem_template key until they are re-encrypted.
-    ruby_files.reject! do |file|
-      file.include?("test/dummy") ||
-        file.include?("rename_verification_test.rb") ||
-        file.include?("rename_gem_identity_test.rb") ||
-        file.end_with?("dummy_credentials_test.rb")
-    end
+    ruby_files.reject! { |f| f.include?("test/dummy") || f.include?("rename_verification_test.rb") }
 
     files_with_old_refs = []
 
