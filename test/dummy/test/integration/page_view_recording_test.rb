@@ -100,8 +100,10 @@ class PageViewRecordingTest < ActionDispatch::IntegrationTest
       raise "subscriber failed"
     end
 
-    assert_difference -> { RecordingStudioViews::PageView.count }, 1 do
-      get root_path
+    assert_error_reported(RuntimeError) do
+      assert_difference -> { RecordingStudioViews::PageView.count }, 1 do
+        get root_path
+      end
     end
 
     assert_response :success
@@ -110,10 +112,12 @@ class PageViewRecordingTest < ActionDispatch::IntegrationTest
   end
 
   test "a failing insert still returns 200" do
-    RecordingStudioViews::PageView.define_singleton_method(:create!) { raise ActiveRecord::StatementInvalid, "insert failed" }
+    RecordingStudioViews::PageView.define_singleton_method(:create!) { |*| raise ActiveRecord::StatementInvalid, "insert failed" }
 
-    assert_no_difference -> { RecordingStudioViews::PageView.count } do
-      get root_path
+    assert_error_reported(ActiveRecord::StatementInvalid) do
+      assert_no_difference -> { RecordingStudioViews::PageView.count } do
+        get root_path
+      end
     end
 
     assert_response :success
@@ -124,8 +128,10 @@ class PageViewRecordingTest < ActionDispatch::IntegrationTest
   test "a raising resolver still returns 200" do
     @configuration.visitor_id_resolver = ->(*) { raise "resolver failed" }
 
-    assert_no_difference -> { RecordingStudioViews::PageView.count } do
-      get root_path
+    assert_error_reported(RuntimeError) do
+      assert_no_difference -> { RecordingStudioViews::PageView.count } do
+        get root_path
+      end
     end
 
     assert_response :success
@@ -136,8 +142,10 @@ class PageViewRecordingTest < ActionDispatch::IntegrationTest
     maintainer.alias_method :ensure_without_failure!, :ensure!
     maintainer.define_method(:ensure!) { |*| raise ActiveRecord::StatementInvalid, "ddl failed" }
 
-    assert_no_difference -> { RecordingStudioViews::PageView.count } do
-      get root_path
+    assert_error_reported(ActiveRecord::StatementInvalid) do
+      assert_no_difference -> { RecordingStudioViews::PageView.count } do
+        get root_path
+      end
     end
 
     assert_response :success
@@ -146,11 +154,20 @@ class PageViewRecordingTest < ActionDispatch::IntegrationTest
     maintainer.remove_method :ensure_without_failure!
   end
 
+  test "a blank path returns nil and reports the error" do
+    assert_error_reported(ArgumentError) do
+      assert_nil RecordingStudioViews.record_page_view(path: " ")
+    end
+  end
+
   test "head and prefetch requests are not recorded" do
     assert_no_difference -> { RecordingStudioViews::PageView.count } do
       head root_path
       get root_path, headers: { "Sec-Purpose" => "prefetch" }
       get root_path, headers: { "Purpose" => "prefetch" }
+      get root_path, headers: { "X-Moz" => "prefetch" }
+      get root_path, headers: { "Purpose" => "preview" }
+      get root_path, headers: { "X-Purpose" => "preview" }
     end
 
     assert_response :success
@@ -193,5 +210,38 @@ class PageViewRecordingTest < ActionDispatch::IntegrationTest
     assert_includes preview.dropped, name
     assert RecordingStudioLogs::Partitioning::Catalog.exists?("recording_studio_views_page_views", name)
     assert RecordingStudioViews::PageView.where(path: "/old").exists?
+  end
+end
+
+class PageViewHostTransactionTest < ActiveSupport::TestCase
+  self.use_transactional_tests = false
+
+  test "a sql failure inside a host transaction does not roll back the host row" do
+    host = nil
+    User.where(email: ["savepoint@example.com", "savepoint-kept@example.com"]).delete_all
+    connection.execute(<<~SQL.squish)
+      ALTER TABLE recording_studio_views_page_views
+      ADD CONSTRAINT recording_studio_views_page_views_path_check CHECK (path <> '/constraint')
+    SQL
+
+    ActiveRecord::Base.transaction do
+      host = User.create!(email: "savepoint@example.com", password: "Password123!", password_confirmation: "Password123!")
+      view = nil
+      assert_error_reported(ActiveRecord::StatementInvalid) do
+        view = RecordingStudioViews.record_page_view(path: "/constraint", visitor_id: "opaque")
+      end
+      assert_nil view
+      host.update!(email: "savepoint-kept@example.com")
+    end
+
+    assert_equal "savepoint-kept@example.com", User.find(host.id).email
+    assert_equal 0, RecordingStudioViews::PageView.where(path: "/constraint").count
+  ensure
+    connection.execute("ALTER TABLE recording_studio_views_page_views DROP CONSTRAINT IF EXISTS recording_studio_views_page_views_path_check")
+    User.where(id: host.id).delete_all if host&.id
+  end
+
+  def connection
+    ActiveRecord::Base.connection
   end
 end

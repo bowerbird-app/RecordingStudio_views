@@ -1,8 +1,10 @@
 # RecordingStudioViews
 
-Internal template for building Rails engine addons on top of Recording Studio 4.x.
+Records host page views and emits `page_view.recorded.recording_studio_views` after commit. RecordingStudio Conversions can subscribe. This gem does not depend on Conversions, Attachable, Library, or Root Switchable.
 
-RecordingStudioViews, loaded with this gem, records page views and emits a provider-neutral page-view event. RecordingStudio Conversions can subscribe. This code does not depend on Conversions, Attachable, Library, or Root Switchable.
+```ruby
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views"
+```
 
 ## Page views
 
@@ -20,9 +22,9 @@ class PressKitsController < ApplicationController
 end
 ```
 
-`record_page_view` reads `request.path`, the referrer, and UTM/click-id query params. Pass `path:` to override the path. `resource_type` defaults to `"Page"`. The insert is synchronous on the request. A failure is reported with `Rails.error.report(error, handled: true)` and the method returns `nil`. It does not raise, so a subscriber, a resolver, or the insert cannot turn the host response into a 500.
+`record_page_view` reads `request.path`, the referrer, and UTM/click-id query params. Pass `path:` to override the path. `resource_type` defaults to `"Page"`. A blank path reports an error and returns `nil`. The insert is synchronous on the request, inside a savepoint, so a SQL failure does not abort a host transaction. A failure is reported with `Rails.error.report(error, handled: true)` and the method returns `nil`. It does not raise.
 
-Only GET requests are recorded. HEAD and other methods are skipped. Prefetch is skipped when `Sec-Purpose`, `Purpose`, `X-Sec-Purpose`, or `X-Purpose` contains `prefetch` (including Turbo prefetch). Set `config.skip_if` to a callable that receives the controller and returns truthy to skip other traffic, such as bots.
+Only GET requests are recorded. HEAD and other methods are skipped. Prefetch is skipped for `Sec-Purpose`, `Purpose`, `X-Sec-Purpose`, and `X-Purpose` when the value is `prefetch` (including Turbo) or `preview`, and for Firefox `X-Moz: prefetch`. Set `config.skip_if` to a callable that receives the controller and returns truthy to skip other traffic, such as bots.
 
 ### Storage
 
@@ -32,13 +34,13 @@ The primary key is `(id, occurred_at)` because the table is partitioned on `occu
 
 `user_id` is a UUID column. A UUID string is stored. An integer id, or any other non-UUID value, is stored as `nil`.
 
-`path` and `visitor_id` are clipped to 2048 characters. `referrer` is reduced to origin and path (scheme, host, optional port, and path) and clipped to 2048 characters. Query keys are matched case-insensitively and stored in lowercase.
+`path` and `visitor_id` are clipped to 2048 characters. `referrer` is reduced to origin and path (scheme, host, optional port, and path) and clipped to 2048 characters. A bad referrer is dropped and the view is still stored. The referrer path can still carry source-site tokens. Query keys are matched case-insensitively and stored in lowercase. When the same key arrives in more than one case, the last value wins.
 
 Install the page-view and summary tables with `bin/rails generate recording_studio_views:migrations`. Install the Logs run tables with `bin/rails generate recording_studio_logs:migrations`, then `bin/rails db:migrate`.
 
 Retention is 30 days. Months drop only after the whole month is older than that and the daily aggregation `recording_studio_views/page_views` has succeeded for every UTC day in the month. Because partitions are monthly, a row can remain until its month is fully expired, about 30 to 61 days.
 
-Schedule these jobs in the host. Views does not start a cron runner. `RecordingStudioLogs::PartitionMaintenanceJob` should run so requests do not create partitions. Logs keeps the previous month through `months_ahead` (default 2). Also schedule `RecordingStudioLogs::DailyAggregationJob`, `RecordingStudioLogs::ReconciliationJob`, and `RecordingStudioLogs::RetentionCleanupJob`. Without the daily aggregation succeeding, retention blocks every month.
+Schedule these jobs in the host. Views does not start a cron runner. `RecordingStudioLogs::PartitionMaintenanceJob` should run so requests do not create partitions. Logs keeps the previous month through `months_ahead` (default 2). Also schedule `RecordingStudioLogs::DailyAggregationJob`, `RecordingStudioLogs::ReconciliationJob`, `RecordingStudioLogs::BackfillJob`, and `RecordingStudioLogs::RetentionCleanupJob`. Without a succeeded aggregation for every UTC day in a month, retention leaves that month in place. A partial first month, or a gap after an outage, stays until `BackfillJob` covers the missing days.
 
 ### Visitor id
 
@@ -251,4 +253,4 @@ The dummy Gemfile keeps `github:` sources so Bundler can fetch those gems. The g
 
 ## Documentation
 
-The original gem template documentation is preserved in `docs/gem_template/` as architectural reference material. Use it as background on the engine conventions; this README and the dummy app are the source of truth for the Recording Studio addon workflow.
+`docs/gem_template/` is the preserved rename reference for the original template, not the product docs for this gem.

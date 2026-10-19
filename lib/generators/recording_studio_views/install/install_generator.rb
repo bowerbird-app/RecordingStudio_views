@@ -9,17 +9,6 @@ module RecordingStudioViews
 
       desc "Installs RecordingStudioViews engine into your application"
 
-      class_option(
-        :mount_path,
-        type: :string,
-        default: "/recording_studio_views",
-        desc: "Route prefix used when mounting the engine"
-      )
-
-      def mount_engine
-        route %(mount RecordingStudioViews::Engine, at: "#{options[:mount_path]}")
-      end
-
       def copy_initializer
         template "recording_studio_views_initializer.rb", "config/initializers/recording_studio_views.rb"
       end

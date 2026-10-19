@@ -12,12 +12,25 @@ module RecordingStudioViews
       return success(nil) unless RequestGate.allow?(@controller)
 
       attributes = page_view_attributes
-      return failure("path is required") if attributes[:path].blank?
+      return missing_path if attributes[:path].blank?
 
-      success(PageView.create!(attributes))
+      success(insert_page_view(attributes))
     end
 
     private
+
+    def missing_path
+      Failure.report(ArgumentError.new("path is required"))
+      failure("path is required")
+    end
+
+    # requires_new keeps a failed insert, or in-request partition DDL, from
+    # aborting the host transaction. EnsuresPartition runs inside this savepoint.
+    def insert_page_view(attributes)
+      PageView.transaction(requires_new: true) do
+        PageView.create!(attributes)
+      end
+    end
 
     def page_view_attributes
       context = RequestContext.new(@controller)

@@ -6,7 +6,7 @@
 
 ---
 
-> **📌 Note:** This documentation directory (`docs/gem_template/`) is preserved during gem renaming and serves as architectural reference material. When you rename your gem, these files intentionally remain under `gem_template` to document the original template structure.
+> This directory is the preserved `gem_template` rename reference, not the RecordingStudioViews product docs.
 
 ---
 

@@ -26,15 +26,12 @@ class InstallGeneratorTest < Minitest::Test
     )
   end
 
-  def test_mount_engine_uses_configured_mount_path
-    generator = build_generator("/tmp", mount_path: "/addons/recording")
-    routes = []
+  def test_install_does_not_mount_the_sample_engine
+    generator_path = "../lib/generators/recording_studio_views/install/install_generator.rb"
+    source = File.read(File.expand_path(generator_path, __dir__))
 
-    generator.stub(:route, ->(value) { routes << value }) do
-      generator.mount_engine
-    end
-
-    assert_equal ["mount RecordingStudioViews::Engine, at: \"/addons/recording\""], routes
+    refute_includes source, "mount RecordingStudioViews::Engine"
+    refute_includes source, "def mount_engine"
   end
 
   def test_add_tailwind_source_injects_engine_and_flatpack_sources

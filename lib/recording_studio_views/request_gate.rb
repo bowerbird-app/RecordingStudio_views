@@ -3,7 +3,8 @@
 module RecordingStudioViews
   # Record ordinary GET navigations. Skip other methods, browser prefetch, and host skip_if.
   module RequestGate
-    PREFETCH_HEADERS = %w[Sec-Purpose Purpose X-Sec-Purpose X-Purpose].freeze
+    PREFETCH_HEADERS = %w[Sec-Purpose Purpose X-Sec-Purpose X-Purpose X-Moz].freeze
+    PREFETCH_TOKENS = %w[prefetch preview].freeze
 
     def self.allow?(controller)
       return true unless http_request?(controller)
@@ -25,7 +26,7 @@ module RecordingStudioViews
     def self.prefetch_value?(value)
       return false if value.nil?
 
-      value.to_s.downcase.split(/[;,]/).any? { |part| part.strip == "prefetch" }
+      value.to_s.downcase.split(/[;,]/).any? { |part| PREFETCH_TOKENS.include?(part.strip) }
     end
     private_class_method :prefetch_value?
 

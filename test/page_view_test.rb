@@ -90,6 +90,10 @@ class PageViewTest < Minitest::Test
     )
 
     assert_equal({ "utm_source" => "Newsletter", "gclid" => "AbC" }, extracted)
+    assert_equal "second", RecordingStudioViews::QueryParams.extract(
+      "utm_source" => "first",
+      "UTM_SOURCE" => "second"
+    )["utm_source"]
   end
 
   def test_referrer_keeps_origin_and_path_within_2048_characters
@@ -98,6 +102,9 @@ class PageViewTest < Minitest::Test
 
     assert_equal "https://press.example:8443/kit", scrubbed
     assert_nil RecordingStudioViews::Referrer.scrub("not a url")
+    URI.stub(:parse, ->(*) { raise ArgumentError, "parser blew up" }) do
+      assert_nil RecordingStudioViews::Referrer.scrub("https://press.example/kit")
+    end
     assert_equal 2048, long.length
   end
 

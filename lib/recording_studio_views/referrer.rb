@@ -20,7 +20,7 @@ module RecordingStudioViews
 
       uri = URI.parse(value.to_s)
       uri if uri.is_a?(URI::HTTP) && uri.host
-    rescue URI::InvalidURIError
+    rescue StandardError
       nil
     end
     private_class_method :parse
