@@ -1,12 +1,8 @@
-<% dummy_page_nav(title: "Edit page", back_url: page_path(@page), back_label: "Page") %>
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Edit page",
+    variant: :h1
+  ) %>
 
-<%= dummy_pages_shell do %>
-  <div class="flex w-full flex-col gap-6">
-    <%= render FlatPack::PageTitle::Component.new(
-      title: "Edit page",
-      variant: :h1
-    ) %>
-
-    <%= render "form", page: @page %>
-  </div>
-<% end %>
+  <%= render "form", page: @page %>
+</div>

@@ -1,13 +1,9 @@
-<% dummy_page_nav(title: "New page", back_url: pages_path, back_label: "Pages") %>
+<div class="flex w-full flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "New page",
+    subtitle: "Give it a name, then open it to count a view.",
+    variant: :h1
+  ) %>
 
-<%= dummy_pages_shell do %>
-  <div class="flex w-full flex-col gap-6">
-    <%= render FlatPack::PageTitle::Component.new(
-      title: "New page",
-      subtitle: "Give it a name, then open it to count a view.",
-      variant: :h1
-    ) %>
-
-    <%= render "form", page: @page %>
-  </div>
-<% end %>
+  <%= render "form", page: @page %>
+</div>

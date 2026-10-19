@@ -32,6 +32,7 @@ class PagesCrudTest < ActionDispatch::IntegrationTest
     get root_path
     assert_response :success
     assert_includes response.body, "flat-pack--sidebar-layout"
+    assert_includes response.body, "recording-studio-root-switchable--root-switch-dropdown"
     assert_includes response.body, "Sidebar Brief"
     assert_includes response.body, new_page_path
 

@@ -1,23 +1,9 @@
-<% dummy_page_nav(title: "Template Demo", back_url: root_path) %>
-
-<%= dummy_pages_shell do %>
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
     title: "Template Demo",
     subtitle: "This dummy app is the browser-facing demo surface for the template.",
     variant: :h1
-  ) do |page_title| %>
-    <% if current_root_recording&.recordable_type == "AdminRoot" %>
-      <% page_title.slot do %>
-        <%= render FlatPack::Button::Component.new(
-          text: "Admin",
-          href: "/admin",
-          style: :primary,
-          size: :md
-        ) %>
-      <% end %>
-    <% end %>
-  <% end %>
+  ) %>
 
   <div class="grid gap-6 lg:grid-cols-2">
     <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
@@ -111,4 +97,3 @@
     <% end %>
   </div>
 </div>
-<% end %>

@@ -112,13 +112,13 @@ class DocsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Provide one section title and codeblock for each method"
   end
 
-  test "authenticated docs pages use the recording studio default layout" do
+  test "authenticated docs pages use the dummy sidebar layout" do
     get docs_install_path
 
     assert_response :success
-    assert_select "body[data-recording-studio-default-layout='true']", count: 1
-    assert_select "nav[aria-label='Page navigation']", count: 1
-    refute_includes response.body, "flat-pack-sidebar-layout"
+    refute_includes response.body, "data-recording-studio-default-layout"
+    assert_select "nav.flat-pack-page-nav", count: 1
+    assert_includes response.body, "flat-pack--sidebar-layout"
   end
 
   private

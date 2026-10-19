@@ -140,16 +140,20 @@ class RecordingStudioViewsTest < Minitest::Test
     refute RecordingStudio.capability_enabled?(:viewable, for: "Workspace")
   end
 
-  def test_dummy_app_uses_recording_studio_default_layout
+  def test_dummy_app_uses_flat_pack_sidebar_layout
     application_controller_path = File.expand_path("dummy/app/controllers/application_controller.rb", __dir__)
     controller_source = File.read(application_controller_path)
+    layout_source = File.read(File.expand_path("dummy/app/views/layouts/flat_pack_sidebar.html.erb", __dir__))
+    sidebar_source = File.read(File.expand_path("dummy/app/views/layouts/flat_pack/_sidebar.html.erb", __dir__))
+    top_nav_source = File.read(File.expand_path("dummy/app/views/layouts/flat_pack/_top_nav.html.erb", __dir__))
 
-    assert_includes controller_source, "include RecordingStudio::UsesDefaultLayout"
-    assert_includes controller_source, '"recording_studio/default_layout"'
+    refute_includes controller_source, "include RecordingStudio::UsesDefaultLayout"
     assert_includes controller_source, "devise_controller? ? \"application\""
-    refute_includes controller_source, "flat_pack_sidebar"
-    refute File.exist?(File.expand_path("dummy/app/views/layouts/flat_pack_sidebar.html.erb", __dir__))
-    refute File.exist?(File.expand_path("dummy/app/views/layouts/flat_pack/_sidebar.html.erb", __dir__))
+    assert_includes controller_source, '"flat_pack_sidebar"'
+    assert_includes layout_source, "FlatPack::SidebarLayout::Component"
+    assert_includes layout_source, "storage_key: \"flat-pack-sidebar-layout\""
+    assert_includes sidebar_source, "FlatPack::Sidebar::Component"
+    assert_includes top_nav_source, "recording_studio_root_switch_dropdown"
   end
 
   def test_dummy_login_layout_keeps_flatpack_assets_without_tight_main_offset
@@ -251,7 +255,7 @@ class RecordingStudioViewsTest < Minitest::Test
     assert_includes view_source, 'title: "Template Demo"'
     assert_includes view_source, 'subtitle: "This dummy app is the browser-facing demo surface for the template."'
     assert_includes view_source, "FlatPack::Card::Component"
-    assert_includes view_source, "dummy_page_nav"
+    refute_includes view_source, "dummy_page_nav"
     refute_includes view_source, 'title: "Demo"'
     refute_includes view_source, "FlatPack::Breadcrumb::Component"
   end

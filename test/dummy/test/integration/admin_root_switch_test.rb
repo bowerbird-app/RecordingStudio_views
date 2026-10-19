@@ -25,7 +25,7 @@ class AdminRootSwitchTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Admin"
     assert_includes response.body, @workspace.name
-    refute_includes response.body, "flat-pack-sidebar-layout"
+    assert_includes response.body, "flat-pack--sidebar-layout"
   end
 
   test "admin screens are forbidden while a workspace root is selected" do
