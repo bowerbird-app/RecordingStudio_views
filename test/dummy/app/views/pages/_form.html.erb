@@ -1,0 +1,15 @@
+<%= form_with model: page, class: "flex w-full flex-col gap-4" do %>
+  <%= render FlatPack::TextInput::Component.new(
+    name: "page[title]",
+    value: page.title,
+    label: "Title",
+    required: true
+  ) %>
+
+  <%= render FlatPack::Button::Component.new(
+    text: page.persisted? ? "Save" : "Create page",
+    style: :primary,
+    size: :md,
+    type: "submit"
+  ) %>
+<% end %>

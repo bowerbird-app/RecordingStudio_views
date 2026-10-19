@@ -28,7 +28,7 @@ Rails.application.routes.draw do
 
   mount RecordingStudioViews::Engine, at: "/recording_studio_views"
 
-  resources :pages, only: [:show]
+  resources :pages
   resources :folders, only: [:show]
   get "public/pages/:id", to: "public_pages#show", as: :public_page
   get "workspaces/:id/search", to: "workspace_searches#show", as: :workspace_search
