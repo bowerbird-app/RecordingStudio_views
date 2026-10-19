@@ -7,11 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- Dummy and root GitHub tags: Recording Studio `v4.2.1` → `v4.2.2`.
+## [0.3.0] - 2026-10-19
+
+### Added
+- Host controllers record a page view with `record_page_view`. Rows are stored in a monthly Recording Studio Logs partition (`recording_studio_views_page_views`), using the site_views column shape (`resource_type`, `root_recording_id`, `recording_id`, `occurred_at`) plus the event fields. The insert is synchronous. `PageView` is required from `lib` and is not reloaded.
+- `record_page_view` does not raise. Subscriber errors, resolver errors, insert errors, partition DDL errors, and a blank path are reported with `Rails.error.report(error, handled: true)` and the method returns nil. The insert and in-request partition DDL run in a savepoint, so a SQL failure does not abort the host transaction. Only GET is recorded. Prefetch is skipped for `Sec-Purpose`, `Purpose`, `X-Sec-Purpose`, and `X-Purpose` (`prefetch`, including Turbo), Firefox `X-Moz: prefetch`, and Safari `Purpose` / `X-Purpose: preview`. `config.skip_if` can skip other requests.
+- Daily aggregation `recording_studio_views/page_views` counts views by root and resource type so Logs retention can drop expired months. Declared retention is 30 days. Monthly partitions mean a row can remain about 30 to 61 days. Schedule `PartitionMaintenanceJob` (`months_ahead` 2), `DailyAggregationJob`, `ReconciliationJob`, `BackfillJob`, and `RetentionCleanupJob`. A partial first month or a gap after an outage leaves that month unfresh until it is backfilled.
+- `referrer` is origin and path, capped at 2048 characters. The path can still carry source-site tokens. `path` and `visitor_id` are capped at 2048. Query keys match case-insensitively; when the same key appears in more than one case, the last value wins. `user_id` must be a UUID; other values, including integers, are stored as nil. The primary key is `(id, occurred_at)`; consumers key on `page_view_id`.
+- After commit, Views emits `page_view.recorded.recording_studio_views`. Payload schema version stays 1. Keys, in order: `schema_version`, `occurred_at`, `path`, `root_recording_id`, `recording_id`, `page_view_id`, `user_id`, `visitor_id`, `referrer`, and `query_params` (UTM and click ids). `page_view_id` is the stored row UUID. `recording_id` is the viewed recording when known, otherwise nil. `RecordingStudioViews::PageViewPayload.build` is the fixture builder. `PageViewPayload::KEYS` lists those keys.
+- `visitor_id` is an opaque host-supplied value (`config.visitor_id_resolver`). Views does not set a visitor cookie and does not depend on Root Switchable. The dummy host passes root_switchable's anonymous device key through that resolver.
+
+### Removed
+- Sample `recording_studio_views_pages` migration. It created an unused table in every host. The dummy app already has its own pages table. The install generator no longer mounts the sample engine route.
 
 ### Upgrade notes
-- Point host and dummy Gemfiles at Recording Studio `v4.2.2`.
+- Add `recording_studio_logs` `~> 0.4.0` and run `bin/rails generate recording_studio_logs:migrations` and `bin/rails generate recording_studio_views:migrations`, then `bin/rails db:migrate`.
+- Schedule `RecordingStudioLogs::PartitionMaintenanceJob`, `DailyAggregationJob`, `ReconciliationJob`, `BackfillJob`, and `RetentionCleanupJob`. Partition maintenance uses `months_ahead` 2 so requests do not run partition DDL. Backfill a month before expecting retention to drop it.
+- RecordingStudio Conversions is not a dependency. It can subscribe to the event. Views also does not depend on Attachable or Library.
 
 ## [0.2.3] - 2026-10-01
 
@@ -115,11 +127,5 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_gem_template/compare/v0.2.3...HEAD
-[0.2.3]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.2.3
-[0.2.2]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.2.2
-[0.2.1]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.2.1
-[0.2.0]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.2.0
-[0.1.2]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.1.2
-[0.1.1]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.1.1
-[0.1.0]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.1.0
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/pull/1
+[0.3.0]: https://github.com/bowerbird-app/RecordingStudio_views/pull/1

@@ -1,6 +1,91 @@
-# GemTemplate
+# RecordingStudioViews
 
-Internal template for building Rails engine addons on top of Recording Studio 4.x.
+Records host page views and emits `page_view.recorded.recording_studio_views` after commit. RecordingStudio Conversions can subscribe. This gem does not depend on Conversions, Attachable, Library, or Root Switchable.
+
+```ruby
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.3.0"
+```
+
+## Page views
+
+Include the controller helper and record a view from the action:
+
+```ruby
+class ApplicationController < ActionController::Base
+  include RecordingStudioViews::PageViewRecording
+end
+
+class PressKitsController < ApplicationController
+  def show
+    record_page_view(resource_type: "PressKit", recording_id: @kit.recording_id)
+  end
+end
+```
+
+`record_page_view` reads `request.path`, the referrer, and UTM/click-id query params. Pass `path:` to override the path. `resource_type` defaults to `"Page"`. A blank path reports an error and returns `nil`. The insert is synchronous on the request, inside a savepoint, so a SQL failure does not abort a host transaction. A failure is reported with `Rails.error.report(error, handled: true)` and the method returns `nil`. It does not raise.
+
+Only GET requests are recorded. HEAD and other methods are skipped. Prefetch is skipped for `Sec-Purpose`, `Purpose`, `X-Sec-Purpose`, and `X-Purpose` when the value is `prefetch` (including Turbo) or `preview`, and for Firefox `X-Moz: prefetch`. Set `config.skip_if` to a callable that receives the controller and returns truthy to skip other traffic, such as bots.
+
+### Storage
+
+High-volume rows go through Recording Studio Logs, the same partitioned-log pattern as the Logs dummy `site_views` table. Views registers `RecordingStudioViews::PageView` on `recording_studio_views_page_views` (`occurred_at`, monthly partitions). Columns follow that demonstration: `resource_type`, `root_recording_id`, `recording_id`, plus the event fields below. New ids are UUIDs. Recording ids passed in are stored as given.
+
+The primary key is `(id, occurred_at)` because the table is partitioned on `occurred_at`. `page_view_id` is that `id` UUID. It is practically unique, and consumers should key on `page_view_id`. `RecordingStudioViews::PageView` is required from `lib` and is not a reloadable autoloaded model.
+
+`user_id` is a UUID column. A UUID string is stored. An integer id, or any other non-UUID value, is stored as `nil`.
+
+`path` and `visitor_id` are clipped to 2048 characters. `referrer` is reduced to origin and path (scheme, host, optional port, and path) and clipped to 2048 characters. A bad referrer is dropped and the view is still stored. The referrer path can still carry source-site tokens. Query keys are matched case-insensitively and stored in lowercase. When the same key arrives in more than one case, the last value wins.
+
+Install the page-view and summary tables with `bin/rails generate recording_studio_views:migrations`. Install the Logs run tables with `bin/rails generate recording_studio_logs:migrations`, then `bin/rails db:migrate`.
+
+Retention is 30 days. Months drop only after the whole month is older than that and the daily aggregation `recording_studio_views/page_views` has succeeded for every UTC day in the month. Because partitions are monthly, a row can remain until its month is fully expired, about 30 to 61 days.
+
+Schedule these jobs in the host. Views does not start a cron runner. `RecordingStudioLogs::PartitionMaintenanceJob` should run so requests do not create partitions. Logs keeps the previous month through `months_ahead` (default 2). Also schedule `RecordingStudioLogs::DailyAggregationJob`, `RecordingStudioLogs::ReconciliationJob`, `RecordingStudioLogs::BackfillJob`, and `RecordingStudioLogs::RetentionCleanupJob`. Without a succeeded aggregation for every UTC day in a month, retention leaves that month in place. A partial first month, or a gap after an outage, stays until `BackfillJob` covers the missing days.
+
+If the first insert of a month creates the partition inside a host transaction, `pg_advisory_xact_lock` and the parent-table lock are held until that host transaction commits, and other inserts wait. Scheduling `PartitionMaintenanceJob` creates the partitions ahead of time and avoids that.
+
+### Visitor id
+
+`visitor_id` is an opaque string from the host. Views does not create a cookie. Point the resolver at root_switchable's existing anonymous device key (`current_root_device_key`) from the host app:
+
+```ruby
+RecordingStudioViews.configure do |config|
+  config.visitor_id_resolver = ->(controller) { controller.current_root_device_key }
+  config.user_id_resolver = ->(controller) { controller.current_user&.id }
+  config.root_recording_id_resolver = ->(controller) { controller.current_root_recording&.id }
+end
+```
+
+Explicit `visitor_id:`, `user_id:`, and `root_recording_id:` arguments win over the resolvers. A missing resolver stores `nil`.
+
+### Event
+
+After the row commits, Views emits ActiveSupport::Notifications event `page_view.recorded.recording_studio_views`.
+
+Payload schema version **1**:
+
+| Key | Value |
+| --- | --- |
+| `schema_version` | `1` |
+| `occurred_at` | ISO 8601 timestamp |
+| `path` | Request path, without the query string |
+| `root_recording_id` | Root recording UUID, or `nil` |
+| `recording_id` | Viewed recording UUID when known, or `nil` |
+| `page_view_id` | Stored row UUID. The primary key is `(id, occurred_at)`. Consumers key on this UUID, which is practically unique per view |
+| `user_id` | Signed-in user UUID, or `nil`. Integer ids become `nil` |
+| `visitor_id` | Opaque host visitor id, clipped to 2048 characters, or `nil` |
+| `referrer` | Origin and path only, clipped to 2048 characters, or `nil` |
+| `query_params` | Allowlisted UTM and click ids, matched case-insensitively (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `utm_id`, `gclid`, `gbraid`, `wbraid`, `dclid`, `fbclid`, `msclkid`, `ttclid`, `twclid`, `li_fat_id`) |
+
+```ruby
+ActiveSupport::Notifications.subscribe("page_view.recorded.recording_studio_views") do |*, payload|
+  payload[:schema_version] # => 1
+  payload[:page_view_id]
+  payload[:recording_id]
+end
+```
+
+`RecordingStudioViews::PageViewPayload.build` is the contract builder for fixtures. `PageViewPayload::KEYS` is that key list, in order. Schema version stays `1`.
 
 ## What's Included
 
@@ -170,4 +255,4 @@ The dummy Gemfile keeps `github:` sources so Bundler can fetch those gems. The g
 
 ## Documentation
 
-The original gem template documentation is preserved in `docs/gem_template/` as architectural reference material. Use it as background on the engine conventions; this README and the dummy app are the source of truth for the Recording Studio addon workflow.
+`docs/gem_template/` is the preserved rename reference for the original template, not the product docs for this gem.
