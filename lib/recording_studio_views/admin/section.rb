@@ -14,8 +14,8 @@ module RecordingStudioViews
            url: ->(context) { context.admin_screen_path("views_page_views") },
            style: :primary
 
-      widget "widgets.views.page_views_over_time"
-      widget "widgets.views.total_views"
+      widget "widgets.views.page_views_over_time", view_variant: :compact
+      widget "widgets.views.total_views", view_variant: :compact
     end
   end
 end

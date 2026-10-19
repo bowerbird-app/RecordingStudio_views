@@ -53,6 +53,10 @@ class AdminRootSwitchTest < ActionDispatch::IntegrationTest
 
     get "/admin/screens/views_page_views"
     assert_response :success
+    assert_includes response.body, "turbo.min.js"
+    assert_includes response.body, 'import "@hotwired/turbo-rails"'
+    assert_includes response.body, 'id="screen-table"'
+    assert_includes response.body, "/admin/screens/views_page_views/table"
   end
 
   private

@@ -18,8 +18,8 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes admin, "RecordingStudioAdmin.register_widget(Widgets::PAGE_VIEWS_OVER_TIME)"
     assert_includes admin, "RecordingStudioAdmin.register_widget(Widgets::TOTAL_VIEWS)"
     assert_includes section, 'key "views"'
-    assert_includes section, 'widget "widgets.views.page_views_over_time"'
-    assert_includes section, 'widget "widgets.views.total_views"'
+    assert_includes section, 'widget "widgets.views.page_views_over_time", view_variant: :compact'
+    assert_includes section, 'widget "widgets.views.total_views", view_variant: :compact'
     assert_includes screen, 'key "views_page_views"'
     assert_includes screen, "filter :date_range, field: :occurred_at"
     assert_includes screen, "filter :root"
@@ -27,6 +27,8 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes screen, "filter :page_key"
     assert_includes screen, "filter :visibility"
     assert_includes widgets, "Queries.page_views_over_time_series"
+    assert_includes widgets, "xaxis: { labels: { show: false } }"
+    assert_includes widgets, "tooltip: { enabled: true }"
     assert_includes widgets, "Queries.total_views"
   end
 

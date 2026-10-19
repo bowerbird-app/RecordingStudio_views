@@ -156,6 +156,15 @@ class RecordingStudioViewsTest < Minitest::Test
     assert_includes top_nav_source, "recording_studio_root_switch_dropdown"
   end
 
+  def test_dummy_importmap_boots_turbo_stimulus_and_admin_controllers
+    importmap = File.read(File.expand_path("dummy/config/importmap.rb", __dir__))
+    application_js = File.read(File.expand_path("dummy/app/javascript/application.js", __dir__))
+
+    assert_includes importmap, 'pin "@hotwired/turbo-rails", to: "turbo.min.js"'
+    assert_includes importmap, "recording_studio_admin/controllers"
+    assert_includes application_js, 'import "@hotwired/turbo-rails"'
+  end
+
   def test_dummy_login_layout_keeps_flatpack_assets_without_tight_main_offset
     application_layout = File.read(File.expand_path("dummy/app/views/layouts/application.html.erb", __dir__))
 

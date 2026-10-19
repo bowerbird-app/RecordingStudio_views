@@ -23,6 +23,13 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_equal RecordingStudioViews::Admin::PageViewsScreen, RecordingStudioAdmin.screen_for("views_page_views")
     assert RecordingStudioAdmin.widget_for("widgets.views.page_views_over_time")
     assert RecordingStudioAdmin.widget_for("widgets.views.total_views")
+    usages = RecordingStudioViews::Admin::Section.widget_usages
+    assert_equal [:compact, :compact], usages.map(&:view_variant)
+    chart_widget = RecordingStudioAdmin.widget_for("widgets.views.page_views_over_time")
+    options = chart_widget.chart_options
+    options = options.call if options.respond_to?(:call)
+    assert_equal false, options.dig(:xaxis, :labels, :show)
+    assert_equal true, options.dig(:tooltip, :enabled)
     admin_root = File.read(Rails.root.join("app/models/admin_root.rb"))
     routes = File.read(Rails.root.join("config/routes.rb"))
     assert_includes admin_root, "section :views"

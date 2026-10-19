@@ -13,6 +13,12 @@ module RecordingStudioViews
         chart_type :line
         hide_change
         series { Queries.page_views_over_time_series }
+        chart_options do
+          {
+            xaxis: { labels: { show: false } },
+            tooltip: { enabled: true }
+          }
+        end
         link_to { |context| context.admin_screen_path("views_page_views") }
       end
 
