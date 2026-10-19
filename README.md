@@ -1,4 +1,4 @@
-# GemTemplate
+# RecordingStudioViews
 
 Internal template for building Rails engine addons on top of Recording Studio 4.x.
 
@@ -26,7 +26,7 @@ end
 
 High-volume rows go through Recording Studio Logs, the same partitioned-log pattern as the Logs dummy `site_views` table. Views registers `RecordingStudioViews::PageView` on `recording_studio_views_page_views` (`occurred_at`, monthly partitions, 30-day retention). Columns follow that demonstration: `resource_type`, `root_recording_id`, `recording_id`, plus the event fields below. New ids are UUIDs. Recording ids passed in are stored as given.
 
-Install the table with `bin/rails generate gem_template:migrations`.
+Install the table with `bin/rails generate recording_studio_views:migrations`.
 
 ### Visitor id
 

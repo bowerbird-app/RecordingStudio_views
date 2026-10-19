@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `visitor_id` is an opaque host-supplied value (`config.visitor_id_resolver`). Views does not set a visitor cookie and does not depend on Root Switchable. The dummy host passes root_switchable's anonymous device key through that resolver.
 
 ### Upgrade notes
-- Add `recording_studio_logs` `v0.4.0` and run `bin/rails generate gem_template:migrations`, then `bin/rails db:migrate`.
+- Add `recording_studio_logs` `v0.4.0` and run `bin/rails generate recording_studio_views:migrations`, then `bin/rails db:migrate`.
 - RecordingStudio Conversions is not a dependency. It can subscribe to the event. Views also does not depend on Attachable or Library.
 
 ## [0.2.3] - 2026-10-01
@@ -91,7 +91,7 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Require `RecordingStudio::Hooks` and `RecordingStudio::Services::BaseService` from core instead of shipping copies
 
 ### Removed
-- Copied `lib/gem_template/hooks.rb` and `lib/gem_template/services/base_service.rb`
+- Copied `lib/recording_studio_views/hooks.rb` and `lib/recording_studio_views/services/base_service.rb`
 - Product-shipped `ExampleService`
 - Custom `flat_pack_sidebar` authenticated shell
 
@@ -126,12 +126,12 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_gem_template/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/bowerbird-app/RecordingStudio_gem_template/compare/v0.2.3...v0.3.0
-[0.2.3]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.2.3
-[0.2.2]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.2.2
-[0.2.1]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.2.1
-[0.2.0]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.2.0
-[0.1.2]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.1.2
-[0.1.1]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.1.1
-[0.1.0]: https://github.com/bowerbird-app/RecordingStudio_gem_template/releases/tag/v0.1.0
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.2.3...v0.3.0
+[0.2.3]: https://github.com/bowerbird-app/RecordingStudio_views/releases/tag/v0.2.3
+[0.2.2]: https://github.com/bowerbird-app/RecordingStudio_views/releases/tag/v0.2.2
+[0.2.1]: https://github.com/bowerbird-app/RecordingStudio_views/releases/tag/v0.2.1
+[0.2.0]: https://github.com/bowerbird-app/RecordingStudio_views/releases/tag/v0.2.0
+[0.1.2]: https://github.com/bowerbird-app/RecordingStudio_views/releases/tag/v0.1.2
+[0.1.1]: https://github.com/bowerbird-app/RecordingStudio_views/releases/tag/v0.1.1
+[0.1.0]: https://github.com/bowerbird-app/RecordingStudio_views/releases/tag/v0.1.0

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 RecordingStudioViews.configure do |config|
+  # config.api_key = "..."
+
   # Opaque anonymous device key from root_switchable. Views does not read that gem.
   config.visitor_id_resolver = lambda do |controller|
     next unless controller.respond_to?(:current_root_device_key)

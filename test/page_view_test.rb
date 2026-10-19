@@ -109,7 +109,7 @@ class PageViewTest < Minitest::Test
   end
 
   def test_views_does_not_depend_on_conversions_attachable_library_or_root_switchable
-    gemspec = File.read(File.expand_path("../gem_template.gemspec", __dir__))
+    gemspec = File.read(File.expand_path("../recording_studio_views.gemspec", __dir__))
     source = Dir[File.expand_path("../lib/recording_studio_views.rb", __dir__),
                  File.expand_path("../lib/recording_studio_views/**/*.rb", __dir__)].map { |path| File.read(path) }.join
 
