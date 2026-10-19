@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.authors     = ["Bowerbird"]
   spec.homepage    = "https://github.com/bowerbird-app/RecordingStudio_views"
   spec.summary     = "Page-view collection for Recording Studio"
-  spec.description = "Records host page views and emits a provider-neutral page-view event. " \
-                     "Built as a Recording Studio addon on Rails 8.1."
+  spec.description = "Records host page views into Recording Studio Logs. " \
+                     "Installing the gem does not start tracking. Built as a Recording Studio addon on Rails 8.1."
   spec.license     = "MIT"
   spec.required_ruby_version = ">= 3.3.0"
 

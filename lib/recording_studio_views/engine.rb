@@ -51,13 +51,11 @@ module RecordingStudioViews
       end
     end
 
-    # Run before_initialize hooks
     initializer "recording_studio_views.before_initialize", before: "recording_studio_views.load_config" do |_app|
       RecordingStudioViews.configuration.hooks.run(:before_initialize, self)
     end
 
     initializer "recording_studio_views.load_config" do |app|
-      # Load config/recording_studio_views.yml via Rails config_for if present
       if app.respond_to?(:config_for)
         begin
           yaml = begin
@@ -66,38 +64,47 @@ module RecordingStudioViews
             nil
           end
           RecordingStudioViews.configuration.merge!(yaml) if yaml.respond_to?(:each)
-        rescue StandardError => _e
-          # ignore load errors; host app can provide initializer overrides
+        rescue StandardError
+          nil
         end
       end
 
-      # Merge Rails.application.config.x.recording_studio_views if present
       if app.config.respond_to?(:x) && app.config.x.respond_to?(:recording_studio_views)
         xcfg = app.config.x.recording_studio_views
         if xcfg.respond_to?(:to_h)
           RecordingStudioViews.configuration.merge!(xcfg.to_h)
         else
           begin
-            # try converting OrderedOptions
             hash = {}
             xcfg.each_pair { |k, v| hash[k] = v } if xcfg.respond_to?(:each_pair)
             RecordingStudioViews.configuration.merge!(hash) if hash&.any?
-          rescue StandardError => _e
-            # ignore
+          rescue StandardError
+            nil
           end
         end
       end
 
-      # Run on_configuration hooks after config is loaded
       RecordingStudioViews.configuration.hooks.run(:on_configuration, RecordingStudioViews.configuration)
     end
 
-    # Run after_initialize hooks
     initializer "recording_studio_views.after_initialize", after: "recording_studio_views.load_config" do |_app|
       RecordingStudioViews.configuration.hooks.run(:after_initialize, self)
     end
 
-    # Apply model extensions when models are loaded
+    initializer "recording_studio_views.helpers" do
+      ActiveSupport.on_load(:action_controller_base) do
+        helper RecordingStudioViews::TrackHelper
+      end
+      ActiveSupport.on_load(:action_view) do
+        include RecordingStudioViews::TrackHelper
+      end
+    end
+
+    initializer "recording_studio_views.assets" do |app|
+      javascripts = root.join("app/assets/javascripts")
+      app.config.assets.paths << javascripts if app.config.respond_to?(:assets) && Dir.exist?(javascripts)
+    end
+
     initializer "recording_studio_views.apply_model_extensions" do
       config.to_prepare do
         next unless defined?(ActiveRecord::Base)
@@ -110,11 +117,10 @@ module RecordingStudioViews
       end
     end
 
-    initializer "recording_studio_views.register_page_view_log" do
-      config.to_prepare { RecordingStudioViews.register_page_view_log! }
+    initializer "recording_studio_views.register_view_log" do
+      config.to_prepare { RecordingStudioViews.register_view_log! }
     end
 
-    # Apply controller extensions
     initializer "recording_studio_views.apply_controller_extensions" do
       config.to_prepare do
         next unless defined?(ActionController::Base)

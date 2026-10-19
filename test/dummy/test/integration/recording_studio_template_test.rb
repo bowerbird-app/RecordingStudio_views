@@ -63,23 +63,22 @@ class RecordingStudioTemplateTest < ActiveSupport::TestCase
     Current.actor = nil
   end
 
-  test "workspace opts into accessible and the example mixin without enabling them globally" do
-    workspace_source = File.read(Rails.root.join("app/models/workspace.rb"))
-    example_source = File.read(RecordingStudioViews::Engine.root.join("lib/recording_studio_views/capabilities/example.rb"))
+  test "page opts into viewable without enabling it globally" do
+    page_source = File.read(Rails.root.join("app/models/page.rb"))
+    viewable_source = File.read(RecordingStudioViews::Engine.root.join("lib/recording_studio_views/capabilities/viewable.rb"))
 
-    assert_includes workspace_source, "include RecordingStudio::Capabilities::Example.to(label: \"dummy workspace\")"
-    assert_includes example_source, "RecordingStudio::Capabilities.include_for(:example, **)"
-    refute_includes example_source, "enable_capability"
-    refute_includes example_source, "set_capability_options"
+    assert_includes page_source, "include RecordingStudio::Capabilities::Viewable.to"
+    assert_includes viewable_source, "RecordingStudio::Capabilities.include_for(:viewable, **)"
+    refute_includes viewable_source, "enable_capability"
+    refute_includes viewable_source, "set_capability_options"
 
     assert RecordingStudio.capability_enabled?(:accessible, for: Workspace)
-    assert RecordingStudio.capability_enabled?(:example, for: Workspace)
-    assert_equal({ label: "dummy workspace" }, RecordingStudio.capability_options(:example, for: Workspace))
+    assert RecordingStudio.capability_enabled?(:viewable, for: Page)
     refute RecordingStudio.capability_enabled?(:accessible, for: Folder)
     refute RecordingStudio.capability_enabled?(:accessible, for: Page)
-    refute RecordingStudio.capability_enabled?(:example, for: Folder)
-    refute RecordingStudio.capability_enabled?(:example, for: Page)
-    assert_equal [ "Workspace" ], RecordingStudio.configuration.enabled_recordable_types_for(:example)
+    refute RecordingStudio.capability_enabled?(:viewable, for: Folder)
+    refute RecordingStudio.capability_enabled?(:viewable, for: Workspace)
+    assert_equal [ "Page" ], RecordingStudio.configuration.enabled_recordable_types_for(:viewable)
     assert_includes ApplicationController.ancestors, RecordingStudio::UsesDefaultLayout
   end
 end

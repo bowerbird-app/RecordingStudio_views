@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioViewsTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.3.0", ::RecordingStudioViews::VERSION
+    assert_equal "0.4.0", ::RecordingStudioViews::VERSION
   end
 
   def test_engine_exists
@@ -29,7 +29,7 @@ class RecordingStudioViewsTest < Minitest::Test
     path = File.expand_path("../.cursor/environment.json", __dir__)
     json = JSON.parse(File.read(path))
 
-    assert_equal "recording-studio-gem-template", json["name"]
+    assert_equal "recording-studio-views", json["name"]
     assert_equal ".cursor/install.sh", json["install"]
     assert_equal ".cursor/start.sh", json["start"]
     refute json.key?("snapshot"), "snapshot pins a Personal build and skips install"
@@ -124,16 +124,15 @@ class RecordingStudioViewsTest < Minitest::Test
     refute File.exist?(File.expand_path("../lib/recording_studio_views/services/example_service.rb", __dir__))
   end
 
-  def test_example_capability_wraps_include_for_and_is_not_enabled_globally
-    source = File.read(File.expand_path("../lib/recording_studio_views/capabilities/example.rb", __dir__))
+  def test_viewable_capability_wraps_include_for_and_is_not_enabled_globally
+    source = File.read(File.expand_path("../lib/recording_studio_views/capabilities/viewable.rb", __dir__))
 
     assert_includes source, "def self.to(**)"
-    assert_includes source, "RecordingStudio::Capabilities.include_for(:example, **)"
+    assert_includes source, "RecordingStudio::Capabilities.include_for(:viewable, **)"
     refute_includes source, "enable_capability"
     refute_includes source, "set_capability_options"
-    refute RecordingStudio.capability_enabled?(:example, for: "Folder")
-    refute RecordingStudio.capability_enabled?(:example, for: "Page")
-    assert_empty RecordingStudio.configuration.enabled_recordable_types_for(:example)
+    refute RecordingStudio.capability_enabled?(:viewable, for: "Folder")
+    refute RecordingStudio.capability_enabled?(:viewable, for: "Workspace")
   end
 
   def test_dummy_app_uses_recording_studio_default_layout

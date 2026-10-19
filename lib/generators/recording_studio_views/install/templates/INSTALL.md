@@ -1,11 +1,34 @@
 RecordingStudioViews install complete.
 
-Next steps:
+Installing this gem does not start tracking.
 
-1. Review config/initializers/recording_studio_views.rb and set any required options.
-2. If you use environment-specific settings, create config/recording_studio_views.yml.
-3. Install the engine migrations with `bin/rails generate recording_studio_views:migrations`.
-4. Apply the migrations with `bin/rails db:migrate`.
-5. Run `bin/rails tailwindcss:build` if you use Tailwind CSS.
-6. Include RecordingStudioViews::PageViewRecording in the host controller and call record_page_view. Adjust auth, layout, and current actor integration to match your host app.
-7. Keep strict recordable declarations enabled and add `recording_studio_recordable(...)` to every configured recordable before running `RecordingStudio.validate_recordable_declarations!`.
+1. Review config/initializers/recording_studio_views.rb. Set tracking_access_policy, consent, and resolvers.
+2. Copy tables with `bin/rails generate recording_studio_views:migrations`.
+   Use `--partitioned` only for a new monthly-partitioned install. Do not flip that later in an initializer.
+3. Also install Logs run tables: `bin/rails generate recording_studio_logs:migrations`.
+4. Run `bin/rails db:migrate`.
+5. Mount the engine once, for the collector POST:
+
+       mount RecordingStudioViews::Engine, at: "/recording_studio_views"
+
+   The install generator does not edit routes or layouts.
+6. In the shared layout, outside any Turbo permanent element, add:
+
+       <%= recording_studio_track_views %>
+
+7. Pin and import the collector with the host asset setup, for importmap:
+
+       pin "recording_studio_views/collector", to: "recording_studio_views/collector.js"
+
+       import "recording_studio_views/collector"
+
+8. Enable tracking per recordable type:
+
+       include RecordingStudio::Capabilities::Viewable.to
+
+9. Implement `current_recording` (or configure recording_resolver once).
+10. Schedule Logs daily aggregation, reconciliation, retention, and `RecordingStudioViews::ReceiptCleanupJob`.
+    Receipts expire after 24 hours. Raw retention defaults to 90 UTC days, overridable on Logs (`:indefinite` is permanent).
+11. Keep `recording_studio_recordable(...)` on every configured recordable.
+
+Default raw storage is an ordinary PostgreSQL table. Partition jobs are not required.

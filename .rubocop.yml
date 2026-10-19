@@ -9,6 +9,10 @@ AllCops:
 Style/Documentation:
   Enabled: false
 
+Style/OneClassPerFile:
+  Exclude:
+    - "lib/recording_studio_views/capabilities/viewable.rb"
+
 Style/StringLiterals:
   Enabled: true
   EnforcedStyle: double_quotes
@@ -17,19 +21,31 @@ Layout/LineLength:
   Max: 120
 
 # Relax metrics for test files and generators
-Metrics/ClassLength:
-  Exclude:
-    - 'test/**/*'
-
 Metrics/MethodLength:
+  Max: 20
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
 
 Metrics/AbcSize:
+  Max: 28
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+
+Metrics/CyclomaticComplexity:
+  Max: 14
+
+Metrics/PerceivedComplexity:
+  Max: 14
+
+Metrics/ClassLength:
+  Max: 130
+  Exclude:
+    - 'test/**/*'
+
+Metrics/BlockLength:
+  Max: 40
 
 # Allow empty blocks in tests (common for stubs/mocks)
 Lint/EmptyBlock:

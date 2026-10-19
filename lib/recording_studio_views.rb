@@ -5,29 +5,34 @@ require "recording_studio"
 require "recording_studio_logs"
 require "recording_studio_views/version"
 require "recording_studio_views/engine"
+require "recording_studio_views/bot_filter"
 require "recording_studio_views/configuration"
-require "recording_studio_views/capabilities/example"
 require "recording_studio_views/failure"
-require "recording_studio_views/text_limit"
-require "recording_studio_views/referrer"
-require "recording_studio_views/uuid_value"
-require "recording_studio_views/request_gate"
-require "recording_studio_views/visitor_id"
-require "recording_studio_views/query_params"
-require "recording_studio_views/page_view"
-require "recording_studio_views/page_view_summary"
-require "recording_studio_views/record_page_view"
-require "recording_studio_views/page_view_recording"
+require "recording_studio_views/instrumentation"
+require "recording_studio_views/path_normalizer"
+require "recording_studio_views/page_context"
+require "recording_studio_views/context_token"
+require "recording_studio_views/context_resolver"
+require "recording_studio_views/schema"
+require "recording_studio_views/storage"
+require "recording_studio_views/view_log"
+require "recording_studio_views/view_receipt"
+require "recording_studio_views/daily_view_summary"
+require "recording_studio_views/write_view"
+require "recording_studio_views/ingest_view"
+require "recording_studio_views/receipt_cleanup_job"
+require "recording_studio_views/site_cleanup"
+require "recording_studio_views/capabilities/viewable"
 
 module RecordingStudioViews
-  PAGE_VIEW_RECORDED = "page_view.recorded.recording_studio_views"
-  PAYLOAD_SCHEMA_VERSION = 1
-  PAGE_VIEW_AGGREGATION = "recording_studio_views/page_views"
-  PAGE_VIEW_AGGREGATABLE = {
-    resource_type: { filter: [:eq], group: true },
+  VIEW_LOG_AGGREGATION = "views/page_views"
+  VIEW_LOG_AGGREGATABLE = {
     root_recording_id: { filter: [:eq], group: true },
-    recording_id: { filter: [:eq], group: true }
+    recording_id: { filter: [:eq], group: true },
+    resource_type: { filter: [:eq], group: true },
+    page_key: { filter: [:eq], group: true }
   }.freeze
+  OWNER = "Recording Studio Views"
 
   class << self
     def configuration
@@ -36,46 +41,31 @@ module RecordingStudioViews
 
     def configure
       yield(configuration) if block_given?
+      configuration
     end
 
-    def record_page_view(...)
-      result = RecordPageView.call(...)
-      result.success? ? result.value : nil
-    rescue StandardError => e
-      Failure.report(e)
-      nil
-    end
-
-    def register_page_view_log!
-      register_log!
-      register_daily_aggregation!
-    end
-
-    private
-
-    def register_log!
+    def register_view_log!
+      Storage.apply!(ViewLog) if defined?(ViewLog)
       RecordingStudioLogs.register(
-        model: "RecordingStudioViews::PageView",
+        model: "RecordingStudioViews::ViewLog",
         timestamp_column: :occurred_at,
-        retention: 30.days,
+        retention: 90.days,
         root_column: :root_recording_id,
-        owner: "Recording Studio Views",
-        aggregatable: PAGE_VIEW_AGGREGATABLE
+        partition_interval: Storage.partition_interval,
+        owner: OWNER,
+        aggregatable: VIEW_LOG_AGGREGATABLE
       )
-    end
-
-    def register_daily_aggregation!
       RecordingStudioLogs.aggregate(
-        source: "RecordingStudioViews::PageView",
-        name: PAGE_VIEW_AGGREGATION,
-        summary_model: "RecordingStudioViews::PageViewSummary",
-        group_by: %i[root_recording_id resource_type],
+        source: "RecordingStudioViews::ViewLog",
+        name: VIEW_LOG_AGGREGATION,
+        summary_model: "RecordingStudioViews::DailyViewSummary",
+        group_by: %i[root_recording_id recording_id resource_type page_key],
         measurements: { views: :count },
         interval: :daily,
-        owner: "Recording Studio Views"
+        owner: OWNER
       )
     end
   end
 end
 
-RecordingStudioViews.register_page_view_log!
+RecordingStudioViews.register_view_log!
