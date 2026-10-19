@@ -3,7 +3,7 @@
 Records host page views and emits `page_view.recorded.recording_studio_views` after commit. RecordingStudio Conversions can subscribe. This gem does not depend on Conversions, Attachable, Library, or Root Switchable.
 
 ```ruby
-gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views"
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.3.0"
 ```
 
 ## Page views
@@ -41,6 +41,8 @@ Install the page-view and summary tables with `bin/rails generate recording_stud
 Retention is 30 days. Months drop only after the whole month is older than that and the daily aggregation `recording_studio_views/page_views` has succeeded for every UTC day in the month. Because partitions are monthly, a row can remain until its month is fully expired, about 30 to 61 days.
 
 Schedule these jobs in the host. Views does not start a cron runner. `RecordingStudioLogs::PartitionMaintenanceJob` should run so requests do not create partitions. Logs keeps the previous month through `months_ahead` (default 2). Also schedule `RecordingStudioLogs::DailyAggregationJob`, `RecordingStudioLogs::ReconciliationJob`, `RecordingStudioLogs::BackfillJob`, and `RecordingStudioLogs::RetentionCleanupJob`. Without a succeeded aggregation for every UTC day in a month, retention leaves that month in place. A partial first month, or a gap after an outage, stays until `BackfillJob` covers the missing days.
+
+If the first insert of a month creates the partition inside a host transaction, `pg_advisory_xact_lock` and the parent-table lock are held until that host transaction commits, and other inserts wait. Scheduling `PartitionMaintenanceJob` creates the partitions ahead of time and avoids that.
 
 ### Visitor id
 
