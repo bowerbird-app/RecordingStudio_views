@@ -36,7 +36,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_includes routes, "recording_studio_admin_for :admin, at: \"/admin\", root_section: :views"
   end
 
-  test "table filters match root resource type page key and visibility" do
+  test "table filters match root resource type page key and visit kind" do
     studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
     client = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Client Workspace"))
 
@@ -81,7 +81,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
     scoped = queries.filter_by_root(scoped, "Studio Workspace")
     scoped = queries.filter_by_resource_type(scoped, "Page")
     scoped = queries.filter_by_page_key(scoped, "getting-started")
-    scoped = queries.filter_by_visibility(scoped, queries::PRIVATE)
+    scoped = queries.filter_by_visit_kind(scoped, queries::SIGNED_IN)
 
     assert_equal [matching.id], scoped.pluck(:id)
   end
@@ -126,17 +126,94 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_equal 2, RecordingStudioViews::Admin::Queries.total_views
   end
 
-  test "visitor kind is Token only when a digest is stored" do
-    with_token = insert_view(visitor_token_digest: "abc123")
-    anonymous = insert_view(visitor_token_digest: nil)
+  test "path filter is a case-insensitive contains match" do
+    matching = insert_view(path: "/Docs/Home")
+    insert_view(path: "/other/page")
     queries = RecordingStudioViews::Admin::Queries
 
-    assert_equal "Token", queries.visitor_kind_value(with_token, nil)
-    assert_nil queries.visitor_kind_value(anonymous, nil)
-    assert_equal "Anonymous", queries.actor_value(anonymous, nil)
+    scoped = queries.filter_by_path(queries.view_logs, "docs/home")
+
+    assert_equal [matching.id], scoped.pluck(:id)
+  end
+
+  test "visit kind filter splits signed in and anonymous rows" do
+    signed_in = insert_view(actor_id: @user.id, actor_type: "User")
+    anonymous = insert_view(actor_id: nil, actor_type: nil)
+    queries = RecordingStudioViews::Admin::Queries
+
+    signed_ids = queries.filter_by_visit_kind(queries.view_logs, queries::SIGNED_IN).pluck(:id)
+    anonymous_ids = queries.filter_by_visit_kind(queries.view_logs, queries::ANONYMOUS_ACTOR).pluck(:id)
+    all_ids = queries.filter_by_visit_kind(queries.view_logs, "").pluck(:id)
+
+    assert_equal [signed_in.id], signed_ids
+    assert_equal [anonymous.id], anonymous_ids
+    assert_equal [signed_in.id, anonymous.id].sort, all_ids.sort
+  end
+
+  test "actor value prefers name then email then type and id" do
+    named = Workspace.find_or_create_by!(name: "Named Workspace")
+    named_row = insert_view(actor_type: "Workspace", actor_id: named.id)
+    email_row = insert_view(actor_type: "User", actor_id: @user.id)
+    missing_row = insert_view(actor_type: "User", actor_id: SecureRandom.uuid)
+    anonymous = insert_view(actor_id: nil, actor_type: nil)
+    queries = RecordingStudioViews::Admin::Queries
+    context = actor_context_for([named_row, email_row, missing_row, anonymous])
+
+    assert_equal "Named Workspace", queries.actor_value(named_row, context)
+    assert_equal @user.email, queries.actor_value(email_row, context)
+    assert_equal "User #{missing_row.actor_id}", queries.actor_value(missing_row, context)
+    assert_equal "Anonymous", queries.actor_value(anonymous, context)
+  end
+
+  test "actor value preloads records for the current table page" do
+    other = User.find_or_create_by!(email: "views-admin-other@example.com") do |record|
+      record.password = "Password123!"
+      record.password_confirmation = "Password123!"
+    end
+    first = insert_view(actor_type: "User", actor_id: @user.id)
+    second = insert_view(actor_type: "User", actor_id: other.id)
+    queries = RecordingStudioViews::Admin::Queries
+    context = actor_context_for([first, second])
+    sql = []
+    subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
+      sql << payload[:sql] if payload[:sql].to_s.match?(/FROM ["']?users["']?/i)
+    end
+
+    assert_equal @user.email, queries.actor_value(first, context)
+    assert_equal other.email, queries.actor_value(second, context)
+    assert_equal 1, sql.count { |query| query.match?(/WHERE/i) }
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  test "screen chart series buckets filtered view logs by day" do
+    today = Time.now.utc.to_date
+    older = today - 2
+    insert_view(occurred_at: Time.utc(older.year, older.month, older.day, 12),
+                arrived_at: Time.utc(older.year, older.month, older.day, 12))
+    insert_view(occurred_at: Time.utc(today.year, today.month, today.day, 12),
+                arrived_at: Time.utc(today.year, today.month, today.day, 12))
+    insert_view(occurred_at: Time.utc(today.year, today.month, today.day, 15),
+                arrived_at: Time.utc(today.year, today.month, today.day, 15))
+    series = RecordingStudioViews::Admin::Queries.screen_page_views_series(
+      RecordingStudioViews::Admin::Queries.view_logs,
+      bucket: :day,
+      start_date: older,
+      end_date: today
+    )
+    points = series.first.fetch(:data).index_by { |point| point.fetch(:x) }
+
+    assert_equal({ x: older, y: 1 }, points.fetch(older))
+    assert_equal({ x: older + 1, y: 0 }, points.fetch(older + 1))
+    assert_equal({ x: today, y: 2 }, points.fetch(today))
   end
 
   private
+
+  def actor_context_for(rows)
+    table_result = Struct.new(:rows).new(rows)
+    Struct.new(:table_result).new(table_result)
+  end
 
   def insert_view(attributes = {})
     now = Time.now.utc

@@ -22,10 +22,14 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes section, 'widget "widgets.views.total_views", view_variant: :compact'
     assert_includes screen, 'key "views_page_views"'
     assert_includes screen, "filter :date_range, field: :occurred_at"
+    assert_includes screen, "filter :group_by, values: %i[day week month], default: :day"
+    assert_includes screen, "Queries.screen_page_views_series"
     assert_includes screen, "filter :root"
     assert_includes screen, "filter :resource_type"
     assert_includes screen, "filter :page_key"
-    assert_includes screen, "filter :visibility"
+    assert_includes screen, "filter :path"
+    assert_includes screen, "filter :visit_kind"
+    refute_includes screen, "visitor_kind"
     assert_includes widgets, "Queries.page_views_over_time_series"
     assert_includes widgets, "xaxis: { labels: { show: false } }"
     assert_includes widgets, "tooltip: { enabled: true }"
