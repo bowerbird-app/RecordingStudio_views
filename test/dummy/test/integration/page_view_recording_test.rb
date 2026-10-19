@@ -57,7 +57,13 @@ class PageViewRecordingTest < ActionDispatch::IntegrationTest
     assert_equal "/", payload[:path]
     assert_equal @root_recording_id, payload[:root_recording_id]
     assert_nil payload[:recording_id]
-    assert_equal view.id, payload[:page_view_id]
+    stored_id = view.read_attribute(:id)
+    assert_kind_of Array, view.id, "view.id is the composite key, got #{view.id.class}: #{view.id.inspect}"
+    assert_equal stored_id, view.id.first
+    assert_kind_of String, payload[:page_view_id],
+                   "page_view_id was #{payload[:page_view_id].class}: #{payload[:page_view_id].inspect}"
+    assert_match(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i, payload[:page_view_id])
+    assert_equal stored_id, payload[:page_view_id]
     assert_equal RecordingStudioViews::PageViewPayload::KEYS, payload.keys
     assert_equal @user.id, payload[:user_id]
     assert_equal "opaque-device-key", payload[:visitor_id]

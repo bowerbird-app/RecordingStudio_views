@@ -25,7 +25,9 @@ module RecordingStudioViews
       end
 
       def add_yaml_config
-        return unless yes?("Would you like to add `config/recording_studio_views.yml` for environment-specific settings? [y/N]")
+        prompt = "Would you like to add `config/recording_studio_views.yml` " \
+                 "for environment-specific settings? [y/N]"
+        return unless yes?(prompt)
 
         template "recording_studio_views.yml", "config/recording_studio_views.yml"
       end
@@ -95,11 +97,19 @@ module RecordingStudioViews
 
       def tailwind_source_lines
         [
-          '@source "../../vendor/bundle/**/recording_studio_views/app/views/**/*.erb";',
-          '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/recording_studio_views-*/app/views/**/*.erb";',
-          '@source "../../vendor/bundle/**/flatpack/app/components/**/*.{rb,erb}";',
-          '@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/flatpack-*/app/components/**/*.{rb,erb}";'
+          tailwind_source("../../vendor/bundle/**/recording_studio_views/app/views/**/*.erb"),
+          tailwind_source("#{bundle_gems}/recording_studio_views-*/app/views/**/*.erb"),
+          tailwind_source("../../vendor/bundle/**/flatpack/app/components/**/*.{rb,erb}"),
+          tailwind_source("#{bundle_gems}/flatpack-*/app/components/**/*.{rb,erb}")
         ]
+      end
+
+      def bundle_gems
+        "../../../../../../usr/local/bundle/ruby/**/bundler/gems"
+      end
+
+      def tailwind_source(path)
+        "@source \"#{path}\";"
       end
     end
   end

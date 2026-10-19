@@ -21,11 +21,19 @@ module RecordingStudioViews
       KEYS.index_with { |key| value_for(view, key) }
     end
 
+    def self.page_view_id_for(view)
+      return view.id_value if view.respond_to?(:id_value)
+      return view.read_attribute(:id) if view.respond_to?(:read_attribute)
+
+      view.id
+    end
+    private_class_method :page_view_id_for
+
     def self.value_for(view, key)
       case key
       when :schema_version then PAYLOAD_SCHEMA_VERSION
       when :occurred_at then view.occurred_at&.iso8601
-      when :page_view_id then view.id
+      when :page_view_id then page_view_id_for(view)
       when :query_params then QueryParams.extract(view.query_params)
       else view.public_send(key)
       end
