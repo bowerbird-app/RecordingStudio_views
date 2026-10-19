@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioViewsTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.4.0", ::RecordingStudioViews::VERSION
+    assert_equal "0.5.0", ::RecordingStudioViews::VERSION
   end
 
   def test_engine_exists
@@ -50,6 +50,10 @@ class RecordingStudioViewsTest < Minitest::Test
     refute_includes gemfile, 'tag: "v4.6.0"'
     refute_includes gemfile, 'tag: "v4.5.0"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.18.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.3.0"'
+    routes = File.read(File.expand_path("dummy/config/routes.rb", __dir__))
+    assert_includes routes, "recording_studio_admin_for :admin, at: \"/admin\", root_section: :views"
+    assert_includes routes, 'mount RecordingStudioAccessible::Engine, at: "/admin/access"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.11.0", require: false'
     refute_includes gemfile, 'tag: "v0.10.0"'
     refute_includes gemfile, 'tag: "v0.17.0"'
@@ -59,7 +63,8 @@ class RecordingStudioViewsTest < Minitest::Test
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.5.0"'
     refute_includes gemfile, 'tag: "v0.6.0"'
     refute_includes gemfile, 'tag: "v0.5.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.196"'
+    assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.213"'
+    refute_includes gemfile, 'tag: "v0.1.196"'
     refute_includes gemfile, "recording_studio/v3.0.0"
     refute_includes gemfile, 'tag: "v4.4.0"'
     refute_includes gemfile, 'tag: "v4.3.0"'
@@ -165,6 +170,7 @@ class RecordingStudioViewsTest < Minitest::Test
 
     assert_includes tailwind_source, "../../../vendor/engines/flat_pack/app/components"
     assert_includes tailwind_source, "../../../vendor/engines/recording_studio/app/views"
+    assert_includes tailwind_source, "../../../vendor/engines/recording_studio_admin/app/views"
     refute_includes tailwind_source, "vendor/bundle/**/flatpack/app/components"
     refute_includes tailwind_source, "recordingstudio-*"
     refute_includes tailwind_source, "@theme"
@@ -179,6 +185,7 @@ class RecordingStudioViewsTest < Minitest::Test
     rake_task = File.read(File.expand_path("dummy/lib/tasks/tailwindcss.rake", __dir__))
     assert_includes rake_task, "FlatPack::Engine.root"
     assert_includes rake_task, "RecordingStudio::Engine.root"
+    assert_includes rake_task, "RecordingStudioAdmin::Engine.root"
     assert_includes rake_task, "tailwindcss:link_engine_sources"
   end
 
@@ -187,7 +194,8 @@ class RecordingStudioViewsTest < Minitest::Test
     initializer_source = File.read(initializer_path)
 
     assert_includes initializer_source, "config.require_recordable_declarations = true"
-    assert_includes initializer_source, "config.recordable_types = [ \"Workspace\", \"Folder\", \"Page\" ]"
+    assert_includes initializer_source,
+                    "config.recordable_types = [ \"Workspace\", \"Folder\", \"Page\", \"AdminRoot\" ]"
     refute_includes initializer_source, "config.include_children"
     refute_includes initializer_source, "config.features."
     refute_includes initializer_source, "v3"
@@ -210,7 +218,8 @@ class RecordingStudioViewsTest < Minitest::Test
     assert_includes readme, "dummy GitHub tag `v4.7.0`"
     refute_includes readme, "dummy GitHub tag `v4.6.0`"
     refute_includes readme, "dummy GitHub tag `v4.5.0`"
-    assert_includes readme, "dummy GitHub tag `v0.1.196`"
+    assert_includes readme, "dummy GitHub tag `v0.1.213`"
+    refute_includes readme, "dummy GitHub tag `v0.1.196`"
     assert_includes readme, "dummy GitHub tag `v0.18.0`"
     assert_includes readme, "dummy GitHub tag `v0.11.0`"
     refute_includes readme, "dummy GitHub tag `v0.10.0`"

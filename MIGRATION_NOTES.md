@@ -7,7 +7,8 @@
 - Recording Studio 4.x (`~> 4.2` in the gemspec; dummy GitHub tag `v4.7.0`)
 - Recording Studio Logs dummy GitHub tag `v0.4.0`
 - Accessible dummy tag `v0.18.0`, Trashable dummy tag `v0.11.0` (`require: false`), and Root Switchable dummy tag `v0.9.0`
-- FlatPack dummy tag `v0.1.196`
+- Recording Studio Admin dummy GitHub tag `v2.3.0` (host optional; Views does not gemspec-depend on Admin)
+- FlatPack dummy tag `v0.1.213`
 - Public RubyGems and GitHub access for dependency installation
 
 ## Verification

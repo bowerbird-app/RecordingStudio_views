@@ -30,5 +30,6 @@ Installing this gem does not start tracking.
 10. Schedule Logs daily aggregation, reconciliation, retention, and `RecordingStudioViews::ReceiptCleanupJob`.
     Receipts expire after 24 hours. Raw retention defaults to 90 UTC days, overridable on Logs (`:indefinite` is permanent).
 11. Keep `recording_studio_recordable(...)` on every configured recordable.
+12. If the host mounts Recording Studio Admin, enable `section :views` on the admin root. Views registers the section only when Admin is loaded. It does not add a second admin.
 
 Default raw storage is an ordinary PostgreSQL table. Partition jobs are not required.

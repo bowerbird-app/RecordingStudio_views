@@ -34,6 +34,7 @@ Then open the app and sign in with:
 - `/users/sign_in` - Devise sign-in page
 - `/docs/install`, `/docs/config`, `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views`, `/docs/methods` - dummy-only starter pages
 - `/up` - Rails health check
+- `/admin` - Views admin section after sign-in
 
 ## Why This App Exists
 
