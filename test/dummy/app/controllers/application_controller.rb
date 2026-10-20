@@ -9,6 +9,12 @@ class ApplicationController < ActionController::Base
     "devise/registrations" => "site.sign_up",
     "site_pages" => "site.about"
   }.freeze
+  SITE_PAGE_PATHS = {
+    "/" => "site.home",
+    "/users/sign_in" => "site.sign_in",
+    "/users/sign_up" => "site.sign_up",
+    "/site/about" => "site.about"
+  }.freeze
 
   allow_browser versions: :modern
 
@@ -16,7 +22,7 @@ class ApplicationController < ActionController::Base
 
   layout :application_layout
 
-  before_action :authenticate_user!
+  before_action :authenticate_user!, unless: :devise_controller?
   before_action :set_current_actor
 
   helper DummyLayoutHelper
@@ -38,7 +44,7 @@ class ApplicationController < ActionController::Base
   end
 
   def current_site_page
-    page_key = SITE_PAGE_KEYS[controller_path]
+    page_key = SITE_PAGE_PATHS[request.path] || SITE_PAGE_KEYS[controller_path]
     return unless page_key
 
     { page_key: page_key, resource_type: "Site" }

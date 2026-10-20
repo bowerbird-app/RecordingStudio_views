@@ -12,7 +12,7 @@ module RecordingStudioViews
 
       recording = recording_for(context)
       return :deny unless recording
-      return :deny unless defined?(::RecordingStudioAccessible)
+      return :allow unless defined?(::RecordingStudioAccessible)
 
       accessible_allowed?(actor, recording) ? :allow : :deny
     rescue StandardError

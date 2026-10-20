@@ -9,11 +9,12 @@ module RecordingStudioViews
 
       resolved = context || ContextResolver.new(controller).call
       consented = consent_for_request?
+      allowed = tracking_allowed?(resolved)
       payload = {
         endpoint: views_endpoint,
-        token: resolved.skipped? ? nil : ContextToken.issue(resolved),
+        token: resolved.skipped? || !allowed ? nil : ContextToken.issue(resolved),
         consent: consented,
-        dispatch: !resolved.skipped? && consented
+        dispatch: !resolved.skipped? && consented && allowed
       }
       context_script(payload)
     rescue StandardError
@@ -35,6 +36,13 @@ module RecordingStudioViews
 
     def consent_for_request?
       RecordingStudioViews.configuration.consent_predicate.call(request)
+    rescue StandardError
+      false
+    end
+
+    def tracking_allowed?(resolved)
+      actor = RecordingStudioViews.configuration.actor_resolver.call(controller)
+      RecordingStudioViews.configuration.tracking_access_policy.call(request, resolved, actor) == :allow
     rescue StandardError
       false
     end

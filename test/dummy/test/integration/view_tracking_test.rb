@@ -8,6 +8,7 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
 
   setup do
+    sign_out :user if respond_to?(:sign_out)
     @user = password_user("views-test@example.com")
     Current.actor = @user
     @studio = Workspace.find_or_create_by!(name: "Studio Workspace")
