@@ -42,6 +42,7 @@ class AdminRegistrationTest < Minitest::Test
       assert_includes screen, ":#{column}"
     end
     assert_includes widgets, "Queries.page_views_over_time_series"
+    assert_includes widgets, "Daily views in UTC from raw view logs."
     assert_includes widgets, "xaxis: { labels: { show: false } }"
     assert_includes widgets, "tooltip: { enabled: true }"
     assert_includes widgets, "Queries.total_views"

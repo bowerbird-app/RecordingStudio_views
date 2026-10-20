@@ -45,7 +45,12 @@ module RecordingStudioViews
         end
 
         def views_by_day_utc(day_range)
-          DailyViewSummary.where(day: day_range).group(:day).sum(:views)
+          day_sql = "(#{quoted_occurred_at} AT TIME ZONE 'UTC')::date"
+          grouped = ViewLog.except(:order)
+                           .where("#{day_sql} BETWEEN ? AND ?", day_range.begin, day_range.end)
+                           .group(Arel.sql(day_sql))
+                           .count
+          grouped.transform_keys(&:to_date)
         end
 
         def default_day_range

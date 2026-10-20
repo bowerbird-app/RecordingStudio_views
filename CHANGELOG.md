@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-10-20
+
+### Changed
+- Admin "Page views over time" counts raw `ViewLog` rows per UTC day (`occurred_at AT TIME ZONE 'UTC'`) over the default 30-day range, filling empty days with 0. The chart no longer waits on `DailyViewSummary` aggregation.
+
+### Upgrade notes
+- The hub chart can show today's views before Logs aggregation runs. Total views, summaries, and aggregation registration are unchanged.
+
 ## [0.7.1] - 2026-10-20
 
 ### Added
