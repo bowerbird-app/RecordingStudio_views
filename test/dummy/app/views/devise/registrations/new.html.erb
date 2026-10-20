@@ -1,0 +1,40 @@
+<%= render FlatPack::Card::Component.new(style: :default, class: "w-full") do |card| %>
+  <% card.body do %>
+    <div class="space-y-6">
+      <%= render FlatPack::PageTitle::Component.new(
+        title: "Sign up",
+        variant: :h2,
+        class: "mb-0 pb-0"
+      ) %>
+
+      <%= form_for(resource, as: resource_name, url: registration_path(resource_name)) do |f| %>
+        <div class="space-y-4">
+        <%= render FlatPack::EmailInput::Component.new(
+          name: "user[email]",
+          label: "Email",
+          placeholder: "you@example.com"
+        ) %>
+
+        <%= render FlatPack::PasswordInput::Component.new(
+          name: "user[password]",
+          label: "Password",
+          required: true
+        ) %>
+
+        <%= render FlatPack::PasswordInput::Component.new(
+          name: "user[password_confirmation]",
+          label: "Password confirmation",
+          required: true
+        ) %>
+
+        <%= render FlatPack::Button::Component.new(
+          text: "Sign up",
+          style: :primary,
+          size: :md,
+          type: "submit"
+        ) %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>

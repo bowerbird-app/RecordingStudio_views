@@ -15,6 +15,7 @@ class PagesCrudTest < ActionDispatch::IntegrationTest
     Current.actor = @user
     @workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
     @workspace_root = RecordingStudio.root_recording_for(@workspace)
+    allow_view!(@user, @workspace)
     sign_in @user
     switch_root(@workspace_root)
     RecordingStudioViews::ViewLog.delete_all
@@ -77,10 +78,10 @@ class PagesCrudTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "data-recording-studio-views-context"
 
+    view = nil
     assert_difference -> { RecordingStudioViews::ViewLog.count }, 1 do
-      ingest_from_last_page
+      view = ingest_from_last_page
     end
-    view = RecordingStudioViews::ViewLog.last
     assert_equal recording.id, view.recording_id
     assert_equal @workspace_root.id, view.root_recording_id
     assert_equal 1, RecordingStudioViews::ViewReceipt.where(id: view.id).count
@@ -123,7 +124,9 @@ class PagesCrudTest < ActionDispatch::IntegrationTest
   end
 
   def ingest_from_last_page
-    post_ingest(page_context, event_id: SecureRandom.uuid)
+    event_id = SecureRandom.uuid
+    post_ingest(page_context, event_id: event_id)
+    RecordingStudioViews::ViewLog.find_by(id: event_id)
   end
 
   def page_context

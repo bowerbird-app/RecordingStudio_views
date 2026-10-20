@@ -48,6 +48,10 @@ class WriteViewTest < ActiveSupport::TestCase
       path: "/site/about"
     )
     RecordingStudioViews::SiteCleanup.call(before: Time.current.utc + 1.second)
+    assert_equal 1, RecordingStudioViews::ViewLog.where(root_recording_id: nil).count
+
+    RecordingStudioLogs.aggregate_day!(Time.now.utc.to_date)
+    RecordingStudioViews::SiteCleanup.call(before: Time.current.utc + 1.second)
     assert_equal 0, RecordingStudioViews::ViewLog.where(root_recording_id: nil).count
   end
 

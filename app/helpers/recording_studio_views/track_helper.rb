@@ -3,13 +3,18 @@
 module RecordingStudioViews
   module TrackHelper
     def recording_studio_track_views(context: nil)
+      if error_response?
+        return context_script({ endpoint: views_endpoint, token: nil, consent: false, dispatch: false })
+      end
+
       resolved = context || ContextResolver.new(controller).call
       consented = consent_for_request?
+      allowed = tracking_allowed?(resolved)
       payload = {
         endpoint: views_endpoint,
-        token: resolved.skipped? ? nil : ContextToken.issue(resolved),
+        token: resolved.skipped? || !allowed ? nil : ContextToken.issue(resolved),
         consent: consented,
-        dispatch: !resolved.skipped? && consented
+        dispatch: !resolved.skipped? && consented && allowed
       }
       context_script(payload)
     rescue StandardError
@@ -33,6 +38,18 @@ module RecordingStudioViews
       RecordingStudioViews.configuration.consent_predicate.call(request)
     rescue StandardError
       false
+    end
+
+    def tracking_allowed?(resolved)
+      actor = RecordingStudioViews.configuration.actor_resolver.call(controller)
+      RecordingStudioViews.configuration.tracking_access_policy.call(request, resolved, actor) == :allow
+    rescue StandardError
+      false
+    end
+
+    def error_response?
+      status = controller.response&.status
+      status.present? && status.to_i >= 400
     end
   end
 end

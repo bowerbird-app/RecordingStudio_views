@@ -35,6 +35,8 @@ Rails.application.routes.draw do
   get "site/about", to: "site_pages#show", as: :site_about
   get "skipped", to: "skipped_pages#show", as: :skipped_page
   get "no-consent/:id", to: "no_consent#show", as: :no_consent_page
+  get "errors/not_found", to: "errors#not_found", as: :error_not_found
+  get "errors/crash", to: "errors#crash", as: :error_crash
 
   # Defines the root path route ("/")
   root "home#index"

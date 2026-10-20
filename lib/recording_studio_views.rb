@@ -13,6 +13,7 @@ require "recording_studio_views/path_normalizer"
 require "recording_studio_views/page_context"
 require "recording_studio_views/context_token"
 require "recording_studio_views/context_resolver"
+require "recording_studio_views/tracking_access"
 require "recording_studio_views/schema"
 require "recording_studio_views/storage"
 require "recording_studio_views/view_log"
@@ -42,6 +43,10 @@ module RecordingStudioViews
     def configure
       yield(configuration) if block_given?
       configuration
+    end
+
+    def delete_for_root(root_recording_id:, dry_run: false)
+      RecordingStudioLogs.delete_for_root(root_recording_id: root_recording_id, dry_run: dry_run)
     end
 
     def register_view_log!

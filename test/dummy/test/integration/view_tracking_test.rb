@@ -8,10 +8,8 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
 
   setup do
-    @user = User.find_or_create_by!(email: "views-test@example.com") do |record|
-      record.password = "Password123!"
-      record.password_confirmation = "Password123!"
-    end
+    sign_out :user if respond_to?(:sign_out)
+    @user = password_user("views-test@example.com")
     Current.actor = @user
     @studio = Workspace.find_or_create_by!(name: "Studio Workspace")
     @client = Workspace.find_or_create_by!(name: "Client Workspace")
@@ -23,6 +21,8 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     @folder_recording = find_or_record(@folder, @studio_root, @studio_root)
     @page_recording = find_or_record(@page, @studio_root, @folder_recording)
     @client_page_recording = find_or_record(@client_page, @client_root, @client_root)
+    allow_view!(@user, @studio)
+    allow_view!(@user, @client)
     RecordingStudioViews::ViewLog.delete_all
     RecordingStudioViews::ViewReceipt.delete_all
     RecordingStudioViews::DailyViewSummary.delete_all
@@ -39,14 +39,15 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     assert_response :success
     context = page_context
     assert context["dispatch"]
-    assert_includes response.body, "recording_studio_track_views" if false
     refute_includes response.body, "record_page_view"
     assert_includes response.body, "data-recording-studio-views-context"
+    refute_includes response.body, "</head>\n    <script"
+    assert_includes response.body, "<body"
     refute_includes response.body, @user.id.to_s
+    view = nil
     assert_difference -> { RecordingStudioViews::ViewLog.count }, 1 do
-      ingest_from_last_page
+      view = ingest_from_last_page
     end
-    view = RecordingStudioViews::ViewLog.last
     assert_equal @page_recording.id, view.recording_id
     assert_equal @studio_root.id, view.root_recording_id
     assert_equal "Page", view.resource_type
@@ -88,10 +89,12 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
 
     threads = Array.new(2) do
       Thread.new do
-        post_ingest(page_context_from(context), event_id: SecureRandom.uuid)
+        post_ingest(page_context_from(context), event_id: event_id)
       end
     end
     threads.each(&:join)
+    assert_equal 1, RecordingStudioViews::ViewLog.where(id: event_id).count
+    assert_equal 1, RecordingStudioViews::ViewReceipt.where(id: event_id).count
   end
 
   test "forged tokens and target ids cannot cross roots" do
@@ -116,14 +119,41 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
   end
 
   test "anonymous public tracking works and private tracking fails closed" do
+    manager = password_user("views-publisher@example.com")
+    publish_page!(@page, manager, @studio)
+
     get public_page_path(@page)
+    assert_response :success
+    view = nil
+    assert_difference -> { RecordingStudioViews::ViewLog.count }, 1 do
+      view = ingest_from_last_page
+    end
+    assert_nil view.actor_id
+    assert_nil view.actor_type
+
+    get page_path(@page)
+    assert_includes [301, 302, 401], response.status
+  end
+
+  test "accessible allowed denied anonymous public and revoked access" do
+    outsider = password_user("views-denied@example.com")
+    sign_in outsider
+    get page_path(@page)
+    assert_response :forbidden
+    refute page_context["dispatch"]
+
+    sign_in @user
+    get page_path(@page)
     assert_response :success
     assert_difference -> { RecordingStudioViews::ViewLog.count }, 1 do
       ingest_from_last_page
     end
 
+    manager = password_user("views-manager@example.com")
+    allow_admin!(manager, @studio)
+    revoke_view!(@user, @studio, manager: manager)
     get page_path(@page)
-    assert_includes [301, 302, 401], response.status
+    assert_response :forbidden
   end
 
   test "revising a page keeps the recording id" do
@@ -133,8 +163,7 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     @page_recording.revise(@page_recording) { |recordable| recordable.title = "Getting Started revised" }
     current_page = RecordingStudio::Recording.find(recording_id).recordable
     get page_path(current_page)
-    ingest_from_last_page
-    view = RecordingStudioViews::ViewLog.last
+    view = ingest_from_last_page
     assert_equal recording_id, view.recording_id
   end
 
@@ -142,6 +171,7 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     sign_in @user
     get page_path(@page)
     ingest_from_last_page
+    switch_root(@client_root)
     get page_path(@client_page)
     assert_response :success
     ingest_from_last_page
@@ -165,9 +195,32 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     log = RecordingStudioLogs.logs.find { |item| item.model_name == "RecordingStudioViews::ViewLog" }
     assert_nil log.partition_interval
 
-    sign_in @user
-    get page_path(@page)
-    assert_response :success
+    context = RecordingStudioViews::PageContext.new(
+      kind: :site,
+      recording_id: nil,
+      root_recording_id: nil,
+      resource_type: "Site",
+      page_key: "site.about",
+      version: 1
+    )
+    event_id = SecureRandom.uuid
+    original = RecordingStudioViews::ViewLog.method(:insert_all!)
+    RecordingStudioViews::ViewLog.define_singleton_method(:insert_all!) do |*_args, **_kwargs|
+      raise ActiveRecord::StatementInvalid, "disk full"
+    end
+
+    result = RecordingStudioViews::WriteView.call(
+      event_id: event_id,
+      context: context,
+      path: "/site/about"
+    )
+
+    assert result.failure?
+    assert_nil RecordingStudioViews::ViewReceipt.find_by(id: event_id)
+  ensure
+    RecordingStudioViews::ViewLog.define_singleton_method(:insert_all!) do |*args, **kwargs, &block|
+      original.call(*args, **kwargs, &block)
+    end
   end
 
   test "conflicting event id reuse is rejected" do
@@ -188,19 +241,56 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
 
   test "site pages are recorded only when enabled" do
     get site_about_path
+    view = nil
     assert_difference -> { RecordingStudioViews::ViewLog.count }, 1 do
-      ingest_from_last_page
+      view = ingest_from_last_page
     end
-    view = RecordingStudioViews::ViewLog.last
     assert_nil view.root_recording_id
     assert_equal "site.about", view.page_key
   end
 
+  test "sign in sign up and home have site page keys and unidentified pages stay skipped" do
+    get new_user_session_path
+    assert_response :success
+    assert_equal "site.sign_in", ingest_from_last_page.page_key
+
+    get new_user_registration_path
+    assert_response :success
+    assert_equal "site.sign_up", ingest_from_last_page.page_key
+
+    get root_path
+    assert_response :success
+    assert_equal "site.home", ingest_from_last_page.page_key
+
+    sign_in @user
+    get docs_install_path
+    assert_response :success
+    assert_equal false, page_context["dispatch"]
+  end
+
   test "a tracking error leaves the html page usable" do
     sign_in @user
+    previous = RecordingStudioViews.configuration.recording_resolver
+    RecordingStudioViews.configuration.recording_resolver = lambda { |*|
+      raise "resolver exploded"
+    }
+
     get page_path(@page)
     assert_response :success
     assert_includes response.body, "Getting Started"
+    assert_equal false, page_context["dispatch"]
+  ensure
+    RecordingStudioViews.configuration.recording_resolver = previous
+  end
+
+  test "error pages do not count" do
+    get error_not_found_path
+    assert_response :not_found
+    assert_equal false, page_context["dispatch"]
+
+    get error_crash_path
+    assert_response :internal_server_error
+    assert_equal false, page_context["dispatch"]
   end
 
   test "ingestion rejects a missing origin" do
@@ -216,7 +306,59 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     assert_equal 0, RecordingStudioViews::ViewLog.count
   end
 
+  test "shared root ownership skips a recording from another root" do
+    sign_in @user
+    previous = RecordingStudioViews.configuration.root_ownership_policy
+    RecordingStudioViews.configuration.root_ownership_policy = lambda { |_controller, root|
+      root.id.to_s == @studio_root.id.to_s
+    }
+
+    get page_path(@client_page)
+    assert_response :success
+    assert_equal false, page_context["dispatch"]
+  ensure
+    RecordingStudioViews.configuration.root_ownership_policy = previous
+  end
+
+  test "delete_for_root removes that root's views and site cleanup skips unaggregated rows" do
+    sign_in @user
+    get page_path(@page)
+    ingest_from_last_page
+    get site_about_path
+    ingest_from_last_page
+    get site_about_path
+    ingest_from_last_page
+
+    studio_count = RecordingStudioViews::ViewLog.where(root_recording_id: @studio_root.id).count
+    site_count = RecordingStudioViews::ViewLog.where(root_recording_id: nil).count
+    assert_equal 1, studio_count
+    assert_equal 2, site_count
+
+    RecordingStudioViews.delete_for_root(root_recording_id: @studio_root.id)
+    assert_equal 0, RecordingStudioViews::ViewLog.where(root_recording_id: @studio_root.id).count
+    assert_equal site_count, RecordingStudioViews::ViewLog.where(root_recording_id: nil).count
+
+    RecordingStudioViews::SiteCleanup.call(before: Time.current.utc + 1.second)
+    assert_equal site_count, RecordingStudioViews::ViewLog.where(root_recording_id: nil).count
+
+    RecordingStudioLogs.aggregate_day!(Time.now.utc.to_date)
+    RecordingStudioViews::SiteCleanup.call(before: Time.current.utc + 1.second)
+    assert_equal 0, RecordingStudioViews::ViewLog.where(root_recording_id: nil).count
+  end
+
   private
+
+  def switch_root(root_recording)
+    patch "/recording_studio_root_switchable/v1/root_switch", params: {
+      scope: "all_workspaces",
+      root_switch: {
+        root_recording_id: root_recording.id,
+        return_to: "/"
+      }
+    }
+  ensure
+    restore_main_app
+  end
 
   def find_or_record(recordable, root, parent)
     RecordingStudio::Recording.find_by(recordable_type: recordable.class.name, recordable_id: recordable.id) ||
@@ -240,7 +382,9 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
   end
 
   def ingest_from_last_page
-    post_ingest(page_context, event_id: SecureRandom.uuid)
+    event_id = SecureRandom.uuid
+    post_ingest(page_context, event_id: event_id)
+    RecordingStudioViews::ViewLog.find_by(id: event_id)
   end
 
   def post_ingest(context, event_id:, user_agent: "Mozilla/5.0 Chrome/120.0", extra_headers: {})

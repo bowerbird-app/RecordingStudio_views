@@ -11,14 +11,10 @@ RecordingStudioViews.configure do |config|
   # config.site_tracking_enabled = false
   # config.site_page_resolver = ->(controller) { controller.current_site_page }
 
-  # Fail closed. Return :allow to record a view for this request actor.
-  config.tracking_access_policy = lambda do |_request, context, actor|
-    next :deny if context.site? && !RecordingStudioViews.configuration.site_tracking_enabled
-    next :allow if actor.present?
-    next :deny if %i[recording root].include?(context.kind)
-
-    :deny
-  end
+  # Tracking access uses Recording Studio Accessible when that gem is loaded.
+  # `authorized?(:view)` is the default. Set tracking_access_action to use
+  # `authorized_action?` instead, matching the viewed page.
+  # config.tracking_access_action = :"recording_studio_views.view"
 
   # Checked at render and again at ingestion. Disabled tracking creates no visitor identifiers.
   # config.consent_predicate = ->(_request) { true }
@@ -36,3 +32,5 @@ end
 # RecordingStudioLogs::RetentionCleanupJob
 # RecordingStudioViews::ReceiptCleanupJob
 # RecordingStudioLogs::PartitionMaintenanceJob  # only for --partitioned installs
+# Call RecordingStudioViews.delete_for_root when a root is removed.
+# RecordingStudioViews::SiteCleanup.call(before:) deletes aggregated site rows only.

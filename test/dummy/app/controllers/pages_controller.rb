@@ -6,6 +6,7 @@ class PagesController < ApplicationController
 
   def show
     @current_recording = recording_for(@page)
+    return unless authorize_viewable_recording!(@current_recording)
   end
 
   def new

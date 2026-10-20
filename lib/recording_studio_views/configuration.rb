@@ -13,7 +13,8 @@ module RecordingStudioViews
 
     attr_accessor :api_key, :enable_feature_x, :timeout, :hooks,
                   :recording_resolver, :root_page_resolver, :site_page_resolver,
-                  :root_ownership_policy, :tracking_access_policy, :consent_predicate,
+                  :root_ownership_policy, :tracking_access_policy, :tracking_access_action,
+                  :consent_predicate,
                   :actor_resolver, :visitor_token_digest_resolver, :skip_paths,
                   :bot_filter, :token_ttl, :site_tracking_enabled,
                   :excluded_controller_paths
@@ -31,7 +32,8 @@ module RecordingStudioViews
       @root_page_resolver = ->(controller) { default_named_resolver(:current_root_page, controller) }
       @site_page_resolver = ->(controller) { default_named_resolver(:current_site_page, controller) }
       @root_ownership_policy = ->(_controller, _root) { true }
-      @tracking_access_policy = ->(_request, _context, _actor) { :deny }
+      @tracking_access_action = nil
+      @tracking_access_policy = default_tracking_access_policy
       @consent_predicate = ->(_request) { true }
       @actor_resolver = ->(controller) { default_actor(controller) }
       @visitor_token_digest_resolver = nil
@@ -59,6 +61,12 @@ module RecordingStudioViews
     end
 
     private
+
+    def default_tracking_access_policy
+      lambda do |request, context, actor|
+        TrackingAccess.decision(request, context, actor)
+      end
+    end
 
     def default_recording_resolver(controller)
       return unless controller.respond_to?(:current_recording)
