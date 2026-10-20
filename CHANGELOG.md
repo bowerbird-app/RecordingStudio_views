@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-20
+
+### Added
+- Raw `ViewLog` rows store validated, truncated `utm_source`, `utm_medium`, `utm_term`, `utm_content`, and `utm_campaign` from the collector payload. The beacon reads those keys from the current page URL query string. The stored `path` stays normalized without a query string.
+- `os_version` from the existing `device_detector` parse of the user agent, next to `browser`, `os`, and `device_type`.
+
+### Changed
+- Admin Page views keeps date range and group by inline and puts every other filter in Admin's filter modal (`filter_presentation :modal, inline_count: 2`).
+- The Views hub "Page views" link uses Admin's secondary button style.
+
+### Upgrade notes
+- Generate and run the existing `add_ip_and_user_agent_to_recording_studio_views_view_logs` migration so hosts also receive `os_version` and the UTM columns (`Schema.add_request_columns!`).
+
 ## [0.7.0] - 2026-10-20
 
 ### Added

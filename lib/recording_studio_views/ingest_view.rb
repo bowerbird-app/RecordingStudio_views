@@ -38,7 +38,7 @@ module RecordingStudioViews
         path: ingest_path,
         actor: @actor,
         visitor_token_digest: @visitor_token_digest,
-        captured: RequestCapture.call(@request)
+        captured: RequestCapture.call(@request).merge(UtmCapture.call(@params))
       )
     end
 

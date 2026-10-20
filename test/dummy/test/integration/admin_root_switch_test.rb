@@ -50,6 +50,10 @@ class AdminRootSwitchTest < ActionDispatch::IntegrationTest
 
     get "/admin/sections/views"
     assert_response :success
+    assert_includes response.body, "Page views"
+    refute_match(/Page views[^<]*primary/i, response.body)
+    refute_includes response.body, "fp-button--primary"
+    assert_includes response.body, "fp-button--secondary"
 
     get "/admin/screens/views_page_views"
     assert_response :success
@@ -57,6 +61,9 @@ class AdminRootSwitchTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "/assets/turbo.min"
     assert_includes response.body, 'id="screen-table"'
     assert_includes response.body, "/admin/screens/views_page_views/table"
+    assert_includes response.body, 'id="screen-inline-filters-form"'
+    assert_includes response.body, 'data-recording-studio-admin--screen-filters-modal-filters-value="true"'
+    assert_includes response.body, "flat-pack--modal-filter"
   end
 
   private

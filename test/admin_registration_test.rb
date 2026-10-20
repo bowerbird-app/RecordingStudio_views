@@ -20,9 +20,11 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes section, 'key "views"'
     assert_includes section, 'widget "widgets.views.page_views_over_time", view_variant: :compact'
     assert_includes section, 'widget "widgets.views.total_views", view_variant: :compact'
-    assert_includes section, "style: :primary"
+    assert_includes section, "style: :secondary"
+    refute_includes section, "style: :primary"
     assert_includes screen, 'key "views_page_views"'
-    assert_includes screen, "filter_presentation :inline"
+    assert_includes screen, "filter_presentation :modal, inline_count: 2"
+    refute_includes screen, "filter_presentation :inline"
     assert_includes screen, "filter :date_range, field: :occurred_at"
     assert_includes screen, "filter :group_by, values: %i[day week month], default: :day"
     assert_includes screen, "Queries.screen_page_views_series"
@@ -36,6 +38,12 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes screen, "column :user_agent"
     assert_includes screen, "column :browser"
     assert_includes screen, "column :os"
+    assert_includes screen, "column :os_version"
+    assert_includes screen, "column :utm_source"
+    assert_includes screen, "column :utm_medium"
+    assert_includes screen, "column :utm_term"
+    assert_includes screen, "column :utm_content"
+    assert_includes screen, "column :utm_campaign"
     assert_includes screen, "column :device_type"
     assert_includes screen, "column :country"
     assert_includes screen, "column :region"

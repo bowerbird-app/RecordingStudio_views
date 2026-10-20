@@ -40,6 +40,30 @@ module RecordingStudioViews
           row.os
         end
 
+        def os_version_value(row, _context)
+          row.os_version
+        end
+
+        def utm_source_value(row, _context)
+          row.utm_source
+        end
+
+        def utm_medium_value(row, _context)
+          row.utm_medium
+        end
+
+        def utm_term_value(row, _context)
+          row.utm_term
+        end
+
+        def utm_content_value(row, _context)
+          row.utm_content
+        end
+
+        def utm_campaign_value(row, _context)
+          row.utm_campaign
+        end
+
         def device_type_value(row, _context)
           row.device_type
         end

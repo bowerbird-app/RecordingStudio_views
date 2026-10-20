@@ -69,6 +69,12 @@ module RecordingStudioViews
         browser: Configuration::DEVICE_FIELD_LIMIT,
         os: Configuration::DEVICE_FIELD_LIMIT,
         device_type: Configuration::DEVICE_FIELD_LIMIT,
+        os_version: Configuration::DEVICE_FIELD_LIMIT,
+        utm_source: Configuration::UTM_LIMIT,
+        utm_medium: Configuration::UTM_LIMIT,
+        utm_term: Configuration::UTM_LIMIT,
+        utm_content: Configuration::UTM_LIMIT,
+        utm_campaign: Configuration::UTM_LIMIT,
         country: Configuration::GEO_NAME_LIMIT,
         region: Configuration::GEO_NAME_LIMIT,
         city: Configuration::GEO_NAME_LIMIT
@@ -101,6 +107,12 @@ module RecordingStudioViews
       table.string :browser, limit: Configuration::DEVICE_FIELD_LIMIT
       table.string :os, limit: Configuration::DEVICE_FIELD_LIMIT
       table.string :device_type, limit: Configuration::DEVICE_FIELD_LIMIT
+      table.string :os_version, limit: Configuration::DEVICE_FIELD_LIMIT
+      table.string :utm_source, limit: Configuration::UTM_LIMIT
+      table.string :utm_medium, limit: Configuration::UTM_LIMIT
+      table.string :utm_term, limit: Configuration::UTM_LIMIT
+      table.string :utm_content, limit: Configuration::UTM_LIMIT
+      table.string :utm_campaign, limit: Configuration::UTM_LIMIT
       table.string :country, limit: Configuration::GEO_NAME_LIMIT
       table.string :region, limit: Configuration::GEO_NAME_LIMIT
       table.string :city, limit: Configuration::GEO_NAME_LIMIT

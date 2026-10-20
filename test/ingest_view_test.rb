@@ -154,7 +154,29 @@ class IngestViewTest < Minitest::Test
 
     assert_equal "Chrome", fields[:browser]
     assert_equal "Windows", fields[:os]
+    assert_equal "10", fields[:os_version]
     assert_equal "desktop", fields[:device_type]
+  end
+
+  def test_passes_validated_utm_from_params
+    fields = capture_write_view(
+      params: {
+        event_id: "11111111-1111-1111-1111-111111111111",
+        token: "unused",
+        path: "/site/about?utm_source=should-not-be-path",
+        utm_source: " google ",
+        utm_medium: "cpc",
+        utm_campaign: "spring",
+        utm_term: "a" * (RecordingStudioViews::Configuration::UTM_LIMIT + 5),
+        utm_content: ["nope"]
+      }
+    )[:captured]
+
+    assert_equal "google", fields[:utm_source]
+    assert_equal "cpc", fields[:utm_medium]
+    assert_equal "spring", fields[:utm_campaign]
+    assert_equal RecordingStudioViews::Configuration::UTM_LIMIT, fields[:utm_term].length
+    assert_nil fields[:utm_content]
   end
 
   def test_source_does_not_call_logs_finalize
@@ -185,9 +207,10 @@ class IngestViewTest < Minitest::Test
     end
     RecordingStudioViews::ContextToken.stub :read, site do
       RecordingStudioViews::WriteView.stub :call, writer do
+        extra_params = request_overrides.delete(:params)
         RecordingStudioViews::IngestView.call(
           request: request(**request_overrides),
-          params: {
+          params: extra_params || {
             event_id: "11111111-1111-1111-1111-111111111111",
             token: "unused",
             path: "/site/about"

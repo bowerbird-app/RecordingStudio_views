@@ -20,6 +20,11 @@ class CollectorJavascriptTest < Minitest::Test
     assert_includes source, "querySelectorAll(CONTEXT_SELECTOR)"
     assert_includes source, "awaitingVisible"
     assert_includes source, "postView(id, attempt + 1, payload)"
+    assert_includes source, "utmParams()"
+    assert_includes source, "utm_source"
+    assert_includes source, "utm_campaign"
+    assert_includes source, "window.location.pathname"
+    refute_includes source, "window.location.href"
     refute_includes source, "navigator.sendBeacon"
     refute_includes source, "unload"
   end

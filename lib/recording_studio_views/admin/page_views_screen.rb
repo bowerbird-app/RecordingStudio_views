@@ -27,7 +27,7 @@ module RecordingStudioViews
 
       query { |_context| Queries.view_logs }
 
-      filter_presentation :inline
+      filter_presentation :modal, inline_count: 2
       filter :date_range, field: :occurred_at, default: :last_30_days
       filter :group_by, values: %i[day week month], default: :day
       filter :root, options: -> { Queries.root_filter_options }, apply: ROOT_FILTER
@@ -65,6 +65,18 @@ module RecordingStudioViews
         column :browser, title: "Browser", sortable: false,
                          value: ->(row, context) { Queries.browser_value(row, context) }
         column :os, title: "OS", sortable: false, value: ->(row, context) { Queries.os_value(row, context) }
+        column :os_version, title: "OS version", sortable: false,
+                            value: ->(row, context) { Queries.os_version_value(row, context) }
+        column :utm_source, title: "UTM source", sortable: false,
+                            value: ->(row, context) { Queries.utm_source_value(row, context) }
+        column :utm_medium, title: "UTM medium", sortable: false,
+                            value: ->(row, context) { Queries.utm_medium_value(row, context) }
+        column :utm_term, title: "UTM term", sortable: false,
+                          value: ->(row, context) { Queries.utm_term_value(row, context) }
+        column :utm_content, title: "UTM content", sortable: false,
+                             value: ->(row, context) { Queries.utm_content_value(row, context) }
+        column :utm_campaign, title: "UTM campaign", sortable: false,
+                              value: ->(row, context) { Queries.utm_campaign_value(row, context) }
         column :device_type, title: "Device", sortable: false,
                              value: ->(row, context) { Queries.device_type_value(row, context) }
         column :country, title: "Country", sortable: false,

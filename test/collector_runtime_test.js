@@ -27,7 +27,7 @@ function runCollector(options) {
   };
   const windowObj = {
     Turbo: options.turbo === false ? undefined : {},
-    location: { pathname: options.pathname || "/pages/1" },
+    location: { pathname: options.pathname || "/pages/1", search: options.search || "" },
     crypto: { randomUUID: () => options.eventId || "11111111-1111-1111-1111-111111111111" },
     addEventListener: (name, fn) => {
       listeners[name] = listeners[name] || [];
@@ -53,6 +53,7 @@ function runCollector(options) {
     Promise,
     JSON,
     Date,
+    URLSearchParams,
     console
   };
   vm.runInNewContext(source, context);
@@ -113,6 +114,21 @@ async function main() {
   assert.ok(retry.posts.length >= 2, "retries after a failed post");
   const tokens = retry.posts.map((post) => post.token);
   assert.ok(tokens.every((token) => token === "token-two"), "retries reuse the captured token");
+
+  const utm = runCollector({
+    scripts: [second],
+    turbo: true,
+    pathname: "/pages/1",
+    search: "?utm_source=google&utm_medium=cpc&utm_campaign=spring&other=1"
+  });
+  utm.listeners["turbo:load"].forEach((fn) => fn());
+  await flush();
+  assert.strictEqual(utm.posts[0].body.path, "/pages/1", "path stays pathname without query");
+  assert.strictEqual(utm.posts[0].body.utm_source, "google");
+  assert.strictEqual(utm.posts[0].body.utm_medium, "cpc");
+  assert.strictEqual(utm.posts[0].body.utm_campaign, "spring");
+  assert.strictEqual(utm.posts[0].body.other, undefined, "non-utm query keys are not sent");
+
   console.log("collector runtime assertions passed");
 }
 

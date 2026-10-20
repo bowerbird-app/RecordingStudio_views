@@ -6,7 +6,11 @@ class AddIpAndUserAgentToRecordingStudioViewsViewLogs < ActiveRecord::Migration[
   end
 
   def down
-    %i[longitude latitude city region country device_type os browser user_agent ip].each do |column|
+    %i[
+      longitude latitude city region country
+      utm_campaign utm_content utm_term utm_medium utm_source
+      os_version device_type os browser user_agent ip
+    ].each do |column|
       next unless column_exists?(:recording_studio_views_view_logs, column)
 
       remove_column :recording_studio_views_view_logs, column

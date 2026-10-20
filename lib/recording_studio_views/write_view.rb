@@ -2,9 +2,10 @@
 
 module RecordingStudioViews
   class WriteView < RecordingStudio::Services::BaseService
-    CAPTURED_KEYS = %i[
-      ip user_agent browser os device_type country region city latitude longitude
-    ].freeze
+    CAPTURED_KEYS = (
+      %i[ip user_agent browser os os_version device_type country region city latitude longitude] +
+      Configuration::UTM_KEYS
+    ).freeze
 
     def initialize(event_id:, context:, path:, actor: nil, visitor_token_digest: nil, ip: nil, user_agent: nil,
                    captured: {})
@@ -85,7 +86,13 @@ module RecordingStudioViews
         user_agent: stored_user_agent,
         browser: captured_value(:browser) || device[:browser],
         os: captured_value(:os) || device[:os],
+        os_version: captured_value(:os_version) || device[:os_version],
         device_type: captured_value(:device_type) || device[:device_type],
+        utm_source: stored_utm(:utm_source),
+        utm_medium: stored_utm(:utm_medium),
+        utm_term: stored_utm(:utm_term),
+        utm_content: stored_utm(:utm_content),
+        utm_campaign: stored_utm(:utm_campaign),
         country: captured_value(:country),
         region: captured_value(:region),
         city: captured_value(:city),
@@ -108,6 +115,10 @@ module RecordingStudioViews
 
     def device
       @device ||= DeviceParser.call(stored_user_agent)
+    end
+
+    def stored_utm(key)
+      UtmCapture.sanitize(captured_value(key))
     end
 
     def captured_value(key)

@@ -61,9 +61,9 @@ Delivery is best effort. The collector uses same-origin `fetch` with credentials
 
 `POST /recording_studio_views/views` checks method, content type, payload size, same-origin, and CSRF. It verifies the token purpose, target, and expiry, re-resolves the Recording or root, checks `:viewable`, then runs the host tracking-access policy for the current request actor. When Recording Studio Accessible is loaded, the default policy calls `RecordingStudioAccessible.authorized?(actor:, recording:, role: :view)`, the same check a private page uses. Set `tracking_access_action` to use `authorized_action?` instead when the page uses audiences (for example anonymous public). Accessible stays optional, the same `defined?` pattern as Admin. Signed context is not proof of a human view and is not authorization. Deleted or now-private content is not trackable with an old token. Anonymous views store no actor. Browser-supplied user ids are ignored.
 
-Raw model `RecordingStudioViews::ViewLog`. Fields: browser event UUID `id`, `occurred_at` (server acceptance, UTC), `arrived_at`, `root_recording_id`, `recording_id`, `resource_type`, `page_key`, normalized `path` (no query or fragment), optional actor, optional `visitor_token_digest` (off by default), masked `ip`, truncated `user_agent`, `browser`, `os`, `device_type`, `country`, `region`, `city`, `latitude`, `longitude`, timestamps. Path is descriptive only. The gem does not store referrer URLs or query strings.
+Raw model `RecordingStudioViews::ViewLog`. Fields: browser event UUID `id`, `occurred_at` (server acceptance, UTC), `arrived_at`, `root_recording_id`, `recording_id`, `resource_type`, `page_key`, normalized `path` (no query or fragment), optional actor, optional `visitor_token_digest` (off by default), masked `ip`, truncated `user_agent`, `browser`, `os`, `os_version`, `device_type`, `utm_source`, `utm_medium`, `utm_term`, `utm_content`, `utm_campaign`, `country`, `region`, `city`, `latitude`, `longitude`, timestamps. Path is descriptive only. The gem does not store referrer URLs or the raw query string. The collector reads `utm_source`, `utm_medium`, `utm_term`, `utm_content`, and `utm_campaign` from the current page URL and the server stores those five fields after validation and truncation.
 
-`ip` comes from Rails `request.remote_ip` on the collector POST and is masked before it is stored: IPv4 last octet is zeroed (`1.2.3.4` → `1.2.3.0`); IPv6 keeps the /48. Masking uses stdlib `IPAddr` only. `config.store_ip` defaults to true; set it to `false` to store nil and skip the address. The full IP is never written to the database, logs, or job arguments. `user_agent` is the raw `User-Agent` header, truncated to 1024 characters. `browser`, `os`, and `device_type` are parsed from that string with `device_detector` at capture time. Geo fields are filled from a local MaxMind lookup of the full IP in memory, then only the masked IP is persisted. Any of these fields may be nil when missing.
+`ip` comes from Rails `request.remote_ip` on the collector POST and is masked before it is stored: IPv4 last octet is zeroed (`1.2.3.4` → `1.2.3.0`); IPv6 keeps the /48. Masking uses stdlib `IPAddr` only. `config.store_ip` defaults to true; set it to `false` to store nil and skip the address. The full IP is never written to the database, logs, or job arguments. `user_agent` is the raw `User-Agent` header, truncated to 1024 characters. `browser`, `os`, `os_version`, and `device_type` are parsed from that string with `device_detector` at capture time. Geo fields are filled from a local MaxMind lookup of the full IP in memory, then only the masked IP is persisted. Any of these fields may be nil when missing.
 
 Receipts (`recording_studio_views_view_receipts`) claim the event UUID in the same transaction as the view insert. A valid duplicate returns success with no new row. Conflicting reuse of an event UUID is rejected. A failed insert rolls back the claim. Receipts expire after 24 hours (`RecordingStudioViews::ReceiptCleanupJob`). They are bookkeeping, not sessions.
 
@@ -85,7 +85,7 @@ recording_studio_admin_sections do
 end
 ```
 
-The hub shows a UTC daily chart from `DailyViewSummary` (`widgets.views.page_views_over_time`) and an all-time total from daily summaries plus raw rows that have not been aggregated. Page views is a table of `ViewLog` rows. Screen filters render inline. Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
+The hub shows a UTC daily chart from `DailyViewSummary` (`widgets.views.page_views_over_time`) and an all-time total from daily summaries plus raw rows that have not been aggregated. Page views is a table of `ViewLog` rows. Date range and group by stay inline; other filters use Admin's filter modal (`filter_presentation :modal, inline_count: 2`). Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
 
 ## Retention and deletion
 
@@ -168,7 +168,7 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 | Trashable       | dummy GitHub tag `v0.11.0` (`require: false`; query-only via Accessible) |
 | Root Switchable | dummy GitHub tag `v0.9.0` |
 | Logs            | dummy GitHub tag `v0.4.0` |
-| device_detector | runtime (browser / OS / device type) |
+| device_detector | runtime (browser / OS / OS version / device type) |
 | maxmind-db      | runtime (local GeoLite2 City lookup only) |
 | Admin           | dummy GitHub tag `v2.3.0` (optional for hosts) |
 | FlatPack        | dummy GitHub tag `v0.1.213` |

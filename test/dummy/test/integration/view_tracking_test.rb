@@ -120,6 +120,7 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     assert_equal "81.2.69.0", view.ip
     assert_equal "Chrome", view.browser
     assert_equal "Windows", view.os
+    assert_equal "10", view.os_version
     assert_equal "desktop", view.device_type
     assert_equal "United Kingdom", view.country
     assert_equal "England", view.region
@@ -144,6 +145,32 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     assert_nil view.country
     assert_nil view.city
     assert_nil view.latitude
+  end
+
+  test "collector stores utm fields and keeps path without query" do
+    sign_in @user
+    get page_path(@page)
+    event_id = SecureRandom.uuid
+    post_ingest(
+      page_context,
+      event_id: event_id,
+      extra_params: {
+        path: "#{page_path(@page)}?utm_source=from-path&other=1",
+        utm_source: " google ",
+        utm_medium: "cpc",
+        utm_term: "kits",
+        utm_content: "hero",
+        utm_campaign: "spring"
+      }
+    )
+    view = RecordingStudioViews::ViewLog.find(event_id)
+    assert_equal page_path(@page), view.path
+    refute_includes view.path, "?"
+    assert_equal "google", view.utm_source
+    assert_equal "cpc", view.utm_medium
+    assert_equal "kits", view.utm_term
+    assert_equal "hero", view.utm_content
+    assert_equal "spring", view.utm_campaign
   end
 
   test "disabled types skipped pages consent bots and policy denials create no views" do
@@ -478,9 +505,9 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     RecordingStudioViews::ViewLog.find_by(id: event_id)
   end
 
-  def post_ingest(context, event_id:, user_agent: "Mozilla/5.0 Chrome/120.0", extra_headers: {})
+  def post_ingest(context, event_id:, user_agent: "Mozilla/5.0 Chrome/120.0", extra_headers: {}, extra_params: {})
     post "/recording_studio_views/views",
-         params: { event_id: event_id, token: context["token"], path: context_path },
+         params: { event_id: event_id, token: context["token"], path: context_path }.merge(extra_params),
          as: :json,
          headers: ingest_headers.merge("HTTP_USER_AGENT" => user_agent).merge(extra_headers)
   ensure

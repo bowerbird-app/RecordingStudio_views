@@ -14,6 +14,8 @@ module RecordingStudioViews
     USER_AGENT_LIMIT = 1_024
     DEVICE_FIELD_LIMIT = 128
     GEO_NAME_LIMIT = 128
+    UTM_LIMIT = 255
+    UTM_KEYS = %i[utm_source utm_medium utm_term utm_content utm_campaign].freeze
 
     attr_accessor :api_key, :enable_feature_x, :timeout, :hooks,
                   :recording_resolver, :root_page_resolver, :site_page_resolver,

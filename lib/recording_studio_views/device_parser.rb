@@ -13,6 +13,7 @@ module RecordingStudioViews
       {
         browser: truncate(client.name),
         os: truncate(client.os_name),
+        os_version: truncate(client.os_full_version),
         device_type: truncate(client.device_type)
       }
     rescue StandardError
@@ -20,7 +21,7 @@ module RecordingStudioViews
     end
 
     def empty
-      { browser: nil, os: nil, device_type: nil }
+      { browser: nil, os: nil, os_version: nil, device_type: nil }
     end
 
     def truncate(value)

@@ -34,6 +34,22 @@ class ViewsAdminTest < ActiveSupport::TestCase
     routes = File.read(Rails.root.join("config/routes.rb"))
     assert_includes admin_root, "section :views"
     assert_includes routes, "recording_studio_admin_for :admin, at: \"/admin\", root_section: :views"
+    screen = RecordingStudioViews::Admin::PageViewsScreen
+    assert_equal :modal, screen.filter_presentation
+    assert_equal 2, screen.inline_filter_count
+    filter_keys = screen.filters_value.map(&:key)
+    assert_equal %i[date_range group_by], filter_keys.first(2)
+    assert_includes filter_keys, :root
+    assert_includes filter_keys, :resource_type
+    assert_includes filter_keys, :visit_kind
+    table_filter_keys = screen.table_value.filters.map(&:key)
+    assert_includes table_filter_keys, :page_key
+    assert_includes table_filter_keys, :path
+    refute_includes table_filter_keys, :date_range
+    refute_includes table_filter_keys, :group_by
+    section = File.read(RecordingStudioViews::Engine.root.join("lib/recording_studio_views/admin/section.rb"))
+    assert_includes section, "style: :secondary"
+    refute_includes section, "style: :primary"
   end
 
   test "table filters match root resource type page key and visit kind" do
@@ -222,6 +238,12 @@ class ViewsAdminTest < ActiveSupport::TestCase
       user_agent: "Mozilla/5.0",
       browser: "Chrome",
       os: "Windows",
+      os_version: "10",
+      utm_source: "google",
+      utm_medium: "cpc",
+      utm_term: "kits",
+      utm_content: "hero",
+      utm_campaign: "spring",
       device_type: "desktop",
       country: "United Kingdom",
       region: "England",
@@ -235,6 +257,12 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_equal "Mozilla/5.0", queries.user_agent_value(row, nil)
     assert_equal "Chrome", queries.browser_value(row, nil)
     assert_equal "Windows", queries.os_value(row, nil)
+    assert_equal "10", queries.os_version_value(row, nil)
+    assert_equal "google", queries.utm_source_value(row, nil)
+    assert_equal "cpc", queries.utm_medium_value(row, nil)
+    assert_equal "kits", queries.utm_term_value(row, nil)
+    assert_equal "hero", queries.utm_content_value(row, nil)
+    assert_equal "spring", queries.utm_campaign_value(row, nil)
     assert_equal "desktop", queries.device_type_value(row, nil)
     assert_equal "United Kingdom", queries.country_value(row, nil)
     assert_equal "England", queries.region_value(row, nil)

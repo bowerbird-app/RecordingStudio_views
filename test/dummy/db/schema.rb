@@ -188,6 +188,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_030500) do
     t.string "user_agent", limit: 1024
     t.string "browser", limit: 128
     t.string "os", limit: 128
+    t.string "os_version", limit: 128
+    t.string "utm_source", limit: 255
+    t.string "utm_medium", limit: 255
+    t.string "utm_term", limit: 255
+    t.string "utm_content", limit: 255
+    t.string "utm_campaign", limit: 255
     t.string "device_type", limit: 128
     t.string "country", limit: 128
     t.string "region", limit: 128

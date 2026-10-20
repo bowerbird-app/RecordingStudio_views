@@ -14,6 +14,7 @@ class DeviceParserTest < Minitest::Test
 
     assert_equal "Chrome", result[:browser]
     assert_equal "Windows", result[:os]
+    assert_equal "10", result[:os_version]
     assert_equal "desktop", result[:device_type]
   end
 
@@ -22,6 +23,7 @@ class DeviceParserTest < Minitest::Test
 
     assert_equal "Mobile Safari", result[:browser]
     assert_equal "iOS", result[:os]
+    assert_equal "17.0", result[:os_version]
     assert_equal "smartphone", result[:device_type]
   end
 
@@ -30,6 +32,7 @@ class DeviceParserTest < Minitest::Test
 
     assert_nil result[:browser]
     assert_nil result[:os]
+    assert_nil result[:os_version]
     assert_nil result[:device_type]
   end
 
@@ -38,6 +41,7 @@ class DeviceParserTest < Minitest::Test
 
     assert_nil result[:browser]
     assert_nil result[:os]
+    assert_nil result[:os_version]
     assert_nil result[:device_type]
   end
 end
