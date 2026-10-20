@@ -102,27 +102,16 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_equal [matching.id], scoped.pluck(:id)
   end
 
-  test "chart series uses daily summary counts by UTC day" do
+  test "chart series counts raw view logs by UTC day when summaries are missing" do
     today = Time.now.utc.to_date
     older = today - 2
-    RecordingStudioViews::DailyViewSummary.create!(
-      day: older,
-      page_key: "docs.getting-started",
-      resource_type: "Page",
-      views: 4
-    )
-    RecordingStudioViews::DailyViewSummary.create!(
-      day: today,
-      page_key: "docs.getting-started",
-      resource_type: "Page",
-      views: 3
-    )
-    RecordingStudioViews::DailyViewSummary.create!(
-      day: today,
-      page_key: "site.about",
-      resource_type: "Site",
-      views: 2
-    )
+    insert_view(occurred_at: Time.utc(older.year, older.month, older.day, 23, 30),
+                arrived_at: Time.utc(older.year, older.month, older.day, 23, 30))
+    insert_view(occurred_at: Time.utc(today.year, today.month, today.day, 0, 15),
+                arrived_at: Time.utc(today.year, today.month, today.day, 0, 15))
+    insert_view(occurred_at: Time.utc(today.year, today.month, today.day, 18),
+                arrived_at: Time.utc(today.year, today.month, today.day, 18))
+    assert_equal 0, RecordingStudioViews::DailyViewSummary.count
 
     series = RecordingStudioViews::Admin::Queries.page_views_over_time_series(
       day_range: older..today
@@ -130,9 +119,9 @@ class ViewsAdminTest < ActiveSupport::TestCase
     points = series.first.fetch(:data).index_by { |point| point.fetch(:x) }
 
     assert_equal "Page views", series.first.fetch(:name)
-    assert_equal 4, points.fetch(older).fetch(:y)
+    assert_equal 1, points.fetch(older).fetch(:y)
     assert_equal 0, points.fetch(older + 1).fetch(:y)
-    assert_equal 5, points.fetch(today).fetch(:y)
+    assert_equal 2, points.fetch(today).fetch(:y)
   end
 
   test "total views counts summaries plus unaggregated raw rows without double counting" do

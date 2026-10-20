@@ -9,7 +9,7 @@ module RecordingStudioViews
       ) do
         type :chart
         title "Page views over time"
-        info "Daily view counts in UTC from the views/page_views summary."
+        info "Daily views in UTC from raw view logs."
         chart_type :line
         hide_change
         series { Queries.page_views_over_time_series }
