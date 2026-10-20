@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `bin/rails recording_studio_views:geoip:update` downloads GeoLite2 City from MaxMind into `config.geoip_database_path` using `config.maxmind_account_id` and `config.maxmind_license_key` (HTTP basic auth, stdlib only). `config.geoip_max_age` (default 7 days) skips a fresh file unless `FORCE=1`. A successful update resets the in-memory GeoLookup reader in that process.
 - Admin Page views lists `ip`, `user_agent`, device, and geo columns on the existing raw-rows table.
 - Hosts pick up the columns with `bin/rails generate recording_studio_views:migrations` then `db:migrate`. New installs also get them from `Schema.create_view_logs!`.
+- Accept `recording_studio_logs` `>= 0.4.0`, `< 0.6` (dummy pin `v0.5.0`).
 
 ### Upgrade notes
 - Generate and run the `add_ip_and_user_agent_to_recording_studio_views_view_logs` migration (also adds device and geo columns).

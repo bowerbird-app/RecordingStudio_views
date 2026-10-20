@@ -7,7 +7,7 @@ gemspec
 
 # recording_studio is not published to RubyGems; resolve the gemspec pin from GitHub.
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.7.0"
-gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.4.0"
+gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.5.0"
 
 gem "devise"
 gem "puma"
