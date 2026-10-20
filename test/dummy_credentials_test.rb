@@ -2,38 +2,17 @@
 
 require "test_helper"
 require "yaml"
-require "digest"
 require "active_support/encrypted_file"
 
 class DummyCredentialsTest < Minitest::Test
   PLACEHOLDER = "dev_placeholder"
-  SHARED_CREDENTIALS = "test/dummy/config/credentials.yml.enc"
-  DEVELOPMENT_CREDENTIALS = "test/dummy/config/credentials/development.yml.enc"
-  PRODUCTION_CREDENTIALS = "test/dummy/config/credentials/production.yml.enc"
-  SHARED_SHA = "2526ea339b8500895f0030936c9f3aa1cc62dd18d56be399ed6bcab8c38003cf"
-  DEVELOPMENT_SHA = "15a5349d8546250c74a8d4f140bb8b1b24dae10827faf08836126d542ab3ed92"
-  PRODUCTION_SHA = "d21f61586a9e207fa56b91e0693c84bf52040d4446409105bf07f999d971fa7c"
 
-  def test_only_dummy_credentials_files_are_committed
+  def test_only_dummy_credentials_file_is_committed
     tracked = Dir.chdir(File.expand_path("..", __dir__)) do
       `git ls-files -- '*.yml.enc'`.split("\n").reject(&:empty?)
     end
 
-    assert_equal [SHARED_CREDENTIALS, DEVELOPMENT_CREDENTIALS, PRODUCTION_CREDENTIALS].sort, tracked.sort
-  end
-
-  def test_env_credentials_match_supplied_ciphertext
-    root = File.expand_path("..", __dir__)
-    shared = File.join(root, SHARED_CREDENTIALS)
-    development = File.join(root, DEVELOPMENT_CREDENTIALS)
-    production = File.join(root, PRODUCTION_CREDENTIALS)
-
-    assert File.exist?(shared)
-    assert File.exist?(development)
-    assert File.exist?(production)
-    assert_equal SHARED_SHA, Digest::SHA256.file(shared).hexdigest
-    assert_equal DEVELOPMENT_SHA, Digest::SHA256.file(development).hexdigest
-    assert_equal PRODUCTION_SHA, Digest::SHA256.file(production).hexdigest
+    assert_equal ["test/dummy/config/credentials.yml.enc"], tracked
   end
 
   def test_encrypted_credentials_file_is_present

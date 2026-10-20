@@ -132,7 +132,7 @@ Render only target context into shared caches. Token expiry must fit the cache l
 
 ## Dummy app
 
-The dummy host at `test/dummy` proves the gem. It has two trackable pages under different workspace roots, shared-layout tracking, a named workspace search page, explicit site pages (`site.home`, `site.sign_in`, `site.sign_up`, `site.about`), anonymous public views through Accessible audiences, and authenticated private pages through `authorized_action?`. It mounts Recording Studio Admin at `/admin` with the Views section enabled. Operation is non-partitioned by default. Partitioned insert coverage lives in the test suite.
+The dummy host at `test/dummy` proves the gem. It has two trackable pages under different workspace roots, shared-layout tracking, a named workspace search page, explicit site pages (`site.home`, `site.sign_in`, `site.sign_up`, `site.about`), anonymous public views through Accessible audiences, and authenticated private pages through `authorized_action?`. It mounts Recording Studio Admin at `/admin` with the Views section enabled. Operation is non-partitioned by default. Partitioned insert coverage lives in the test suite. Dummy uses the shared `test/dummy/config/credentials.yml.enc` (no per-environment credential files). MaxMind keys live in that file; without the master key (as in CI) geo stays off.
 
 Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Password`.
 

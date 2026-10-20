@@ -18,13 +18,6 @@ class GeoipConfigTest < ActiveSupport::TestCase
     assert_includes source, "if account_id.present? && license_key.present?"
   end
 
-  test "application falls back to shared credentials without env keys" do
-    source = File.read(Rails.root.join("config/application.rb"))
-
-    assert_includes source, 'config.root.join("config/credentials.yml.enc")'
-    assert_includes source, 'config.root.join("config/credentials/#{Rails.env}.key")'
-  end
-
   test "geoip update rake task is loaded" do
     Rails.application.load_tasks
     assert Rake::Task.task_defined?("recording_studio_views:geoip:update")

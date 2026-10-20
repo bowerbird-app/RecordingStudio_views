@@ -23,14 +23,6 @@ module Dummy
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
 
-    # Env-specific credentials need config/credentials/#{Rails.env}.key.
-    # CI and test only have the shared master.key, so keep credentials.yml.enc.
-    env_credentials_key = config.root.join("config/credentials/#{Rails.env}.key")
-    unless env_credentials_key.exist?
-      config.credentials.content_path = config.root.join("config/credentials.yml.enc")
-      config.credentials.key_path = config.root.join("config/master.key")
-    end
-
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
