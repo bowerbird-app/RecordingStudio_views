@@ -26,8 +26,10 @@ RecordingStudioViews.configure do |config|
   # config.store_ip = true
 
   # Local MaxMind GeoLite2 City .mmdb only. Leave unset to skip geo (geo_enabled is then false).
-  # The gem does not ship this file and does not call a geocoding service.
-  # config.geoip_database_path = Rails.root.join("db/GeoLite2-City.mmdb")
+  # The gem does not ship this file. Fetch it with `bin/rails recording_studio_views:geoip:update`.
+  config.geoip_database_path = Rails.root.join("db/GeoLite2-City.mmdb")
+  config.maxmind_account_id = Rails.application.credentials.dig(:maxmind, :account_id)
+  config.maxmind_license_key = Rails.application.credentials.dig(:maxmind, :license_key)
 
   # Shared roots need an explicit ownership check.
   # config.root_ownership_policy = ->(_controller, _root) { true }

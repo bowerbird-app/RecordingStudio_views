@@ -26,14 +26,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Raw `ViewLog` rows store a masked visitor `ip` (from `request.remote_ip`) and the raw `User-Agent` header, truncated to 1024 characters. IPv4 zeros the last octet; IPv6 zeros the last 80 bits (`IPAddr` /48). Capture happens on the collector POST. Summary tables are unchanged.
 - `config.store_ip` (default `true`) turns IP storage off entirely. When off, `ip` is nil. The full address is never persisted, logged, or passed as a job argument.
 - Device fields `browser`, `os`, and `device_type` from the `device_detector` gem, parsed server-side from the stored user agent at capture time.
-- Optional local geo: `country`, `region`, `city`, `latitude`, `longitude` via official `maxmind-db` against a host-supplied MaxMind GeoLite2 City `.mmdb`. Lookup uses the full IP in memory, then only the masked IP is stored. `geo_enabled` is true only when `geoip_database_path` is set. Missing file or lookup failure stores nil and does not raise. The gem does not bundle the database and does not call a geocoding HTTP service (Geocoder is not used; it cannot read `maxmind-db`).
+- Optional local geo: `country`, `region`, `city`, `latitude`, `longitude` via official `maxmind-db` against a host-supplied MaxMind GeoLite2 City `.mmdb`. Lookup uses the full IP in memory, then only the masked IP is stored. `geo_enabled` is true only when `geoip_database_path` is set. Missing file or lookup failure stores nil and does not raise. The gem does not bundle the database and does not call a geocoding HTTP service at request time (Geocoder is not used; it cannot read `maxmind-db`).
+- `bin/rails recording_studio_views:geoip:update` downloads GeoLite2 City from MaxMind into `config.geoip_database_path` using `config.maxmind_account_id` and `config.maxmind_license_key` (HTTP basic auth, stdlib only). `config.geoip_max_age` (default 7 days) skips a fresh file unless `FORCE=1`. A successful update resets the in-memory GeoLookup reader in that process.
 - Admin Page views lists `ip`, `user_agent`, device, and geo columns on the existing raw-rows table.
 - Hosts pick up the columns with `bin/rails generate recording_studio_views:migrations` then `db:migrate`. New installs also get them from `Schema.create_view_logs!`.
 
 ### Upgrade notes
 - Generate and run the `add_ip_and_user_agent_to_recording_studio_views_view_logs` migration (also adds device and geo columns).
 - Set `config.store_ip = false` if the host must not store even a masked IP.
-- To store city-level geo, download GeoLite2 City, keep it updated under MaxMind's license, give attribution, and set `config.geoip_database_path`.
+- To store city-level geo, set `config.geoip_database_path`, `config.maxmind_account_id`, and `config.maxmind_license_key`, then run `bin/rails recording_studio_views:geoip:update` on deploy (no-op when fresh) and weekly. Restart after an update so other processes reopen the file. Keep MaxMind's license and attribution.
 
 ## [0.6.0] - 2026-10-20
 

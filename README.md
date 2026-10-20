@@ -108,17 +108,23 @@ Default exclusions: the ingestion endpoint, health checks, assets, skipped pages
 
 ## GeoLite2 City
 
-Geo is off until the host sets a local MaxMind database path. Views does not ship a `.mmdb` and does not call MaxMind or any other geocoding API.
+Geo is off until the host sets a local MaxMind database path. Views does not ship a `.mmdb` and does not call MaxMind or any other geocoding API at request time.
 
-1. Create a free [MaxMind account](https://www.maxmind.com/en/geolite2/signup) and download **GeoLite2 City**.
-2. Keep the file updated. MaxMind's license requires timely updates and [attribution](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data): *This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.*
-3. Point Views at the file (do not commit the paid/licensed database into the gem):
+1. Create a free [MaxMind account](https://www.maxmind.com/en/geolite2/signup). Put the account id and license key in Rails credentials as `maxmind.account_id` and `maxmind.license_key`.
+2. Point Views at the file and those credentials (do not commit the licensed database into the gem):
 
 ```ruby
 RecordingStudioViews.configure do |config|
   config.geoip_database_path = Rails.root.join("db/GeoLite2-City.mmdb")
+  config.maxmind_account_id = Rails.application.credentials.dig(:maxmind, :account_id)
+  config.maxmind_license_key = Rails.application.credentials.dig(:maxmind, :license_key)
 end
 ```
+
+3. Fetch or refresh the database with `bin/rails recording_studio_views:geoip:update`. Run that in the deploy / pre-deploy step; it is a no-op when the file exists and is younger than `config.geoip_max_age` (default 7 days). Set `FORCE=1` to download anyway.
+4. Schedule the same task weekly (Solid Queue recurring or cron). After an update, restart app processes so they reopen the new file.
+
+MaxMind's license requires timely updates and [attribution](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data): *This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.*
 
 `RecordingStudioViews.config.geoip_database_path` is the same setting. `geo_enabled` is true only when that path is set. If the file is missing or a lookup fails, geo columns stay nil.
 
