@@ -2,14 +2,20 @@
 
 module RecordingStudioViews
   class WriteView < RecordingStudio::Services::BaseService
-    def initialize(event_id:, context:, path:, actor: nil, visitor_token_digest: nil, ip: nil, user_agent: nil)
+    CAPTURED_KEYS = %i[
+      ip user_agent browser os device_type country region city latitude longitude
+    ].freeze
+
+    def initialize(event_id:, context:, path:, actor: nil, visitor_token_digest: nil, ip: nil, user_agent: nil,
+                   captured: {})
       @event_id = event_id
       @context = context
       @path = path
       @actor = actor
       @visitor_token_digest = visitor_token_digest
-      @ip = ip
-      @user_agent = user_agent
+      @captured = captured.to_h.symbolize_keys
+      @captured[:ip] = ip unless ip.nil?
+      @captured[:user_agent] = user_agent unless user_agent.nil?
       super()
     end
 
@@ -69,22 +75,45 @@ module RecordingStudioViews
         path: PathNormalizer.call(@path) || "/",
         actor_type: actor_type,
         actor_id: actor_id,
-        visitor_token_digest: @visitor_token_digest,
+        visitor_token_digest: @visitor_token_digest
+      }.merge(request_columns)
+    end
+
+    def request_columns
+      {
         ip: stored_ip,
-        user_agent: stored_user_agent
+        user_agent: stored_user_agent,
+        browser: captured_value(:browser) || device[:browser],
+        os: captured_value(:os) || device[:os],
+        device_type: captured_value(:device_type) || device[:device_type],
+        country: captured_value(:country),
+        region: captured_value(:region),
+        city: captured_value(:city),
+        latitude: captured_value(:latitude),
+        longitude: captured_value(:longitude)
       }
     end
 
     def stored_ip
       return unless RecordingStudioViews.configuration.store_ip
 
-      IpMask.call(@ip)
+      IpMask.call(@captured[:ip])
     end
 
     def stored_user_agent
-      return if @user_agent.blank?
+      return if @captured[:user_agent].blank?
 
-      @user_agent.to_s[0, Configuration::USER_AGENT_LIMIT]
+      @captured[:user_agent].to_s[0, Configuration::USER_AGENT_LIMIT]
+    end
+
+    def device
+      @device ||= DeviceParser.call(stored_user_agent)
+    end
+
+    def captured_value(key)
+      return unless CAPTURED_KEYS.include?(key)
+
+      @captured[key]
     end
 
     def actor_type

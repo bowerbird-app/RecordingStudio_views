@@ -25,6 +25,10 @@ RecordingStudioViews.configure do |config|
   # Store a masked visitor IP on each raw view (IPv4 last octet zeroed, IPv6 /48). Default true.
   # config.store_ip = true
 
+  # Local MaxMind GeoLite2 City .mmdb only. Leave unset to skip geo (geo_enabled is then false).
+  # The gem does not ship this file and does not call a geocoding service.
+  # config.geoip_database_path = Rails.root.join("db/GeoLite2-City.mmdb")
+
   # Shared roots need an explicit ownership check.
   # config.root_ownership_policy = ->(_controller, _root) { true }
 end

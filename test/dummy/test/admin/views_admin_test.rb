@@ -216,12 +216,31 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_equal({ x: today, y: 2 }, points.fetch(today))
   end
 
-  test "raw table values include ip and user agent" do
-    row = insert_view(ip: "1.2.3.0", user_agent: "Mozilla/5.0")
+  test "raw table values include ip user agent device and geo" do
+    row = insert_view(
+      ip: "1.2.3.0",
+      user_agent: "Mozilla/5.0",
+      browser: "Chrome",
+      os: "Windows",
+      device_type: "desktop",
+      country: "United Kingdom",
+      region: "England",
+      city: "London",
+      latitude: 51.5142,
+      longitude: -0.0931
+    )
     queries = RecordingStudioViews::Admin::Queries
 
     assert_equal "1.2.3.0", queries.ip_value(row, nil)
     assert_equal "Mozilla/5.0", queries.user_agent_value(row, nil)
+    assert_equal "Chrome", queries.browser_value(row, nil)
+    assert_equal "Windows", queries.os_value(row, nil)
+    assert_equal "desktop", queries.device_type_value(row, nil)
+    assert_equal "United Kingdom", queries.country_value(row, nil)
+    assert_equal "England", queries.region_value(row, nil)
+    assert_equal "London", queries.city_value(row, nil)
+    assert_in_delta 51.5142, queries.latitude_value(row, nil), 0.0001
+    assert_in_delta(-0.0931, queries.longitude_value(row, nil), 0.0001)
   end
 
   private

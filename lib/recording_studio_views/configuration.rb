@@ -12,6 +12,8 @@ module RecordingStudioViews
     ACTOR_TYPE_LIMIT = 128
     IP_LIMIT = 64
     USER_AGENT_LIMIT = 1_024
+    DEVICE_FIELD_LIMIT = 128
+    GEO_NAME_LIMIT = 128
 
     attr_accessor :api_key, :enable_feature_x, :timeout, :hooks,
                   :recording_resolver, :root_page_resolver, :site_page_resolver,
@@ -19,7 +21,7 @@ module RecordingStudioViews
                   :consent_predicate,
                   :actor_resolver, :visitor_token_digest_resolver, :skip_paths,
                   :bot_filter, :token_ttl, :site_tracking_enabled,
-                  :excluded_controller_paths, :store_ip
+                  :excluded_controller_paths, :store_ip, :geoip_database_path
 
     def initialize
       @api_key = ENV.fetch("RECORDING_STUDIO_VIEWS_API_KEY", nil)
@@ -41,7 +43,13 @@ module RecordingStudioViews
       @visitor_token_digest_resolver = nil
       @bot_filter = BotFilter
       @store_ip = true
+      @geoip_database_path = nil
     end
+
+    def geo_enabled?
+      geoip_database_path.present?
+    end
+    alias geo_enabled geo_enabled?
 
     def to_h
       {
@@ -51,6 +59,8 @@ module RecordingStudioViews
         token_ttl: token_ttl,
         site_tracking_enabled: site_tracking_enabled,
         store_ip: store_ip,
+        geoip_database_path: geoip_database_path,
+        geo_enabled: geo_enabled,
         hooks_registered: hooks.instance_variable_get(:@registry).transform_values(&:size)
       }
     end

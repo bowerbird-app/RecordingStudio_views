@@ -100,6 +100,52 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     RecordingStudioViews.configuration.store_ip = previous
   end
 
+  test "collector stores device and local geo without the full ip" do
+    previous_path = RecordingStudioViews.configuration.geoip_database_path
+    RecordingStudioViews.configuration.geoip_database_path =
+      RecordingStudioViews::Engine.root.join("test/fixtures/GeoIP2-City-Test.mmdb")
+    RecordingStudioViews::GeoLookup.reset!
+    chrome = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " \
+             "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    sign_in @user
+    get page_path(@page)
+    event_id = SecureRandom.uuid
+    post_ingest(
+      page_context,
+      event_id: event_id,
+      user_agent: chrome,
+      extra_headers: { "REMOTE_ADDR" => "81.2.69.142" }
+    )
+    view = RecordingStudioViews::ViewLog.find(event_id)
+    assert_equal "81.2.69.0", view.ip
+    assert_equal "Chrome", view.browser
+    assert_equal "Windows", view.os
+    assert_equal "desktop", view.device_type
+    assert_equal "United Kingdom", view.country
+    assert_equal "England", view.region
+    assert_equal "London", view.city
+    assert_in_delta 51.5142, view.latitude, 0.0001
+    assert_in_delta(-0.0931, view.longitude, 0.0001)
+    assert_equal 0, RecordingStudioViews::ViewLog.where(ip: "81.2.69.142").count
+  ensure
+    RecordingStudioViews.configuration.geoip_database_path = previous_path
+    RecordingStudioViews::GeoLookup.reset!
+  end
+
+  test "geo off stores nil geo fields" do
+    RecordingStudioViews.configuration.geoip_database_path = nil
+    RecordingStudioViews::GeoLookup.reset!
+    sign_in @user
+    get page_path(@page)
+    event_id = SecureRandom.uuid
+    post_ingest(page_context, event_id: event_id, extra_headers: { "REMOTE_ADDR" => "81.2.69.142" })
+    view = RecordingStudioViews::ViewLog.find(event_id)
+    assert_equal "81.2.69.0", view.ip
+    assert_nil view.country
+    assert_nil view.city
+    assert_nil view.latitude
+  end
+
   test "disabled types skipped pages consent bots and policy denials create no views" do
     sign_in @user
     get folder_path(@folder)

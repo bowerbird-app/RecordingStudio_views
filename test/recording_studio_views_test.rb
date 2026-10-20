@@ -16,6 +16,9 @@ class RecordingStudioViewsTest < Minitest::Test
 
     assert_includes gemspec, 'spec.add_dependency "recording_studio", "~> 4.2"'
     assert_includes gemspec, 'spec.add_dependency "recording_studio_logs", "~> 0.4.0"'
+    assert_includes gemspec, 'spec.add_dependency "device_detector"'
+    assert_includes gemspec, 'spec.add_dependency "maxmind-db"'
+    refute_includes gemspec, "geocoder"
   end
 
   def test_gemspec_excludes_cursor_config

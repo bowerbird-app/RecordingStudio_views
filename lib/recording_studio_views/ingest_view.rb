@@ -38,8 +38,7 @@ module RecordingStudioViews
         path: ingest_path,
         actor: @actor,
         visitor_token_digest: @visitor_token_digest,
-        ip: RequestCapture.ip(@request),
-        user_agent: RequestCapture.user_agent(@request)
+        captured: RequestCapture.call(@request)
       )
     end
 

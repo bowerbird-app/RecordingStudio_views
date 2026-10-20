@@ -62,6 +62,19 @@ module RecordingStudioViews
         column :ip, title: "IP", sortable: false, value: ->(row, context) { Queries.ip_value(row, context) }
         column :user_agent, title: "User agent", sortable: false,
                             value: ->(row, context) { Queries.user_agent_value(row, context) }
+        column :browser, title: "Browser", sortable: false,
+                         value: ->(row, context) { Queries.browser_value(row, context) }
+        column :os, title: "OS", sortable: false, value: ->(row, context) { Queries.os_value(row, context) }
+        column :device_type, title: "Device", sortable: false,
+                             value: ->(row, context) { Queries.device_type_value(row, context) }
+        column :country, title: "Country", sortable: false,
+                         value: ->(row, context) { Queries.country_value(row, context) }
+        column :region, title: "Region", sortable: false, value: ->(row, context) { Queries.region_value(row, context) }
+        column :city, title: "City", sortable: false, value: ->(row, context) { Queries.city_value(row, context) }
+        column :latitude, title: "Latitude", sortable: false,
+                          value: ->(row, context) { Queries.latitude_value(row, context) }
+        column :longitude, title: "Longitude", sortable: false,
+                           value: ->(row, context) { Queries.longitude_value(row, context) }
         column :actor, title: "Actor", sortable: false, value: ->(row, context) { Queries.actor_value(row, context) }
         paginate per_page: 25
         default_sort :occurred_at, direction: :desc

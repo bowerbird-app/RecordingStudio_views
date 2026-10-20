@@ -186,6 +186,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_030500) do
     t.datetime "updated_at", null: false
     t.string "ip", limit: 64
     t.string "user_agent", limit: 1024
+    t.string "browser", limit: 128
+    t.string "os", limit: 128
+    t.string "device_type", limit: 128
+    t.string "country", limit: 128
+    t.string "region", limit: 128
+    t.string "city", limit: 128
+    t.decimal "latitude", precision: 10, scale: 6
+    t.decimal "longitude", precision: 10, scale: 6
     t.index ["root_recording_id", "occurred_at"], name: "index_recording_studio_views_view_logs_on_root_recording_id_occ"
   end
 

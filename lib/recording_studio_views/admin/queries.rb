@@ -3,6 +3,7 @@
 require_relative "queries/actor_labels"
 require_relative "queries/chart_series"
 require_relative "queries/filters"
+require_relative "queries/row_values"
 
 module RecordingStudioViews
   module Admin
@@ -17,6 +18,7 @@ module RecordingStudioViews
         include ActorLabels
         include ChartSeries
         include Filters
+        include RowValues
 
         def view_logs
           ViewLog.order(occurred_at: :desc)
@@ -59,34 +61,6 @@ module RecordingStudioViews
 
         def resource_type_filter_options
           ViewLog.where.not(resource_type: [nil, ""]).distinct.order(:resource_type).pluck(:resource_type)
-        end
-
-        def occurred_at_value(row, _context)
-          row.occurred_at&.utc
-        end
-
-        def root_value(row, _context)
-          root_label(row.root_recording_id)
-        end
-
-        def page_key_value(row, _context)
-          row.page_key
-        end
-
-        def resource_type_value(row, _context)
-          row.resource_type
-        end
-
-        def path_value(row, _context)
-          row.path
-        end
-
-        def ip_value(row, _context)
-          row.ip
-        end
-
-        def user_agent_value(row, _context)
-          row.user_agent
         end
 
         def root_label(root_recording_id)

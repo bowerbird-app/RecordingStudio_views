@@ -61,9 +61,9 @@ Delivery is best effort. The collector uses same-origin `fetch` with credentials
 
 `POST /recording_studio_views/views` checks method, content type, payload size, same-origin, and CSRF. It verifies the token purpose, target, and expiry, re-resolves the Recording or root, checks `:viewable`, then runs the host tracking-access policy for the current request actor. When Recording Studio Accessible is loaded, the default policy calls `RecordingStudioAccessible.authorized?(actor:, recording:, role: :view)`, the same check a private page uses. Set `tracking_access_action` to use `authorized_action?` instead when the page uses audiences (for example anonymous public). Accessible stays optional, the same `defined?` pattern as Admin. Signed context is not proof of a human view and is not authorization. Deleted or now-private content is not trackable with an old token. Anonymous views store no actor. Browser-supplied user ids are ignored.
 
-Raw model `RecordingStudioViews::ViewLog`. Fields: browser event UUID `id`, `occurred_at` (server acceptance, UTC), `arrived_at`, `root_recording_id`, `recording_id`, `resource_type`, `page_key`, normalized `path` (no query or fragment), optional actor, optional `visitor_token_digest` (off by default), masked `ip`, truncated `user_agent`, timestamps. Path is descriptive only. The gem does not store referrer URLs or query strings.
+Raw model `RecordingStudioViews::ViewLog`. Fields: browser event UUID `id`, `occurred_at` (server acceptance, UTC), `arrived_at`, `root_recording_id`, `recording_id`, `resource_type`, `page_key`, normalized `path` (no query or fragment), optional actor, optional `visitor_token_digest` (off by default), masked `ip`, truncated `user_agent`, `browser`, `os`, `device_type`, `country`, `region`, `city`, `latitude`, `longitude`, timestamps. Path is descriptive only. The gem does not store referrer URLs or query strings.
 
-`ip` comes from Rails `request.remote_ip` on the collector POST and is masked before it is stored: IPv4 last octet is zeroed (`1.2.3.4` → `1.2.3.0`); IPv6 keeps the /48. Masking uses stdlib `IPAddr` only. `config.store_ip` defaults to true; set it to `false` to store nil and skip the address. The full IP is never written to the database, logs, or job arguments. `user_agent` is the raw `User-Agent` header, truncated to 1024 characters, with no device parsing. Either field may be nil when missing.
+`ip` comes from Rails `request.remote_ip` on the collector POST and is masked before it is stored: IPv4 last octet is zeroed (`1.2.3.4` → `1.2.3.0`); IPv6 keeps the /48. Masking uses stdlib `IPAddr` only. `config.store_ip` defaults to true; set it to `false` to store nil and skip the address. The full IP is never written to the database, logs, or job arguments. `user_agent` is the raw `User-Agent` header, truncated to 1024 characters. `browser`, `os`, and `device_type` are parsed from that string with `device_detector` at capture time. Geo fields are filled from a local MaxMind lookup of the full IP in memory, then only the masked IP is persisted. Any of these fields may be nil when missing.
 
 Receipts (`recording_studio_views_view_receipts`) claim the event UUID in the same transaction as the view insert. A valid duplicate returns success with no new row. Conflicting reuse of an event UUID is rejected. A failed insert rolls back the claim. Receipts expire after 24 hours (`RecordingStudioViews::ReceiptCleanupJob`). They are bookkeeping, not sessions.
 
@@ -105,6 +105,22 @@ Schedule in the host. Views starts no cron runner:
 ## Privacy and caching
 
 Default exclusions: the ingestion endpoint, health checks, assets, skipped pages, recognized bots. Admin, staff, and internal traffic are host-configurable. No persistent visitor cookie is required. Stored IPs are masked as above and can be disabled with `store_ip`.
+
+## GeoLite2 City
+
+Geo is off until the host sets a local MaxMind database path. Views does not ship a `.mmdb` and does not call MaxMind or any other geocoding API.
+
+1. Create a free [MaxMind account](https://www.maxmind.com/en/geolite2/signup) and download **GeoLite2 City**.
+2. Keep the file updated. MaxMind's license requires timely updates and [attribution](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data): *This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.*
+3. Point Views at the file (do not commit the paid/licensed database into the gem):
+
+```ruby
+RecordingStudioViews.configure do |config|
+  config.geoip_database_path = Rails.root.join("db/GeoLite2-City.mmdb")
+end
+```
+
+`RecordingStudioViews.config.geoip_database_path` is the same setting. `geo_enabled` is true only when that path is set. If the file is missing or a lookup fails, geo columns stay nil.
 
 Render only target context into shared caches. Token expiry must fit the cache lifetime. Refresh the token on a dynamic shell, or keep that shell out of the shared cache.
 
@@ -152,6 +168,8 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 | Trashable       | dummy GitHub tag `v0.11.0` (`require: false`; query-only via Accessible) |
 | Root Switchable | dummy GitHub tag `v0.9.0` |
 | Logs            | dummy GitHub tag `v0.4.0` |
+| device_detector | runtime (browser / OS / device type) |
+| maxmind-db      | runtime (local GeoLite2 City lookup only) |
 | Admin           | dummy GitHub tag `v2.3.0` (optional for hosts) |
 | FlatPack        | dummy GitHub tag `v0.1.213` |
 | Devise          | latest  |
