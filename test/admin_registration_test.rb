@@ -20,7 +20,9 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes section, 'key "views"'
     assert_includes section, 'widget "widgets.views.page_views_over_time", view_variant: :compact'
     assert_includes section, 'widget "widgets.views.total_views", view_variant: :compact'
+    assert_includes section, "style: :primary"
     assert_includes screen, 'key "views_page_views"'
+    assert_includes screen, "filter_presentation :inline"
     assert_includes screen, "filter :date_range, field: :occurred_at"
     assert_includes screen, "filter :group_by, values: %i[day week month], default: :day"
     assert_includes screen, "Queries.screen_page_views_series"

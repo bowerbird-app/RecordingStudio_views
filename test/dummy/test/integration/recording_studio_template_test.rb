@@ -77,6 +77,7 @@ class RecordingStudioTemplateTest < ActiveSupport::TestCase
     assert RecordingStudio.capability_enabled?(:viewable, for: Page)
     refute RecordingStudio.capability_enabled?(:accessible, for: Folder)
     refute RecordingStudio.capability_enabled?(:accessible, for: Page)
+    assert RecordingStudio.capability_enabled?(:action_audiences, for: Page)
     refute RecordingStudio.capability_enabled?(:viewable, for: Folder)
     refute RecordingStudio.capability_enabled?(:viewable, for: Workspace)
     assert_equal [ "Page" ], RecordingStudio.configuration.enabled_recordable_types_for(:viewable)

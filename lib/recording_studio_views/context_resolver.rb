@@ -11,7 +11,10 @@ module RecordingStudioViews
       return PageContext.skipped if excluded_request?
       return PageContext.skipped unless consent?
 
-      recording_context || root_context || site_context || PageContext.skipped
+      recording = resolve_recording
+      return recording_context(recording) if recording.present?
+
+      root_context || site_context || PageContext.skipped
     end
 
     private
@@ -30,14 +33,12 @@ module RecordingStudioViews
       false
     end
 
-    def recording_context
-      recording = resolve_recording
-      return if recording.blank?
-      return unless recording_enabled?(recording)
+    def recording_context(recording)
+      return PageContext.skipped unless recording_enabled?(recording)
 
       root = recording_root(recording)
-      return if root.blank?
-      return unless owned_root?(root)
+      return PageContext.skipped if root.blank?
+      return PageContext.skipped unless owned_root?(root)
 
       PageContext.new(
         kind: :recording,

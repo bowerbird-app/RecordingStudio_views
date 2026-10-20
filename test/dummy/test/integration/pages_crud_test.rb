@@ -15,6 +15,7 @@ class PagesCrudTest < ActionDispatch::IntegrationTest
     Current.actor = @user
     @workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
     @workspace_root = RecordingStudio.root_recording_for(@workspace)
+    allow_view!(@user, @workspace)
     sign_in @user
     switch_root(@workspace_root)
     RecordingStudioViews::ViewLog.delete_all

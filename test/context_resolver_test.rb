@@ -93,6 +93,50 @@ class ContextResolverTest < Minitest::Test
     assert context.site?
   end
 
+  def test_disabled_viewable_recording_does_not_fall_through
+    recording = FakeRecording.new(
+      id: "rec-1",
+      root_recording_id: "root-1",
+      recordable_type: "Folder",
+      root: false,
+      root_recording: FakeRecording.new(id: "root-1", recordable_type: "Workspace", root: true)
+    )
+    RecordingStudioViews.configuration.consent_predicate = ->(*) { true }
+    RecordingStudioViews.configuration.recording_resolver = ->(*) { recording }
+    RecordingStudioViews.configuration.root_page_resolver = lambda { |*|
+      { root_recording: recording.root_recording, page_key: "workspace.search", resource_type: "Workspace" }
+    }
+    RecordingStudioViews.configuration.site_tracking_enabled = true
+    RecordingStudioViews.configuration.site_page_resolver = lambda { |*|
+      { page_key: "site.home", resource_type: "Site" }
+    }
+    RecordingStudioViews.configuration.root_ownership_policy = ->(*) { true }
+    RecordingStudio.stub :capability_enabled?, ->(*) { false } do
+      controller = FakeController.new(request: FakeRequest.new(path: "/folders/1"), controller_path: "folders")
+      context = RecordingStudioViews::ContextResolver.new(controller).call
+      assert context.skipped?
+    end
+  end
+
+  def test_root_ownership_policy_skips_a_foreign_root
+    recording = FakeRecording.new(
+      id: "rec-1",
+      root_recording_id: "root-2",
+      recordable_type: "Page",
+      root: false,
+      root_recording: FakeRecording.new(id: "root-2", recordable_type: "Workspace", root: true)
+    )
+    RecordingStudioViews.configuration.consent_predicate = ->(*) { true }
+    RecordingStudioViews.configuration.recording_resolver = ->(*) { recording }
+    RecordingStudioViews.configuration.root_ownership_policy = lambda { |_controller, root|
+      root.id == "root-1"
+    }
+    RecordingStudio.stub :capability_enabled?, ->(name, **kwargs) { name == :viewable && kwargs[:for] == "Page" } do
+      controller = FakeController.new(request: FakeRequest.new(path: "/pages/1"), controller_path: "pages")
+      assert RecordingStudioViews::ContextResolver.new(controller).call.skipped?
+    end
+  end
+
   def test_site_pages_stay_skipped_when_disabled
     RecordingStudioViews.configuration.consent_predicate = ->(*) { true }
     RecordingStudioViews.configuration.recording_resolver = ->(*) {}

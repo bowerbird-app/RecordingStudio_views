@@ -27,8 +27,12 @@ module RecordingStudioViews
 
       query { |_context| Queries.view_logs }
 
+      filter_presentation :inline
       filter :date_range, field: :occurred_at, default: :last_30_days
       filter :group_by, values: %i[day week month], default: :day
+      filter :root, options: -> { Queries.root_filter_options }, apply: ROOT_FILTER
+      filter :resource_type, options: -> { Queries.resource_type_filter_options }, apply: RESOURCE_TYPE_FILTER
+      filter :visit_kind, options: -> { Queries.visit_kind_filter_options }, apply: VISIT_KIND_FILTER
 
       chart do
         title "Page views over time"
@@ -46,11 +50,8 @@ module RecordingStudioViews
 
       table do
         title "Page views"
-        filter :root, options: -> { Queries.root_filter_options }, apply: ROOT_FILTER
-        filter :resource_type, options: -> { Queries.resource_type_filter_options }, apply: RESOURCE_TYPE_FILTER
         filter :page_key, apply: PAGE_KEY_FILTER
         filter :path, apply: PATH_FILTER
-        filter :visit_kind, options: -> { Queries.visit_kind_filter_options }, apply: VISIT_KIND_FILTER
         column :occurred_at, title: "Time", value: ->(row, context) { Queries.occurred_at_value(row, context) }
         column :root, title: "Root", sortable: false, value: ->(row, context) { Queries.root_value(row, context) }
         column :page_key, title: "Page", sortable: false,

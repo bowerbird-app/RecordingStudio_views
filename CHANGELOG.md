@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-20
+
+### Added
+- Tracking access delegates to Recording Studio Accessible when that gem is loaded (`authorized?(:view)`, or `authorized_action?` when `tracking_access_action` is set). Accessible stays an optional load.
+- `RecordingStudioViews.delete_for_root` forwards to Logs owner deletion.
+- Dummy wires pages through Accessible the same way Accessible's dummy does, with public audience on anonymous pages.
+
+### Changed
+- The collector reads the last context script and retries with the captured payload. A hidden tab records once when it becomes visible.
+- A recording without `:viewable` is skipped with no root or site fall-through.
+- 4xx and 5xx responses do not dispatch.
+- Total views is daily summaries plus raw rows whose UTC day is not yet aggregated.
+- Site cleanup deletes aggregated site rows only.
+- Admin Page views filters use `filter_presentation :inline`. The hub still uses the existing page views over time chart widget.
+
+### Upgrade notes
+- Put `recording_studio_track_views` in the layout body, not `<head>`.
+- If Accessible is installed, private tracking now fails closed unless the actor has `:view` (or the configured tracking action). Set `tracking_access_action` when pages use audiences for public views.
+- Call `RecordingStudioViews.delete_for_root` from host root deletion. Site cleanup no longer deletes unaggregated site rows.
+
 ## [0.5.0] - 2026-10-19
 
 ### Added

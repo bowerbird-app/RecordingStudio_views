@@ -3,6 +3,10 @@
 module RecordingStudioViews
   module TrackHelper
     def recording_studio_track_views(context: nil)
+      if error_response?
+        return context_script({ endpoint: views_endpoint, token: nil, consent: false, dispatch: false })
+      end
+
       resolved = context || ContextResolver.new(controller).call
       consented = consent_for_request?
       payload = {
@@ -33,6 +37,11 @@ module RecordingStudioViews
       RecordingStudioViews.configuration.consent_predicate.call(request)
     rescue StandardError
       false
+    end
+
+    def error_response?
+      status = controller.response&.status
+      status.present? && status.to_i >= 400
     end
   end
 end

@@ -2,17 +2,11 @@
 
 RecordingStudioViews.configure do |config|
   config.site_tracking_enabled = true
+  config.tracking_access_action = :"recording_studio_views.view"
 
-  config.tracking_access_policy = lambda do |_request, context, actor|
-    next :deny if context.skipped?
-    next :allow if context.site?
-    next :allow if actor.present?
-
-    studio = Workspace.find_by(name: "Studio Workspace")
-    next :deny unless studio && context.kind == :recording
-
-    root = RecordingStudio.root_recording_for(studio)
-    context.root_recording_id.to_s == root.id.to_s ? :allow : :deny
+  config.root_ownership_policy = lambda do |controller, root|
+    current = controller.respond_to?(:current_root_recording) ? controller.current_root_recording : nil
+    current.blank? || current.id.to_s == root.id.to_s
   end
 
   config.consent_predicate = lambda do |request|

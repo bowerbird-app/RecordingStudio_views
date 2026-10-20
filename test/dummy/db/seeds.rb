@@ -54,6 +54,9 @@ begin
   find_or_record_child.call(page, root_recording, folder_recording)
   find_or_record_child.call(client_page, accessible_root_recording, accessible_root_recording)
 
+  bootstrap_owner_access.call(root_recording, user)
+  bootstrap_owner_access.call(accessible_root_recording, user)
+
   admin_root = AdminRoot.find_or_create_by!(name: "Admin")
   admin_root_recording = RecordingStudio.root_recording_for(admin_root)
   bootstrap_owner_access.call(admin_root_recording, user)

@@ -119,11 +119,19 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_equal 5, points.fetch(today).fetch(:y)
   end
 
-  test "total views counts ViewLog rows" do
+  test "total views counts summaries plus unaggregated raw rows without double counting" do
+    older = Time.now.utc.to_date - 2
     insert_view(page_key: "one")
     insert_view(page_key: "two")
+    insert_view(page_key: "old", occurred_at: older.to_time.utc)
+    RecordingStudioViews::DailyViewSummary.create!(
+      day: older,
+      page_key: "old",
+      resource_type: "Page",
+      views: 10
+    )
 
-    assert_equal 2, RecordingStudioViews::Admin::Queries.total_views
+    assert_equal 12, RecordingStudioViews::Admin::Queries.total_views
   end
 
   test "path filter is a case-insensitive contains match" do

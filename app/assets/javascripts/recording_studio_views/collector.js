@@ -3,11 +3,13 @@
   const RETRY_DELAYS = [0, 400, 1200];
   const RETRY_WINDOW_MS = 24 * 60 * 60 * 1000;
   let recordingThisTick = false;
+  let awaitingVisible = false;
   let turboAvailable = typeof window.Turbo !== "undefined";
 
   function contextPayload() {
-    const el = document.querySelector(CONTEXT_SELECTOR);
-    if (!el) return null;
+    const nodes = document.querySelectorAll(CONTEXT_SELECTOR);
+    if (!nodes.length) return null;
+    const el = nodes[nodes.length - 1];
     try {
       return JSON.parse(el.textContent);
     } catch (error) {
@@ -28,29 +30,12 @@
     return document.documentElement.hasAttribute("data-turbo-preview");
   }
 
-  function shouldDispatch() {
-    if (!visible() || turboPreview()) return false;
-    const payload = contextPayload();
+  function dispatchablePayload(payload) {
     return !!(payload && payload.dispatch === true && payload.consent === true && payload.endpoint && payload.token);
   }
 
-  function eventId() {
-    if (window.crypto && typeof window.crypto.randomUUID === "function") {
-      return window.crypto.randomUUID();
-    }
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (char) {
-      const rand = (Math.random() * 16) | 0;
-      const value = char === "x" ? rand : (rand & 0x3) | 0x8;
-      return value.toString(16);
-    });
-  }
-
-  function retryableStatus(status) {
-    return status === 503 || status === 429 || status >= 500;
-  }
-
-  function postView(id, attempt) {
-    const payload = contextPayload();
+  function postView(id, attempt, captured) {
+    const payload = captured || contextPayload();
     if (!payload) return Promise.resolve();
     const body = JSON.stringify({
       event_id: id,
@@ -72,7 +57,7 @@
         return new Promise(function (resolve) {
           window.setTimeout(resolve, RETRY_DELAYS[attempt + 1]);
         }).then(function () {
-          return postView(id, attempt + 1);
+          return postView(id, attempt + 1, payload);
         });
       }
     }).catch(function () {
@@ -80,23 +65,48 @@
         return new Promise(function (resolve) {
           window.setTimeout(resolve, RETRY_DELAYS[attempt + 1]);
         }).then(function () {
-          return postView(id, attempt + 1);
+          return postView(id, attempt + 1, payload);
         });
       }
     });
   }
 
+  function retryableStatus(status) {
+    return status === 503 || status === 429 || status >= 500;
+  }
+
   function recordNavigation() {
+    if (turboPreview()) return;
+    const payload = contextPayload();
+    if (!dispatchablePayload(payload)) {
+      awaitingVisible = false;
+      return;
+    }
+    if (!visible()) {
+      awaitingVisible = true;
+      return;
+    }
     if (recordingThisTick) return;
     recordingThisTick = true;
     window.setTimeout(function () {
       recordingThisTick = false;
     }, 0);
-    if (!shouldDispatch()) return;
+    awaitingVisible = false;
     const id = eventId();
     const startedAt = Date.now();
     if (Date.now() - startedAt > RETRY_WINDOW_MS) return;
-    postView(id, 0);
+    postView(id, 0, payload);
+  }
+
+  function eventId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return window.crypto.randomUUID();
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (char) {
+      const rand = (Math.random() * 16) | 0;
+      const value = char === "x" ? rand : (rand & 0x3) | 0x8;
+      return value.toString(16);
+    });
   }
 
   function onTurboLoad() {
@@ -115,6 +125,8 @@
   document.addEventListener("turbo:load", onTurboLoad);
   document.addEventListener("DOMContentLoaded", onDomReady);
   window.addEventListener("pageshow", onPageShow);
-  document.addEventListener("visibilitychange", function () {});
+  document.addEventListener("visibilitychange", function () {
+    if (visible() && awaitingVisible) recordNavigation();
+  });
   window.addEventListener("hashchange", function () {});
 })();

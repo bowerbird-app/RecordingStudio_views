@@ -28,7 +28,7 @@ module RecordingStudioViews
       ) do
         type :number
         title "Total views"
-        info "Every stored ViewLog row."
+        info "All-time views from daily summaries plus raw rows not yet aggregated."
         value { Queries.total_views }
         hide_change
         hide_period

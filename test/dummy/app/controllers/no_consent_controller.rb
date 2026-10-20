@@ -5,5 +5,6 @@ class NoConsentController < ApplicationController
   def show
     @page = Page.find(params[:id])
     @current_recording = RecordingStudio::Recording.find_by!(recordable_type: "Page", recordable_id: @page.id)
+    return unless authorize_viewable_recording!(@current_recording)
   end
 end

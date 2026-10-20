@@ -5,7 +5,7 @@ Page views for Recording Studio apps. Installing the gem does not start tracking
 V1 records page views only. It does not create sessions, funnels, conversions, unique visitors, or engagement duration. It never writes a Recording, revision, or timeline Event per view.
 
 ```ruby
-gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.5.0"
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.6.0"
 gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.4.0"
 ```
 
@@ -19,9 +19,11 @@ gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: 
 
        mount RecordingStudioViews::Engine, at: "/recording_studio_views"
 
-5. In the shared layout, outside any Turbo permanent element:
+5. In the shared layout **body** (not `<head>`), outside any Turbo permanent element:
 
        <%= recording_studio_track_views %>
+
+   The collector reads the last context script in the document, so a Turbo Drive visit posts the current page. Head scripts stay on the first page's token.
 
 6. Pin the collector with the host asset setup. Importmap:
 
@@ -46,17 +48,18 @@ Context states:
 - Recording page: enabled Recording plus verified owning root
 - Root page: named page with a root and no target Recording
 - Site page: explicitly allowed, no root
-- Skipped: no valid context, disabled capability, excluded route, or denied policy
+- Skipped: no valid context, disabled capability, excluded route, 4xx/5xx response, or denied policy
+- A recording without `:viewable` is skipped. Resolvers do not fall through to a root or site page.
 
 Site pages and unresolved pages are skipped by default. A missing root never grants site-wide access. Shared roots need `root_ownership_policy`.
 
-The collector records one view for a visible full page load, a completed Turbo Drive visit, a refresh, and a visible back/forward restore. Turbo preview plus the final render is one view. Turbo Frame and Stream updates, hover prefetch, prerender, hash-only navigation, and tab switches do not record. Retried POSTs reuse the same event UUID inside the 24 hour receipt window.
+The collector records one view for a visible full page load, a completed Turbo Drive visit, a refresh, and a visible back/forward restore. A page that opens hidden records once when it becomes visible. Turbo preview plus the final render is one view. Turbo Frame and Stream updates, hover prefetch, prerender, hash-only navigation, and later tab switches do not record. Retried POSTs reuse the same event UUID and the captured page context, not a reread of the document.
 
 Delivery is best effort. The collector uses same-origin `fetch` with credentials and the CSRF header, limited retries, and never blocks navigation. It does not use `unload` and does not claim guaranteed delivery.
 
 ## Ingestion and storage
 
-`POST /recording_studio_views/views` checks method, content type, payload size, same-origin, and CSRF. It verifies the token purpose, target, and expiry, re-resolves the Recording or root, checks `:viewable`, then runs the host tracking-access policy for the current request actor. Signed context is not proof of a human view and is not authorization. Deleted or now-private content is not trackable with an old token. Anonymous access needs an explicit public-access policy. Browser-supplied user ids are ignored.
+`POST /recording_studio_views/views` checks method, content type, payload size, same-origin, and CSRF. It verifies the token purpose, target, and expiry, re-resolves the Recording or root, checks `:viewable`, then runs the host tracking-access policy for the current request actor. When Recording Studio Accessible is loaded, the default policy calls `RecordingStudioAccessible.authorized?(actor:, recording:, role: :view)`, the same check a private page uses. Set `tracking_access_action` to use `authorized_action?` instead when the page uses audiences (for example anonymous public). Accessible stays optional, the same `defined?` pattern as Admin. Signed context is not proof of a human view and is not authorization. Deleted or now-private content is not trackable with an old token. Anonymous views store no actor. Browser-supplied user ids are ignored.
 
 Raw model `RecordingStudioViews::ViewLog`. Fields: browser event UUID `id`, `occurred_at` (server acceptance, UTC), `arrived_at`, `root_recording_id`, `recording_id`, `resource_type`, `page_key`, normalized `path` (no query or fragment), optional actor, optional `visitor_token_digest` (off by default), timestamps. Path is descriptive only. The gem does not store raw IP, raw user agent, referrer URLs, or query strings.
 
@@ -80,13 +83,13 @@ recording_studio_admin_sections do
 end
 ```
 
-The hub shows a UTC daily chart from `DailyViewSummary` (`views/page_views`) and a total from `ViewLog`. Page views is a table of `ViewLog` rows. Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
+The hub shows a UTC daily chart from `DailyViewSummary` (`widgets.views.page_views_over_time`) and an all-time total from daily summaries plus raw rows that have not been aggregated. Page views is a table of `ViewLog` rows. Screen filters render inline. Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
 
 ## Retention and deletion
 
-Raw cleanup is Logs in both storage modes. Non-partitioned deletes expired rows only for UTC days with a successful covering aggregation. Partitioned drops a month only when the whole month is expired and covered. Use `RecordingStudioLogs.delete_for_root` through the host deletion lifecycle. Cancelling a subscription does not delete analytics.
+Raw cleanup is Logs in both storage modes. Non-partitioned deletes expired rows only for UTC days with a successful covering aggregation. Partitioned drops a month only when the whole month is expired and covered. Call `RecordingStudioViews.delete_for_root` (or `RecordingStudioLogs.delete_for_root`) from the host deletion lifecycle. Cancelling a subscription does not delete analytics.
 
-Receipt expiry is separate. Site-level rows (no root) are not covered by root deletion. Call `RecordingStudioViews::SiteCleanup.call(before:)` from an explicit host job.
+Receipt expiry is separate. Site-level rows (no root) are not covered by root deletion. Call `RecordingStudioViews::SiteCleanup.call(before:)` from an explicit host job. Site cleanup deletes only rows whose UTC day already has a daily summary.
 
 Schedule in the host. Views starts no cron runner:
 
@@ -105,7 +108,7 @@ Render only target context into shared caches. Token expiry must fit the cache l
 
 ## Dummy app
 
-The dummy host at `test/dummy` proves the gem. It has two trackable pages under different workspace roots, shared-layout tracking, a named workspace search page, an explicit site page, anonymous public views, and an authenticated private page. It mounts Recording Studio Admin at `/admin` with the Views section enabled. Operation is non-partitioned by default. Partitioned insert coverage lives in the test suite.
+The dummy host at `test/dummy` proves the gem. It has two trackable pages under different workspace roots, shared-layout tracking, a named workspace search page, explicit site pages (`site.home`, `site.sign_in`, `site.sign_up`, `site.about`), anonymous public views through Accessible audiences, and authenticated private pages through `authorized_action?`. It mounts Recording Studio Admin at `/admin` with the Views section enabled. Operation is non-partitioned by default. Partitioned insert coverage lives in the test suite.
 
 Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Password`.
 

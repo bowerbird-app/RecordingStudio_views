@@ -23,7 +23,17 @@ module RecordingStudioViews
         end
 
         def total_views
-          ViewLog.count
+          summary_total = DailyViewSummary.sum(:views).to_i
+          days = DailyViewSummary.distinct.pluck(:day)
+          raw_total = if days.empty?
+                        ViewLog.count
+                      else
+                        quoted_days = days.map { |day| ViewLog.connection.quote(day) }.join(", ")
+                        ViewLog.where(
+                          "((#{quoted_occurred_at} AT TIME ZONE 'UTC')::date) NOT IN (#{quoted_days})"
+                        ).count
+                      end
+          summary_total + raw_total
         end
 
         def page_views_over_time_series(day_range: default_day_range)

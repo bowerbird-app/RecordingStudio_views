@@ -1,6 +1,15 @@
 class ApplicationController < ActionController::Base
   include RecordingStudio::RootSwitchable::ControllerSupport
 
+  PAGE_VIEW_ACTION = :"recording_studio_views.view"
+
+  SITE_PAGE_KEYS = {
+    "home" => "site.home",
+    "devise/sessions" => "site.sign_in",
+    "devise/registrations" => "site.sign_up",
+    "site_pages" => "site.about"
+  }.freeze
+
   allow_browser versions: :modern
 
   stale_when_importmap_changes
@@ -29,9 +38,10 @@ class ApplicationController < ActionController::Base
   end
 
   def current_site_page
-    return unless @site_page
+    page_key = SITE_PAGE_KEYS[controller_path]
+    return unless page_key
 
-    { page_key: "site.about", resource_type: "Site" }
+    { page_key: page_key, resource_type: "Site" }
   end
 
   def current_actor
@@ -46,5 +56,17 @@ class ApplicationController < ActionController::Base
 
   def set_current_actor
     Current.actor = current_user
+  end
+
+  def authorize_viewable_recording!(recording)
+    allowed = RecordingStudioAccessible.authorized_action?(
+      actor: Current.actor,
+      action: PAGE_VIEW_ACTION,
+      recording: recording
+    )
+    return true if allowed
+
+    head :forbidden
+    false
   end
 end

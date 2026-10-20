@@ -24,6 +24,7 @@ class CacheContextTest < ActionDispatch::IntegrationTest
         action: "created", recordable: page, root_recording: root, parent_recording: folder_recording
       )
 
+    allow_view!(user, workspace)
     sign_in user
     get page_path(page)
     script = css_select("script[data-recording-studio-views-context]").first
