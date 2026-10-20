@@ -50,7 +50,7 @@ module RecordingStudioViews
                            .where("#{day_sql} BETWEEN ? AND ?", day_range.begin, day_range.end)
                            .group(Arel.sql(day_sql))
                            .count
-          grouped.transform_keys { |day| day.to_date }
+          grouped.transform_keys(&:to_date)
         end
 
         def default_day_range
