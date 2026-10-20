@@ -44,10 +44,10 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "</head>\n    <script"
     assert_includes response.body, "<body"
     refute_includes response.body, @user.id.to_s
+    view = nil
     assert_difference -> { RecordingStudioViews::ViewLog.count }, 1 do
-      ingest_from_last_page
+      view = ingest_from_last_page
     end
-    view = RecordingStudioViews::ViewLog.last
     assert_equal @page_recording.id, view.recording_id
     assert_equal @studio_root.id, view.root_recording_id
     assert_equal "Page", view.resource_type
@@ -124,10 +124,10 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
 
     get public_page_path(@page)
     assert_response :success
+    view = nil
     assert_difference -> { RecordingStudioViews::ViewLog.count }, 1 do
-      ingest_from_last_page
+      view = ingest_from_last_page
     end
-    view = RecordingStudioViews::ViewLog.last
     assert_nil view.actor_id
     assert_nil view.actor_type
 
@@ -163,8 +163,7 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     @page_recording.revise(@page_recording) { |recordable| recordable.title = "Getting Started revised" }
     current_page = RecordingStudio::Recording.find(recording_id).recordable
     get page_path(current_page)
-    ingest_from_last_page
-    view = RecordingStudioViews::ViewLog.last
+    view = ingest_from_last_page
     assert_equal recording_id, view.recording_id
   end
 
@@ -242,10 +241,10 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
 
   test "site pages are recorded only when enabled" do
     get site_about_path
+    view = nil
     assert_difference -> { RecordingStudioViews::ViewLog.count }, 1 do
-      ingest_from_last_page
+      view = ingest_from_last_page
     end
-    view = RecordingStudioViews::ViewLog.last
     assert_nil view.root_recording_id
     assert_equal "site.about", view.page_key
   end
@@ -253,18 +252,15 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
   test "sign in sign up and home have site page keys and unidentified pages stay skipped" do
     get new_user_session_path
     assert_response :success
-    ingest_from_last_page
-    assert_equal "site.sign_in", RecordingStudioViews::ViewLog.last.page_key
+    assert_equal "site.sign_in", ingest_from_last_page.page_key
 
     get new_user_registration_path
     assert_response :success
-    ingest_from_last_page
-    assert_equal "site.sign_up", RecordingStudioViews::ViewLog.last.page_key
+    assert_equal "site.sign_up", ingest_from_last_page.page_key
 
     get root_path
     assert_response :success
-    ingest_from_last_page
-    assert_equal "site.home", RecordingStudioViews::ViewLog.last.page_key
+    assert_equal "site.home", ingest_from_last_page.page_key
 
     sign_in @user
     get docs_install_path
@@ -386,7 +382,9 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
   end
 
   def ingest_from_last_page
-    post_ingest(page_context, event_id: SecureRandom.uuid)
+    event_id = SecureRandom.uuid
+    post_ingest(page_context, event_id: event_id)
+    RecordingStudioViews::ViewLog.find_by(id: event_id)
   end
 
   def post_ingest(context, event_id:, user_agent: "Mozilla/5.0 Chrome/120.0", extra_headers: {})
