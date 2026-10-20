@@ -10,6 +10,12 @@ module RecordingStudioViews
     PAGE_KEY_LIMIT = 128
     RESOURCE_TYPE_LIMIT = 128
     ACTOR_TYPE_LIMIT = 128
+    IP_LIMIT = 64
+    USER_AGENT_LIMIT = 1_024
+    DEVICE_FIELD_LIMIT = 128
+    GEO_NAME_LIMIT = 128
+    UTM_LIMIT = 255
+    UTM_KEYS = %i[utm_source utm_medium utm_term utm_content utm_campaign].freeze
 
     attr_accessor :api_key, :enable_feature_x, :timeout, :hooks,
                   :recording_resolver, :root_page_resolver, :site_page_resolver,
@@ -17,9 +23,46 @@ module RecordingStudioViews
                   :consent_predicate,
                   :actor_resolver, :visitor_token_digest_resolver, :skip_paths,
                   :bot_filter, :token_ttl, :site_tracking_enabled,
-                  :excluded_controller_paths
+                  :excluded_controller_paths, :store_ip, :geoip_database_path,
+                  :maxmind_account_id, :maxmind_license_key, :geoip_max_age
 
     def initialize
+      assign_core_defaults
+      assign_capture_defaults
+    end
+
+    def geo_enabled?
+      geoip_database_path.present?
+    end
+    alias geo_enabled geo_enabled?
+
+    def to_h
+      {
+        api_key: api_key,
+        enable_feature_x: enable_feature_x,
+        timeout: timeout,
+        token_ttl: token_ttl,
+        site_tracking_enabled: site_tracking_enabled,
+        store_ip: store_ip,
+        geoip_database_path: geoip_database_path,
+        geoip_max_age: geoip_max_age,
+        geo_enabled: geo_enabled,
+        hooks_registered: hooks.instance_variable_get(:@registry).transform_values(&:size)
+      }
+    end
+
+    def merge!(hash)
+      return unless hash.respond_to?(:each)
+
+      hash.each do |key, value|
+        setter = "#{key}="
+        public_send(setter, value) if respond_to?(setter)
+      end
+    end
+
+    private
+
+    def assign_core_defaults
       @api_key = ENV.fetch("RECORDING_STUDIO_VIEWS_API_KEY", nil)
       @enable_feature_x = false
       @timeout = 5
@@ -40,27 +83,13 @@ module RecordingStudioViews
       @bot_filter = BotFilter
     end
 
-    def to_h
-      {
-        api_key: api_key,
-        enable_feature_x: enable_feature_x,
-        timeout: timeout,
-        token_ttl: token_ttl,
-        site_tracking_enabled: site_tracking_enabled,
-        hooks_registered: hooks.instance_variable_get(:@registry).transform_values(&:size)
-      }
+    def assign_capture_defaults
+      @store_ip = true
+      @geoip_database_path = nil
+      @maxmind_account_id = nil
+      @maxmind_license_key = nil
+      @geoip_max_age = 7.days
     end
-
-    def merge!(hash)
-      return unless hash.respond_to?(:each)
-
-      hash.each do |key, value|
-        setter = "#{key}="
-        public_send(setter, value) if respond_to?(setter)
-      end
-    end
-
-    private
 
     def default_tracking_access_policy
       lambda do |request, context, actor|

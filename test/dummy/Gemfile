@@ -5,7 +5,7 @@ gem "recording_studio_views", path: "../.."
 
 # RecordingStudio engine
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.7.0"
-gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.4.0"
+gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.5.0"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.18.0"
 gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.3.0"
 # Required by accessible 0.17+ for trashable query helpers (GitHub-only; not on RubyGems)

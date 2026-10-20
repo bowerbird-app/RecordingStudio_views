@@ -55,6 +55,124 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     assert_equal @user.id.to_s, view.actor_id
   end
 
+  test "collector stores masked ipv4 ipv6 and truncated user agent" do
+    sign_in @user
+    get page_path(@page)
+    context = page_context
+    ipv4_id = SecureRandom.uuid
+    post_ingest(
+      context,
+      event_id: ipv4_id,
+      user_agent: "Mozilla/5.0 #{'X' * 2_000}",
+      extra_headers: { "REMOTE_ADDR" => "1.2.3.4" }
+    )
+    ipv4 = RecordingStudioViews::ViewLog.find(ipv4_id)
+    assert_equal "1.2.3.0", ipv4.ip
+    assert_equal RecordingStudioViews::Configuration::USER_AGENT_LIMIT, ipv4.user_agent.length
+    assert_equal "Mozilla/5.0 #{'X' * (RecordingStudioViews::Configuration::USER_AGENT_LIMIT - 'Mozilla/5.0 '.length)}",
+                 ipv4.user_agent
+
+    ipv6_id = SecureRandom.uuid
+    post_ingest(
+      context,
+      event_id: ipv6_id,
+      extra_headers: { "REMOTE_ADDR" => "2001:db8:85a3:8d3:1319:8a2e:370:7344" }
+    )
+    assert_equal "2001:db8:85a3::", RecordingStudioViews::ViewLog.find(ipv6_id).ip
+  end
+
+  test "store_ip off stores nil ip and still saves user agent" do
+    previous = RecordingStudioViews.configuration.store_ip
+    RecordingStudioViews.configuration.store_ip = false
+    sign_in @user
+    get page_path(@page)
+    event_id = SecureRandom.uuid
+    post_ingest(
+      page_context,
+      event_id: event_id,
+      user_agent: "TestAgent/1.0",
+      extra_headers: { "REMOTE_ADDR" => "9.8.7.6" }
+    )
+    view = RecordingStudioViews::ViewLog.find(event_id)
+    assert_nil view.ip
+    assert_equal "TestAgent/1.0", view.user_agent
+  ensure
+    RecordingStudioViews.configuration.store_ip = previous
+  end
+
+  test "collector stores device and local geo without the full ip" do
+    previous_path = RecordingStudioViews.configuration.geoip_database_path
+    RecordingStudioViews.configuration.geoip_database_path =
+      RecordingStudioViews::Engine.root.join("test/fixtures/GeoIP2-City-Test.mmdb")
+    RecordingStudioViews::GeoLookup.reset!
+    chrome = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " \
+             "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    sign_in @user
+    get page_path(@page)
+    event_id = SecureRandom.uuid
+    post_ingest(
+      page_context,
+      event_id: event_id,
+      user_agent: chrome,
+      extra_headers: { "REMOTE_ADDR" => "81.2.69.142" }
+    )
+    view = RecordingStudioViews::ViewLog.find(event_id)
+    assert_equal "81.2.69.0", view.ip
+    assert_equal "Chrome", view.browser
+    assert_equal "Windows", view.os
+    assert_equal "10", view.os_version
+    assert_equal "desktop", view.device_type
+    assert_equal "United Kingdom", view.country
+    assert_equal "England", view.region
+    assert_equal "London", view.city
+    assert_in_delta 51.5142, view.latitude, 0.0001
+    assert_in_delta(-0.0931, view.longitude, 0.0001)
+    assert_equal 0, RecordingStudioViews::ViewLog.where(ip: "81.2.69.142").count
+  ensure
+    RecordingStudioViews.configuration.geoip_database_path = previous_path
+    RecordingStudioViews::GeoLookup.reset!
+  end
+
+  test "geo off stores nil geo fields" do
+    RecordingStudioViews.configuration.geoip_database_path = nil
+    RecordingStudioViews::GeoLookup.reset!
+    sign_in @user
+    get page_path(@page)
+    event_id = SecureRandom.uuid
+    post_ingest(page_context, event_id: event_id, extra_headers: { "REMOTE_ADDR" => "81.2.69.142" })
+    view = RecordingStudioViews::ViewLog.find(event_id)
+    assert_equal "81.2.69.0", view.ip
+    assert_nil view.country
+    assert_nil view.city
+    assert_nil view.latitude
+  end
+
+  test "collector stores utm fields and keeps path without query" do
+    sign_in @user
+    get page_path(@page)
+    event_id = SecureRandom.uuid
+    post_ingest(
+      page_context,
+      event_id: event_id,
+      extra_params: {
+        path: "#{page_path(@page)}?utm_source=from-path&other=1",
+        utm_source: " google ",
+        utm_medium: "cpc",
+        utm_term: "kits",
+        utm_content: "hero",
+        utm_campaign: "spring"
+      }
+    )
+    view = RecordingStudioViews::ViewLog.find(event_id)
+    assert_equal page_path(@page), view.path
+    refute_includes view.path, "?"
+    assert_equal "google", view.utm_source
+    assert_equal "cpc", view.utm_medium
+    assert_equal "kits", view.utm_term
+    assert_equal "hero", view.utm_content
+    assert_equal "spring", view.utm_campaign
+  end
+
   test "disabled types skipped pages consent bots and policy denials create no views" do
     sign_in @user
     get folder_path(@folder)
@@ -387,9 +505,9 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     RecordingStudioViews::ViewLog.find_by(id: event_id)
   end
 
-  def post_ingest(context, event_id:, user_agent: "Mozilla/5.0 Chrome/120.0", extra_headers: {})
+  def post_ingest(context, event_id:, user_agent: "Mozilla/5.0 Chrome/120.0", extra_headers: {}, extra_params: {})
     post "/recording_studio_views/views",
-         params: { event_id: event_id, token: context["token"], path: context_path },
+         params: { event_id: event_id, token: context["token"], path: context_path }.merge(extra_params),
          as: :json,
          headers: ingest_headers.merge("HTTP_USER_AGENT" => user_agent).merge(extra_headers)
   ensure

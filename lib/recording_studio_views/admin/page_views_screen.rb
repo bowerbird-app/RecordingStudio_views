@@ -24,10 +24,34 @@ module RecordingStudioViews
       VISIT_KIND_FILTER = lambda { |relation, value, _context|
         Queries.filter_by_visit_kind(relation, value)
       }
+      TABLE_COLUMNS = [
+        [:occurred_at, "Time", true],
+        [:root, "Root", false],
+        [:page_key, "Page", false],
+        [:resource_type, "Resource type", false],
+        [:path, "Path", false],
+        [:ip, "IP", false],
+        [:user_agent, "User agent", false],
+        [:browser, "Browser", false],
+        [:os, "OS", false],
+        [:os_version, "OS version", false],
+        [:utm_source, "UTM source", false],
+        [:utm_medium, "UTM medium", false],
+        [:utm_term, "UTM term", false],
+        [:utm_content, "UTM content", false],
+        [:utm_campaign, "UTM campaign", false],
+        [:device_type, "Device", false],
+        [:country, "Country", false],
+        [:region, "Region", false],
+        [:city, "City", false],
+        [:latitude, "Latitude", false],
+        [:longitude, "Longitude", false],
+        [:actor, "Actor", false]
+      ].freeze
 
       query { |_context| Queries.view_logs }
 
-      filter_presentation :inline
+      filter_presentation :modal, inline_count: 2
       filter :date_range, field: :occurred_at, default: :last_30_days
       filter :group_by, values: %i[day week month], default: :day
       filter :root, options: -> { Queries.root_filter_options }, apply: ROOT_FILTER
@@ -52,14 +76,10 @@ module RecordingStudioViews
         title "Page views"
         filter :page_key, apply: PAGE_KEY_FILTER
         filter :path, apply: PATH_FILTER
-        column :occurred_at, title: "Time", value: ->(row, context) { Queries.occurred_at_value(row, context) }
-        column :root, title: "Root", sortable: false, value: ->(row, context) { Queries.root_value(row, context) }
-        column :page_key, title: "Page", sortable: false,
-                          value: ->(row, context) { Queries.page_key_value(row, context) }
-        column :resource_type, title: "Resource type", sortable: false,
-                               value: ->(row, context) { Queries.resource_type_value(row, context) }
-        column :path, title: "Path", sortable: false, value: ->(row, context) { Queries.path_value(row, context) }
-        column :actor, title: "Actor", sortable: false, value: ->(row, context) { Queries.actor_value(row, context) }
+        TABLE_COLUMNS.each do |key, title, sortable|
+          column key, title: title, sortable: sortable,
+                      value: ->(row, context) { Queries.public_send(:"#{key}_value", row, context) }
+        end
         paginate per_page: 25
         default_sort :occurred_at, direction: :desc
       end

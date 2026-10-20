@@ -12,7 +12,7 @@ module RecordingStudioViews
       link :views_page_views,
            text: "Page views",
            url: ->(context) { context.admin_screen_path("views_page_views") },
-           style: :primary
+           style: :secondary
 
       widget "widgets.views.page_views_over_time", view_variant: :compact
       widget "widgets.views.total_views", view_variant: :compact

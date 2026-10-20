@@ -20,9 +20,11 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes section, 'key "views"'
     assert_includes section, 'widget "widgets.views.page_views_over_time", view_variant: :compact'
     assert_includes section, 'widget "widgets.views.total_views", view_variant: :compact'
-    assert_includes section, "style: :primary"
+    assert_includes section, "style: :secondary"
+    refute_includes section, "style: :primary"
     assert_includes screen, 'key "views_page_views"'
-    assert_includes screen, "filter_presentation :inline"
+    assert_includes screen, "filter_presentation :modal, inline_count: 2"
+    refute_includes screen, "filter_presentation :inline"
     assert_includes screen, "filter :date_range, field: :occurred_at"
     assert_includes screen, "filter :group_by, values: %i[day week month], default: :day"
     assert_includes screen, "Queries.screen_page_views_series"
@@ -32,6 +34,13 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes screen, "filter :path"
     assert_includes screen, "filter :visit_kind"
     refute_includes screen, "visitor_kind"
+    %i[
+      ip user_agent browser os os_version
+      utm_source utm_medium utm_term utm_content utm_campaign
+      device_type country region city latitude longitude
+    ].each do |column|
+      assert_includes screen, ":#{column}"
+    end
     assert_includes widgets, "Queries.page_views_over_time_series"
     assert_includes widgets, "xaxis: { labels: { show: false } }"
     assert_includes widgets, "tooltip: { enabled: true }"

@@ -5,7 +5,7 @@ Page views for Recording Studio apps. Installing the gem does not start tracking
 V1 records page views only. It does not create sessions, funnels, conversions, unique visitors, or engagement duration. It never writes a Recording, revision, or timeline Event per view.
 
 ```ruby
-gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.6.0"
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.7.0"
 gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.4.0"
 ```
 
@@ -61,7 +61,9 @@ Delivery is best effort. The collector uses same-origin `fetch` with credentials
 
 `POST /recording_studio_views/views` checks method, content type, payload size, same-origin, and CSRF. It verifies the token purpose, target, and expiry, re-resolves the Recording or root, checks `:viewable`, then runs the host tracking-access policy for the current request actor. When Recording Studio Accessible is loaded, the default policy calls `RecordingStudioAccessible.authorized?(actor:, recording:, role: :view)`, the same check a private page uses. Set `tracking_access_action` to use `authorized_action?` instead when the page uses audiences (for example anonymous public). Accessible stays optional, the same `defined?` pattern as Admin. Signed context is not proof of a human view and is not authorization. Deleted or now-private content is not trackable with an old token. Anonymous views store no actor. Browser-supplied user ids are ignored.
 
-Raw model `RecordingStudioViews::ViewLog`. Fields: browser event UUID `id`, `occurred_at` (server acceptance, UTC), `arrived_at`, `root_recording_id`, `recording_id`, `resource_type`, `page_key`, normalized `path` (no query or fragment), optional actor, optional `visitor_token_digest` (off by default), timestamps. Path is descriptive only. The gem does not store raw IP, raw user agent, referrer URLs, or query strings.
+Raw model `RecordingStudioViews::ViewLog`. Fields: browser event UUID `id`, `occurred_at` (server acceptance, UTC), `arrived_at`, `root_recording_id`, `recording_id`, `resource_type`, `page_key`, normalized `path` (no query or fragment), optional actor, optional `visitor_token_digest` (off by default), masked `ip`, truncated `user_agent`, `browser`, `os`, `os_version`, `device_type`, `utm_source`, `utm_medium`, `utm_term`, `utm_content`, `utm_campaign`, `country`, `region`, `city`, `latitude`, `longitude`, timestamps. Path is descriptive only. The gem does not store referrer URLs or the raw query string. The collector reads `utm_source`, `utm_medium`, `utm_term`, `utm_content`, and `utm_campaign` from the current page URL and the server stores those five fields after validation and truncation.
+
+`ip` comes from Rails `request.remote_ip` on the collector POST and is masked before it is stored: IPv4 last octet is zeroed (`1.2.3.4` → `1.2.3.0`); IPv6 keeps the /48. Masking uses stdlib `IPAddr` only. `config.store_ip` defaults to true; set it to `false` to store nil and skip the address. The full IP is never written to the database, logs, or job arguments. `user_agent` is the raw `User-Agent` header, truncated to 1024 characters. `browser`, `os`, `os_version`, and `device_type` are parsed from that string with `device_detector` at capture time. Geo fields are filled from a local MaxMind lookup of the full IP in memory, then only the masked IP is persisted. Any of these fields may be nil when missing.
 
 Receipts (`recording_studio_views_view_receipts`) claim the event UUID in the same transaction as the view insert. A valid duplicate returns success with no new row. Conflicting reuse of an event UUID is rejected. A failed insert rolls back the claim. Receipts expire after 24 hours (`RecordingStudioViews::ReceiptCleanupJob`). They are bookkeeping, not sessions.
 
@@ -83,7 +85,7 @@ recording_studio_admin_sections do
 end
 ```
 
-The hub shows a UTC daily chart from `DailyViewSummary` (`widgets.views.page_views_over_time`) and an all-time total from daily summaries plus raw rows that have not been aggregated. Page views is a table of `ViewLog` rows. Screen filters render inline. Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
+The hub shows a UTC daily chart from `DailyViewSummary` (`widgets.views.page_views_over_time`) and an all-time total from daily summaries plus raw rows that have not been aggregated. Page views is a table of `ViewLog` rows. Date range and group by stay inline; other filters use Admin's filter modal (`filter_presentation :modal, inline_count: 2`). Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
 
 ## Retention and deletion
 
@@ -102,13 +104,35 @@ Schedule in the host. Views starts no cron runner:
 
 ## Privacy and caching
 
-Default exclusions: the ingestion endpoint, health checks, assets, skipped pages, recognized bots. Admin, staff, and internal traffic are host-configurable. No persistent visitor cookie is required.
+Default exclusions: the ingestion endpoint, health checks, assets, skipped pages, recognized bots. Admin, staff, and internal traffic are host-configurable. No persistent visitor cookie is required. Stored IPs are masked as above and can be disabled with `store_ip`.
+
+## GeoLite2 City
+
+Geo is off until the host sets a local MaxMind database path. Views does not ship a `.mmdb` and does not call MaxMind or any other geocoding API at request time.
+
+1. Create a free [MaxMind account](https://www.maxmind.com/en/geolite2/signup). Put the account id and license key in Rails credentials as `maxmind.account_id` and `maxmind.license_key`.
+2. Point Views at the file and those credentials (do not commit the licensed database into the gem):
+
+```ruby
+RecordingStudioViews.configure do |config|
+  config.geoip_database_path = Rails.root.join("db/GeoLite2-City.mmdb")
+  config.maxmind_account_id = Rails.application.credentials.dig(:maxmind, :account_id)
+  config.maxmind_license_key = Rails.application.credentials.dig(:maxmind, :license_key)
+end
+```
+
+3. Fetch or refresh the database with `bin/rails recording_studio_views:geoip:update`. Run that in the deploy / pre-deploy step; it is a no-op when the file exists and is younger than `config.geoip_max_age` (default 7 days). Set `FORCE=1` to download anyway.
+4. Schedule the same task weekly (Solid Queue recurring or cron). After an update, restart app processes so they reopen the new file.
+
+MaxMind's license requires timely updates and [attribution](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data): *This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.*
+
+`RecordingStudioViews.config.geoip_database_path` is the same setting. `geo_enabled` is true only when that path is set. If the file is missing or a lookup fails, geo columns stay nil.
 
 Render only target context into shared caches. Token expiry must fit the cache lifetime. Refresh the token on a dynamic shell, or keep that shell out of the shared cache.
 
 ## Dummy app
 
-The dummy host at `test/dummy` proves the gem. It has two trackable pages under different workspace roots, shared-layout tracking, a named workspace search page, explicit site pages (`site.home`, `site.sign_in`, `site.sign_up`, `site.about`), anonymous public views through Accessible audiences, and authenticated private pages through `authorized_action?`. It mounts Recording Studio Admin at `/admin` with the Views section enabled. Operation is non-partitioned by default. Partitioned insert coverage lives in the test suite.
+The dummy host at `test/dummy` proves the gem. It has two trackable pages under different workspace roots, shared-layout tracking, a named workspace search page, explicit site pages (`site.home`, `site.sign_in`, `site.sign_up`, `site.about`), anonymous public views through Accessible audiences, and authenticated private pages through `authorized_action?`. It mounts Recording Studio Admin at `/admin` with the Views section enabled. Operation is non-partitioned by default. Partitioned insert coverage lives in the test suite. Dummy uses the shared `test/dummy/config/credentials.yml.enc` (no per-environment credential files). MaxMind keys live in that file; without the master key (as in CI) geo stays off.
 
 Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Password`.
 
@@ -150,6 +174,8 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 | Trashable       | dummy GitHub tag `v0.11.0` (`require: false`; query-only via Accessible) |
 | Root Switchable | dummy GitHub tag `v0.9.0` |
 | Logs            | dummy GitHub tag `v0.4.0` |
+| device_detector | runtime (browser / OS / OS version / device type) |
+| maxmind-db      | runtime (local GeoLite2 City lookup only) |
 | Admin           | dummy GitHub tag `v2.3.0` (optional for hosts) |
 | FlatPack        | dummy GitHub tag `v0.1.213` |
 | Devise          | latest  |

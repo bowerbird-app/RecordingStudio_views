@@ -10,6 +10,12 @@ require "recording_studio_views/configuration"
 require "recording_studio_views/failure"
 require "recording_studio_views/instrumentation"
 require "recording_studio_views/path_normalizer"
+require "recording_studio_views/utm_capture"
+require "recording_studio_views/ip_mask"
+require "recording_studio_views/device_parser"
+require "recording_studio_views/geo_lookup"
+require "recording_studio_views/geoip_updater"
+require "recording_studio_views/request_capture"
 require "recording_studio_views/page_context"
 require "recording_studio_views/context_token"
 require "recording_studio_views/context_resolver"
@@ -44,6 +50,8 @@ module RecordingStudioViews
       yield(configuration) if block_given?
       configuration
     end
+
+    alias config configuration
 
     def delete_for_root(root_recording_id:, dry_run: false)
       RecordingStudioLogs.delete_for_root(root_recording_id: root_recording_id, dry_run: dry_run)

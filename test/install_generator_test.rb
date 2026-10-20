@@ -142,6 +142,19 @@ class InstallGeneratorTest < Minitest::Test
     refute_includes install_guide, "RecordingStudio v3"
   end
 
+  def test_initializer_template_wires_geoip_path_and_maxmind_credentials
+    template = File.read(
+      File.expand_path(
+        "../lib/generators/recording_studio_views/install/templates/recording_studio_views_initializer.rb",
+        __dir__
+      )
+    )
+
+    assert_includes template, 'config.geoip_database_path = Rails.root.join("db/GeoLite2-City.mmdb")'
+    assert_includes template, "config.maxmind_account_id = Rails.application.credentials.dig(:maxmind, :account_id)"
+    assert_includes template, "config.maxmind_license_key = Rails.application.credentials.dig(:maxmind, :license_key)"
+  end
+
   private
 
   def assert_tailwind_sources_present(css)

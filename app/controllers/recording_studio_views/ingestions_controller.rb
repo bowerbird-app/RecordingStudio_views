@@ -18,7 +18,7 @@ module RecordingStudioViews
     private
 
     def ingest_params
-      params.permit(:event_id, :token, :path)
+      params.permit(:event_id, :token, :path, *Configuration::UTM_KEYS)
     end
 
     def resolved_actor

@@ -52,6 +52,47 @@ module RecordingStudioViews
       )
     end
 
+    def add_request_columns!(connection: ActiveRecord::Base.connection)
+      return unless connection.data_source_exists?(VIEW_LOGS)
+
+      request_string_columns.each do |name, limit|
+        add_string_column(connection, name, limit)
+      end
+      add_decimal_column(connection, :latitude)
+      add_decimal_column(connection, :longitude)
+    end
+
+    def request_string_columns
+      {
+        ip: Configuration::IP_LIMIT,
+        user_agent: Configuration::USER_AGENT_LIMIT,
+        browser: Configuration::DEVICE_FIELD_LIMIT,
+        os: Configuration::DEVICE_FIELD_LIMIT,
+        device_type: Configuration::DEVICE_FIELD_LIMIT,
+        os_version: Configuration::DEVICE_FIELD_LIMIT,
+        utm_source: Configuration::UTM_LIMIT,
+        utm_medium: Configuration::UTM_LIMIT,
+        utm_term: Configuration::UTM_LIMIT,
+        utm_content: Configuration::UTM_LIMIT,
+        utm_campaign: Configuration::UTM_LIMIT,
+        country: Configuration::GEO_NAME_LIMIT,
+        region: Configuration::GEO_NAME_LIMIT,
+        city: Configuration::GEO_NAME_LIMIT
+      }
+    end
+
+    def add_string_column(connection, name, limit)
+      return if connection.column_exists?(VIEW_LOGS, name)
+
+      connection.add_column VIEW_LOGS, name, :string, limit: limit
+    end
+
+    def add_decimal_column(connection, name)
+      return if connection.column_exists?(VIEW_LOGS, name)
+
+      connection.add_column VIEW_LOGS, name, :decimal, precision: 10, scale: 6
+    end
+
     def view_log_columns(table)
       table.uuid :root_recording_id
       table.uuid :recording_id
@@ -61,6 +102,9 @@ module RecordingStudioViews
       table.string :actor_type, limit: Configuration::ACTOR_TYPE_LIMIT
       table.string :actor_id, limit: 64
       table.string :visitor_token_digest, limit: 64
+      request_string_columns.each { |name, limit| table.string name, limit: limit }
+      table.decimal :latitude, precision: 10, scale: 6
+      table.decimal :longitude, precision: 10, scale: 6
       table.timestamps
     end
   end

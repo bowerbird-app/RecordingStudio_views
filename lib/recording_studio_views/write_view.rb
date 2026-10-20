@@ -2,12 +2,21 @@
 
 module RecordingStudioViews
   class WriteView < RecordingStudio::Services::BaseService
-    def initialize(event_id:, context:, path:, actor: nil, visitor_token_digest: nil)
+    CAPTURED_KEYS = (
+      %i[ip user_agent browser os os_version device_type country region city latitude longitude] +
+      Configuration::UTM_KEYS
+    ).freeze
+
+    def initialize(event_id:, context:, path:, actor: nil, visitor_token_digest: nil, ip: nil, user_agent: nil,
+                   captured: {})
       @event_id = event_id
       @context = context
       @path = path
       @actor = actor
       @visitor_token_digest = visitor_token_digest
+      @captured = captured.to_h.symbolize_keys
+      @captured[:ip] = ip unless ip.nil?
+      @captured[:user_agent] = user_agent unless user_agent.nil?
       super()
     end
 
@@ -68,7 +77,54 @@ module RecordingStudioViews
         actor_type: actor_type,
         actor_id: actor_id,
         visitor_token_digest: @visitor_token_digest
+      }.merge(request_columns)
+    end
+
+    def request_columns
+      {
+        ip: stored_ip,
+        user_agent: stored_user_agent,
+        browser: captured_value(:browser) || device[:browser],
+        os: captured_value(:os) || device[:os],
+        os_version: captured_value(:os_version) || device[:os_version],
+        device_type: captured_value(:device_type) || device[:device_type],
+        utm_source: stored_utm(:utm_source),
+        utm_medium: stored_utm(:utm_medium),
+        utm_term: stored_utm(:utm_term),
+        utm_content: stored_utm(:utm_content),
+        utm_campaign: stored_utm(:utm_campaign),
+        country: captured_value(:country),
+        region: captured_value(:region),
+        city: captured_value(:city),
+        latitude: captured_value(:latitude),
+        longitude: captured_value(:longitude)
       }
+    end
+
+    def stored_ip
+      return unless RecordingStudioViews.configuration.store_ip
+
+      IpMask.call(@captured[:ip])
+    end
+
+    def stored_user_agent
+      return if @captured[:user_agent].blank?
+
+      @captured[:user_agent].to_s[0, Configuration::USER_AGENT_LIMIT]
+    end
+
+    def device
+      @device ||= DeviceParser.call(stored_user_agent)
+    end
+
+    def stored_utm(key)
+      UtmCapture.sanitize(captured_value(key))
+    end
+
+    def captured_value(key)
+      return unless CAPTURED_KEYS.include?(key)
+
+      @captured[key]
     end
 
     def actor_type

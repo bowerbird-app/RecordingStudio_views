@@ -50,6 +50,13 @@ class AdminRootSwitchTest < ActionDispatch::IntegrationTest
 
     get "/admin/sections/views"
     assert_response :success
+    page_views_link = css_select('a[href="/admin/screens/views_page_views"]').find do |node|
+      node.text.include?("Page views")
+    end
+    assert page_views_link, "expected a Page views section link"
+    classes = page_views_link["class"].to_s
+    refute_match(/\bprimary\b/, classes)
+    assert_includes classes, "fp-button-flat"
 
     get "/admin/screens/views_page_views"
     assert_response :success
@@ -57,6 +64,11 @@ class AdminRootSwitchTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "/assets/turbo.min"
     assert_includes response.body, 'id="screen-table"'
     assert_includes response.body, "/admin/screens/views_page_views/table"
+    assert_includes response.body, 'id="screen-inline-filters-form"'
+    assert_includes response.body, 'data-recording-studio-admin--screen-filters-modal-filters-value="true"'
+    assert_includes response.body,
+                    'data-recording-studio-admin--screen-filters-inline-filter-names-value="[&quot;start_date&quot;,&quot;end_date&quot;,&quot;date_range_preset&quot;,&quot;group_by&quot;]"'
+    assert_includes response.body, "flat-pack--modal"
   end
 
   private

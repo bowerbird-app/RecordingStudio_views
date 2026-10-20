@@ -42,6 +42,12 @@ class ConfigurationTest < Minitest::Test
     assert_equal "env-token", configuration.api_key
     assert_equal false, configuration.enable_feature_x
     assert_equal 5, configuration.timeout
+    assert_equal true, configuration.store_ip
+    assert_nil configuration.geoip_database_path
+    assert_nil configuration.maxmind_account_id
+    assert_nil configuration.maxmind_license_key
+    assert_equal 7.days, configuration.geoip_max_age
+    assert_equal false, configuration.geo_enabled
     assert_instance_of RecordingStudio::Hooks, configuration.hooks
   ensure
     ENV["RECORDING_STUDIO_VIEWS_API_KEY"] = previous_value

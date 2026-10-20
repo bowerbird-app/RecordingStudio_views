@@ -22,6 +22,15 @@ RecordingStudioViews.configure do |config|
   # Optional SHA digest of a host visitor cookie. Off by default. This is not unique-visitor reporting.
   # config.visitor_token_digest_resolver = ->(controller) { ... }
 
+  # Store a masked visitor IP on each raw view (IPv4 last octet zeroed, IPv6 /48). Default true.
+  # config.store_ip = true
+
+  # Local MaxMind GeoLite2 City .mmdb only. Leave unset to skip geo (geo_enabled is then false).
+  # The gem does not ship this file. Fetch it with `bin/rails recording_studio_views:geoip:update`.
+  config.geoip_database_path = Rails.root.join("db/GeoLite2-City.mmdb")
+  config.maxmind_account_id = Rails.application.credentials.dig(:maxmind, :account_id)
+  config.maxmind_license_key = Rails.application.credentials.dig(:maxmind, :license_key)
+
   # Shared roots need an explicit ownership check.
   # config.root_ownership_policy = ->(_controller, _root) { true }
 end

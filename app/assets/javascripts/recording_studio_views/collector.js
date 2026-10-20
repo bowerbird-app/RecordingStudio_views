@@ -17,6 +17,17 @@
     }
   }
 
+  function utmParams() {
+    const params = new URLSearchParams(window.location.search || "");
+    const keys = ["utm_source", "utm_medium", "utm_term", "utm_content", "utm_campaign"];
+    const values = {};
+    keys.forEach(function (key) {
+      const value = params.get(key);
+      if (value) values[key] = value;
+    });
+    return values;
+  }
+
   function csrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
     return meta ? meta.getAttribute("content") : null;
@@ -37,11 +48,11 @@
   function postView(id, attempt, captured) {
     const payload = captured || contextPayload();
     if (!payload) return Promise.resolve();
-    const body = JSON.stringify({
+    const body = JSON.stringify(Object.assign({
       event_id: id,
       token: payload.token,
       path: window.location.pathname
-    });
+    }, utmParams()));
     return fetch(payload.endpoint, {
       method: "POST",
       credentials: "same-origin",

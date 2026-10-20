@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_19_080000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_20_030500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -184,6 +184,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_080000) do
     t.string "visitor_token_digest", limit: 64
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "ip", limit: 64
+    t.string "user_agent", limit: 1024
+    t.string "browser", limit: 128
+    t.string "os", limit: 128
+    t.string "os_version", limit: 128
+    t.string "utm_source", limit: 255
+    t.string "utm_medium", limit: 255
+    t.string "utm_term", limit: 255
+    t.string "utm_content", limit: 255
+    t.string "utm_campaign", limit: 255
+    t.string "device_type", limit: 128
+    t.string "country", limit: 128
+    t.string "region", limit: 128
+    t.string "city", limit: 128
+    t.decimal "latitude", precision: 10, scale: 6
+    t.decimal "longitude", precision: 10, scale: 6
     t.index ["root_recording_id", "occurred_at"], name: "index_recording_studio_views_view_logs_on_root_recording_id_occ"
   end
 

@@ -25,11 +25,15 @@ class DummyCredentialsTest < Minitest::Test
     gitignore = File.read(File.expand_path("../.gitignore", __dir__))
     assert_includes gitignore, "test/dummy/config/master.key"
     assert_includes gitignore, "config/master.key"
+    assert_includes gitignore, "config/credentials/*.key"
+    assert_includes gitignore, "test/dummy/config/credentials/*.key"
+    assert_includes gitignore, "test/dummy/db/GeoLite2-City.mmdb"
 
     tracked = Dir.chdir(File.expand_path("..", __dir__)) do
-      `git ls-files -- config/master.key test/dummy/config/master.key`.strip
+      `git ls-files -- config/master.key test/dummy/config/master.key \
+        config/credentials/*.key test/dummy/config/credentials/*.key`.strip
     end
-    assert_equal "", tracked, "master.key must not be committed"
+    assert_equal "", tracked, "credential keys must not be committed"
   end
 
   def test_dummy_credentials_decrypt_when_master_key_is_available
