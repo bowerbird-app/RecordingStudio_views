@@ -24,6 +24,30 @@ module RecordingStudioViews
       VISIT_KIND_FILTER = lambda { |relation, value, _context|
         Queries.filter_by_visit_kind(relation, value)
       }
+      TABLE_COLUMNS = [
+        [:occurred_at, "Time", true],
+        [:root, "Root", false],
+        [:page_key, "Page", false],
+        [:resource_type, "Resource type", false],
+        [:path, "Path", false],
+        [:ip, "IP", false],
+        [:user_agent, "User agent", false],
+        [:browser, "Browser", false],
+        [:os, "OS", false],
+        [:os_version, "OS version", false],
+        [:utm_source, "UTM source", false],
+        [:utm_medium, "UTM medium", false],
+        [:utm_term, "UTM term", false],
+        [:utm_content, "UTM content", false],
+        [:utm_campaign, "UTM campaign", false],
+        [:device_type, "Device", false],
+        [:country, "Country", false],
+        [:region, "Region", false],
+        [:city, "City", false],
+        [:latitude, "Latitude", false],
+        [:longitude, "Longitude", false],
+        [:actor, "Actor", false]
+      ].freeze
 
       query { |_context| Queries.view_logs }
 
@@ -52,42 +76,10 @@ module RecordingStudioViews
         title "Page views"
         filter :page_key, apply: PAGE_KEY_FILTER
         filter :path, apply: PATH_FILTER
-        column :occurred_at, title: "Time", value: ->(row, context) { Queries.occurred_at_value(row, context) }
-        column :root, title: "Root", sortable: false, value: ->(row, context) { Queries.root_value(row, context) }
-        column :page_key, title: "Page", sortable: false,
-                          value: ->(row, context) { Queries.page_key_value(row, context) }
-        column :resource_type, title: "Resource type", sortable: false,
-                               value: ->(row, context) { Queries.resource_type_value(row, context) }
-        column :path, title: "Path", sortable: false, value: ->(row, context) { Queries.path_value(row, context) }
-        column :ip, title: "IP", sortable: false, value: ->(row, context) { Queries.ip_value(row, context) }
-        column :user_agent, title: "User agent", sortable: false,
-                            value: ->(row, context) { Queries.user_agent_value(row, context) }
-        column :browser, title: "Browser", sortable: false,
-                         value: ->(row, context) { Queries.browser_value(row, context) }
-        column :os, title: "OS", sortable: false, value: ->(row, context) { Queries.os_value(row, context) }
-        column :os_version, title: "OS version", sortable: false,
-                            value: ->(row, context) { Queries.os_version_value(row, context) }
-        column :utm_source, title: "UTM source", sortable: false,
-                            value: ->(row, context) { Queries.utm_source_value(row, context) }
-        column :utm_medium, title: "UTM medium", sortable: false,
-                            value: ->(row, context) { Queries.utm_medium_value(row, context) }
-        column :utm_term, title: "UTM term", sortable: false,
-                          value: ->(row, context) { Queries.utm_term_value(row, context) }
-        column :utm_content, title: "UTM content", sortable: false,
-                             value: ->(row, context) { Queries.utm_content_value(row, context) }
-        column :utm_campaign, title: "UTM campaign", sortable: false,
-                              value: ->(row, context) { Queries.utm_campaign_value(row, context) }
-        column :device_type, title: "Device", sortable: false,
-                             value: ->(row, context) { Queries.device_type_value(row, context) }
-        column :country, title: "Country", sortable: false,
-                         value: ->(row, context) { Queries.country_value(row, context) }
-        column :region, title: "Region", sortable: false, value: ->(row, context) { Queries.region_value(row, context) }
-        column :city, title: "City", sortable: false, value: ->(row, context) { Queries.city_value(row, context) }
-        column :latitude, title: "Latitude", sortable: false,
-                          value: ->(row, context) { Queries.latitude_value(row, context) }
-        column :longitude, title: "Longitude", sortable: false,
-                           value: ->(row, context) { Queries.longitude_value(row, context) }
-        column :actor, title: "Actor", sortable: false, value: ->(row, context) { Queries.actor_value(row, context) }
+        TABLE_COLUMNS.each do |key, title, sortable|
+          column key, title: title, sortable: sortable,
+                      value: ->(row, context) { Queries.public_send(:"#{key}_value", row, context) }
+        end
         paginate per_page: 25
         default_sort :occurred_at, direction: :desc
       end

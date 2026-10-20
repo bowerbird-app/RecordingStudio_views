@@ -34,22 +34,13 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes screen, "filter :path"
     assert_includes screen, "filter :visit_kind"
     refute_includes screen, "visitor_kind"
-    assert_includes screen, "column :ip"
-    assert_includes screen, "column :user_agent"
-    assert_includes screen, "column :browser"
-    assert_includes screen, "column :os"
-    assert_includes screen, "column :os_version"
-    assert_includes screen, "column :utm_source"
-    assert_includes screen, "column :utm_medium"
-    assert_includes screen, "column :utm_term"
-    assert_includes screen, "column :utm_content"
-    assert_includes screen, "column :utm_campaign"
-    assert_includes screen, "column :device_type"
-    assert_includes screen, "column :country"
-    assert_includes screen, "column :region"
-    assert_includes screen, "column :city"
-    assert_includes screen, "column :latitude"
-    assert_includes screen, "column :longitude"
+    %i[
+      ip user_agent browser os os_version
+      utm_source utm_medium utm_term utm_content utm_campaign
+      device_type country region city latitude longitude
+    ].each do |column|
+      assert_includes screen, ":#{column}"
+    end
     assert_includes widgets, "Queries.page_views_over_time_series"
     assert_includes widgets, "xaxis: { labels: { show: false } }"
     assert_includes widgets, "tooltip: { enabled: true }"

@@ -15,12 +15,13 @@ class MigrationsGeneratorTest < Minitest::Test
       )
     )
 
-    assert_includes schema, "table.string :ip, limit: Configuration::IP_LIMIT"
-    assert_includes schema, "table.string :user_agent, limit: Configuration::USER_AGENT_LIMIT"
-    assert_includes schema, "table.string :browser, limit: Configuration::DEVICE_FIELD_LIMIT"
-    assert_includes schema, "table.string :os_version, limit: Configuration::DEVICE_FIELD_LIMIT"
-    assert_includes schema, "table.string :utm_source, limit: Configuration::UTM_LIMIT"
-    assert_includes schema, "table.string :country, limit: Configuration::GEO_NAME_LIMIT"
+    assert_includes schema, "ip: Configuration::IP_LIMIT"
+    assert_includes schema, "user_agent: Configuration::USER_AGENT_LIMIT"
+    assert_includes schema, "browser: Configuration::DEVICE_FIELD_LIMIT"
+    assert_includes schema, "os_version: Configuration::DEVICE_FIELD_LIMIT"
+    assert_includes schema, "utm_source: Configuration::UTM_LIMIT"
+    assert_includes schema, "country: Configuration::GEO_NAME_LIMIT"
+    assert_includes schema, "request_string_columns.each { |name, limit| table.string name, limit: limit }"
     assert_includes schema, "table.decimal :latitude, precision: 10, scale: 6"
     assert_includes schema, "def add_request_columns!"
     assert_includes generator, "add_ip_and_user_agent_to_recording_studio_views_view_logs.rb"

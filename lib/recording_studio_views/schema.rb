@@ -102,20 +102,7 @@ module RecordingStudioViews
       table.string :actor_type, limit: Configuration::ACTOR_TYPE_LIMIT
       table.string :actor_id, limit: 64
       table.string :visitor_token_digest, limit: 64
-      table.string :ip, limit: Configuration::IP_LIMIT
-      table.string :user_agent, limit: Configuration::USER_AGENT_LIMIT
-      table.string :browser, limit: Configuration::DEVICE_FIELD_LIMIT
-      table.string :os, limit: Configuration::DEVICE_FIELD_LIMIT
-      table.string :device_type, limit: Configuration::DEVICE_FIELD_LIMIT
-      table.string :os_version, limit: Configuration::DEVICE_FIELD_LIMIT
-      table.string :utm_source, limit: Configuration::UTM_LIMIT
-      table.string :utm_medium, limit: Configuration::UTM_LIMIT
-      table.string :utm_term, limit: Configuration::UTM_LIMIT
-      table.string :utm_content, limit: Configuration::UTM_LIMIT
-      table.string :utm_campaign, limit: Configuration::UTM_LIMIT
-      table.string :country, limit: Configuration::GEO_NAME_LIMIT
-      table.string :region, limit: Configuration::GEO_NAME_LIMIT
-      table.string :city, limit: Configuration::GEO_NAME_LIMIT
+      request_string_columns.each { |name, limit| table.string name, limit: limit }
       table.decimal :latitude, precision: 10, scale: 6
       table.decimal :longitude, precision: 10, scale: 6
       table.timestamps
