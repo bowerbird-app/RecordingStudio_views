@@ -216,6 +216,14 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_equal({ x: today, y: 2 }, points.fetch(today))
   end
 
+  test "raw table values include ip and user agent" do
+    row = insert_view(ip: "1.2.3.0", user_agent: "Mozilla/5.0")
+    queries = RecordingStudioViews::Admin::Queries
+
+    assert_equal "1.2.3.0", queries.ip_value(row, nil)
+    assert_equal "Mozilla/5.0", queries.user_agent_value(row, nil)
+  end
+
   private
 
   def actor_context_for(rows)

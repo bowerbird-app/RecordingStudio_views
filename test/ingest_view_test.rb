@@ -5,6 +5,7 @@ require "test_helper"
 class IngestViewTest < Minitest::Test
   FakeRequest = Struct.new(
     :request_method, :media_type, :content_length, :origin, :referer, :host, :port, :path, :user_agent,
+    :remote_ip,
     keyword_init: true
   ) do
     def post?
@@ -15,6 +16,7 @@ class IngestViewTest < Minitest::Test
       case name
       when "HTTP_ORIGIN" then origin
       when "HTTP_REFERER" then referer
+      when "HTTP_USER_AGENT" then user_agent
       end
     end
   end
@@ -22,13 +24,19 @@ class IngestViewTest < Minitest::Test
   def setup
     @previous_policy = RecordingStudioViews.configuration.tracking_access_policy
     @previous_consent = RecordingStudioViews.configuration.consent_predicate
+    @previous_site = RecordingStudioViews.configuration.site_tracking_enabled
+    @previous_store_ip = RecordingStudioViews.configuration.store_ip
     RecordingStudioViews.configuration.tracking_access_policy = ->(*) { :allow }
     RecordingStudioViews.configuration.consent_predicate = ->(*) { true }
+    RecordingStudioViews.configuration.site_tracking_enabled = true
+    RecordingStudioViews.configuration.store_ip = true
   end
 
   def teardown
     RecordingStudioViews.configuration.tracking_access_policy = @previous_policy
     RecordingStudioViews.configuration.consent_predicate = @previous_consent
+    RecordingStudioViews.configuration.site_tracking_enabled = @previous_site
+    RecordingStudioViews.configuration.store_ip = @previous_store_ip
   end
 
   def test_rejects_non_post_and_wrong_content_type
@@ -89,6 +97,26 @@ class IngestViewTest < Minitest::Test
     end
   end
 
+  def test_passes_masked_ipv4_and_truncated_user_agent
+    captured = capture_write_view(remote_ip: "1.2.3.4", user_agent: "A" * 2_000)
+
+    assert_equal "1.2.3.0", captured[:ip]
+    assert_equal "A" * RecordingStudioViews::Configuration::USER_AGENT_LIMIT, captured[:user_agent]
+  end
+
+  def test_passes_masked_ipv6
+    captured = capture_write_view(remote_ip: "2001:db8:85a3:8d3:1319:8a2e:370:7344")
+
+    assert_equal "2001:db8:85a3::", captured[:ip]
+  end
+
+  def test_store_ip_off_passes_nil_ip
+    RecordingStudioViews.configuration.store_ip = false
+    captured = capture_write_view(remote_ip: "1.2.3.4")
+
+    assert_nil captured[:ip]
+  end
+
   def test_source_does_not_call_logs_finalize
     source = File.read(File.expand_path("../lib/recording_studio_views.rb", __dir__))
     engine = File.read(File.expand_path("../lib/recording_studio_views/engine.rb", __dir__))
@@ -98,6 +126,37 @@ class IngestViewTest < Minitest::Test
   end
 
   private
+
+  Success = Struct.new(:success?, keyword_init: true)
+
+  def capture_write_view(**request_overrides)
+    captured = nil
+    site = RecordingStudioViews::PageContext.new(
+      kind: :site,
+      recording_id: nil,
+      root_recording_id: nil,
+      resource_type: "Site",
+      page_key: "site.about",
+      version: 1
+    )
+    writer = lambda do |*_args, **kwargs|
+      captured = kwargs
+      Success.new(success?: true)
+    end
+    RecordingStudioViews::ContextToken.stub :read, site do
+      RecordingStudioViews::WriteView.stub :call, writer do
+        RecordingStudioViews::IngestView.call(
+          request: request(**request_overrides),
+          params: {
+            event_id: "11111111-1111-1111-1111-111111111111",
+            token: "unused",
+            path: "/site/about"
+          }
+        )
+      end
+    end
+    captured
+  end
 
   def request(**overrides)
     FakeRequest.new(
@@ -110,7 +169,8 @@ class IngestViewTest < Minitest::Test
         host: "www.example.com",
         port: 80,
         path: "/recording_studio_views/views",
-        user_agent: "Mozilla/5.0 Chrome/120.0"
+        user_agent: "Mozilla/5.0 Chrome/120.0",
+        remote_ip: "1.2.3.4"
       }.merge(overrides)
     )
   end

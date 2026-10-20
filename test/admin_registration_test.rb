@@ -32,6 +32,8 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes screen, "filter :path"
     assert_includes screen, "filter :visit_kind"
     refute_includes screen, "visitor_kind"
+    assert_includes screen, "column :ip"
+    assert_includes screen, "column :user_agent"
     assert_includes widgets, "Queries.page_views_over_time_series"
     assert_includes widgets, "xaxis: { labels: { show: false } }"
     assert_includes widgets, "tooltip: { enabled: true }"

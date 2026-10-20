@@ -22,6 +22,7 @@ module RecordingStudioViews
         copy_named_migration("create_recording_studio_views_view_logs", view_logs_body)
         copy_engine_migration("create_recording_studio_views_view_receipts.rb")
         copy_engine_migration("create_recording_studio_views_daily_view_summaries.rb")
+        copy_engine_migration("add_ip_and_user_agent_to_recording_studio_views_view_logs.rb")
         say "\nRun 'bin/rails db:migrate' to apply the migrations.", :green
         say partition_note, :yellow if options[:partitioned]
       end

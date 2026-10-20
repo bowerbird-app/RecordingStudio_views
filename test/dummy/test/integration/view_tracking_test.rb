@@ -55,6 +55,51 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     assert_equal @user.id.to_s, view.actor_id
   end
 
+  test "collector stores masked ipv4 ipv6 and truncated user agent" do
+    sign_in @user
+    get page_path(@page)
+    context = page_context
+    ipv4_id = SecureRandom.uuid
+    post_ingest(
+      context,
+      event_id: ipv4_id,
+      user_agent: "Mozilla/5.0 #{'X' * 2_000}",
+      extra_headers: { "REMOTE_ADDR" => "1.2.3.4" }
+    )
+    ipv4 = RecordingStudioViews::ViewLog.find(ipv4_id)
+    assert_equal "1.2.3.0", ipv4.ip
+    assert_equal RecordingStudioViews::Configuration::USER_AGENT_LIMIT, ipv4.user_agent.length
+    assert_equal "Mozilla/5.0 #{'X' * (RecordingStudioViews::Configuration::USER_AGENT_LIMIT - 'Mozilla/5.0 '.length)}",
+                 ipv4.user_agent
+
+    ipv6_id = SecureRandom.uuid
+    post_ingest(
+      context,
+      event_id: ipv6_id,
+      extra_headers: { "REMOTE_ADDR" => "2001:db8:85a3:8d3:1319:8a2e:370:7344" }
+    )
+    assert_equal "2001:db8:85a3::", RecordingStudioViews::ViewLog.find(ipv6_id).ip
+  end
+
+  test "store_ip off stores nil ip and still saves user agent" do
+    previous = RecordingStudioViews.configuration.store_ip
+    RecordingStudioViews.configuration.store_ip = false
+    sign_in @user
+    get page_path(@page)
+    event_id = SecureRandom.uuid
+    post_ingest(
+      page_context,
+      event_id: event_id,
+      user_agent: "TestAgent/1.0",
+      extra_headers: { "REMOTE_ADDR" => "9.8.7.6" }
+    )
+    view = RecordingStudioViews::ViewLog.find(event_id)
+    assert_nil view.ip
+    assert_equal "TestAgent/1.0", view.user_agent
+  ensure
+    RecordingStudioViews.configuration.store_ip = previous
+  end
+
   test "disabled types skipped pages consent bots and policy denials create no views" do
     sign_in @user
     get folder_path(@folder)

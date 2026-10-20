@@ -26,19 +26,26 @@ module RecordingStudioViews
       return excluded(:policy) unless access_allowed?(context)
       return excluded(:bot) if bot?
 
-      result = WriteView.call(
-        event_id: event_id,
-        context: context,
-        path: @params[:path] || @params["path"] || @request.path,
-        actor: @actor,
-        visitor_token_digest: @visitor_token_digest
-      )
-      return result if result.success?
-
-      result
+      write_view(context)
     end
 
     private
+
+    def write_view(context)
+      WriteView.call(
+        event_id: event_id,
+        context: context,
+        path: ingest_path,
+        actor: @actor,
+        visitor_token_digest: @visitor_token_digest,
+        ip: RequestCapture.ip(@request),
+        user_agent: RequestCapture.user_agent(@request)
+      )
+    end
+
+    def ingest_path
+      @params[:path] || @params["path"] || @request.path
+    end
 
     def request_gate
       return rejected(:method) unless @request.post?

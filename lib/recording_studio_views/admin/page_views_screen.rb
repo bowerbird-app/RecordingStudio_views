@@ -59,6 +59,9 @@ module RecordingStudioViews
         column :resource_type, title: "Resource type", sortable: false,
                                value: ->(row, context) { Queries.resource_type_value(row, context) }
         column :path, title: "Path", sortable: false, value: ->(row, context) { Queries.path_value(row, context) }
+        column :ip, title: "IP", sortable: false, value: ->(row, context) { Queries.ip_value(row, context) }
+        column :user_agent, title: "User agent", sortable: false,
+                            value: ->(row, context) { Queries.user_agent_value(row, context) }
         column :actor, title: "Actor", sortable: false, value: ->(row, context) { Queries.actor_value(row, context) }
         paginate per_page: 25
         default_sort :occurred_at, direction: :desc

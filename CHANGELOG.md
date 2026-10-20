@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-20
+
+### Added
+- Raw `ViewLog` rows store a masked visitor `ip` (from `request.remote_ip`) and the raw `User-Agent` header, truncated to 1024 characters. IPv4 zeros the last octet; IPv6 zeros the last 80 bits (`IPAddr` /48). Capture happens on the collector POST. Summary tables are unchanged.
+- `config.store_ip` (default `true`) turns IP storage off entirely. When off, `ip` is nil. The full address is never persisted, logged, or passed as a job argument.
+- Admin Page views lists `ip` and `user_agent` on the existing raw-rows table.
+- Hosts pick up the columns with `bin/rails generate recording_studio_views:migrations` then `db:migrate`. New installs also get them from `Schema.create_view_logs!`.
+
+### Upgrade notes
+- Generate and run the `add_ip_and_user_agent_to_recording_studio_views_view_logs` migration.
+- Set `config.store_ip = false` if the host must not store even a masked IP.
+
 ## [0.6.0] - 2026-10-20
 
 ### Added

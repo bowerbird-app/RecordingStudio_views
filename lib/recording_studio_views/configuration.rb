@@ -10,6 +10,8 @@ module RecordingStudioViews
     PAGE_KEY_LIMIT = 128
     RESOURCE_TYPE_LIMIT = 128
     ACTOR_TYPE_LIMIT = 128
+    IP_LIMIT = 64
+    USER_AGENT_LIMIT = 1_024
 
     attr_accessor :api_key, :enable_feature_x, :timeout, :hooks,
                   :recording_resolver, :root_page_resolver, :site_page_resolver,
@@ -17,7 +19,7 @@ module RecordingStudioViews
                   :consent_predicate,
                   :actor_resolver, :visitor_token_digest_resolver, :skip_paths,
                   :bot_filter, :token_ttl, :site_tracking_enabled,
-                  :excluded_controller_paths
+                  :excluded_controller_paths, :store_ip
 
     def initialize
       @api_key = ENV.fetch("RECORDING_STUDIO_VIEWS_API_KEY", nil)
@@ -38,6 +40,7 @@ module RecordingStudioViews
       @actor_resolver = ->(controller) { default_actor(controller) }
       @visitor_token_digest_resolver = nil
       @bot_filter = BotFilter
+      @store_ip = true
     end
 
     def to_h
@@ -47,6 +50,7 @@ module RecordingStudioViews
         timeout: timeout,
         token_ttl: token_ttl,
         site_tracking_enabled: site_tracking_enabled,
+        store_ip: store_ip,
         hooks_registered: hooks.instance_variable_get(:@registry).transform_values(&:size)
       }
     end

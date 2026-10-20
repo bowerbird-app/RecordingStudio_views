@@ -2,12 +2,14 @@
 
 module RecordingStudioViews
   class WriteView < RecordingStudio::Services::BaseService
-    def initialize(event_id:, context:, path:, actor: nil, visitor_token_digest: nil)
+    def initialize(event_id:, context:, path:, actor: nil, visitor_token_digest: nil, ip: nil, user_agent: nil)
       @event_id = event_id
       @context = context
       @path = path
       @actor = actor
       @visitor_token_digest = visitor_token_digest
+      @ip = ip
+      @user_agent = user_agent
       super()
     end
 
@@ -67,8 +69,22 @@ module RecordingStudioViews
         path: PathNormalizer.call(@path) || "/",
         actor_type: actor_type,
         actor_id: actor_id,
-        visitor_token_digest: @visitor_token_digest
+        visitor_token_digest: @visitor_token_digest,
+        ip: stored_ip,
+        user_agent: stored_user_agent
       }
+    end
+
+    def stored_ip
+      return unless RecordingStudioViews.configuration.store_ip
+
+      IpMask.call(@ip)
+    end
+
+    def stored_user_agent
+      return if @user_agent.blank?
+
+      @user_agent.to_s[0, Configuration::USER_AGENT_LIMIT]
     end
 
     def actor_type

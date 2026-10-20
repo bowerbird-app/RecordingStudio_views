@@ -81,6 +81,14 @@ module RecordingStudioViews
           row.path
         end
 
+        def ip_value(row, _context)
+          row.ip
+        end
+
+        def user_agent_value(row, _context)
+          row.user_agent
+        end
+
         def root_label(root_recording_id)
           return SITE_ROOT_LABEL if root_recording_id.blank?
 

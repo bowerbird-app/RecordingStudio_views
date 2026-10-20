@@ -22,6 +22,9 @@ RecordingStudioViews.configure do |config|
   # Optional SHA digest of a host visitor cookie. Off by default. This is not unique-visitor reporting.
   # config.visitor_token_digest_resolver = ->(controller) { ... }
 
+  # Store a masked visitor IP on each raw view (IPv4 last octet zeroed, IPv6 /48). Default true.
+  # config.store_ip = true
+
   # Shared roots need an explicit ownership check.
   # config.root_ownership_policy = ->(_controller, _root) { true }
 end

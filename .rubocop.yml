@@ -47,6 +47,10 @@ Metrics/ClassLength:
 Metrics/BlockLength:
   Max: 40
 
+Metrics/ParameterLists:
+  Exclude:
+    - "lib/recording_studio_views/write_view.rb"
+
 # Allow empty blocks in tests (common for stubs/mocks)
 Lint/EmptyBlock:
   Exclude:

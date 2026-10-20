@@ -52,6 +52,19 @@ module RecordingStudioViews
       )
     end
 
+    def add_request_columns!(connection: ActiveRecord::Base.connection)
+      return unless connection.data_source_exists?(VIEW_LOGS)
+
+      add_string_column(connection, :ip, Configuration::IP_LIMIT)
+      add_string_column(connection, :user_agent, Configuration::USER_AGENT_LIMIT)
+    end
+
+    def add_string_column(connection, name, limit)
+      return if connection.column_exists?(VIEW_LOGS, name)
+
+      connection.add_column VIEW_LOGS, name, :string, limit: limit
+    end
+
     def view_log_columns(table)
       table.uuid :root_recording_id
       table.uuid :recording_id
@@ -61,6 +74,8 @@ module RecordingStudioViews
       table.string :actor_type, limit: Configuration::ACTOR_TYPE_LIMIT
       table.string :actor_id, limit: 64
       table.string :visitor_token_digest, limit: 64
+      table.string :ip, limit: Configuration::IP_LIMIT
+      table.string :user_agent, limit: Configuration::USER_AGENT_LIMIT
       table.timestamps
     end
   end
