@@ -3,7 +3,10 @@
 module RecordingStudioViews
   class Configuration
     CONTEXT_VERSION = 1
-    DEFAULT_TOKEN_TTL = 6.hours
+    DEFAULT_TOKEN_TTL = 2.hours
+    DEFAULT_VISITOR_RATE_LIMIT = 120
+    DEFAULT_VISITOR_ROOT_RATE_LIMIT = 30
+    DEFAULT_RATE_LIMIT_WINDOW = 1.minute
     DEDUP_WINDOW = 24.hours
     MAX_PAYLOAD_BYTES = 4_096
     PATH_LIMIT = 2_048
@@ -24,11 +27,14 @@ module RecordingStudioViews
                   :actor_resolver, :visitor_token_digest_resolver, :skip_paths,
                   :bot_filter, :token_ttl, :site_tracking_enabled,
                   :excluded_controller_paths, :store_ip, :geoip_database_path,
-                  :maxmind_account_id, :maxmind_license_key, :geoip_max_age
+                  :maxmind_account_id, :maxmind_license_key, :geoip_max_age,
+                  :rate_limiting_enabled, :rate_limit_store, :visitor_rate_limit,
+                  :visitor_root_rate_limit, :rate_limit_window
 
     def initialize
       assign_core_defaults
       assign_capture_defaults
+      assign_rate_limit_defaults
     end
 
     def geo_enabled?
@@ -47,6 +53,10 @@ module RecordingStudioViews
         geoip_database_path: geoip_database_path,
         geoip_max_age: geoip_max_age,
         geo_enabled: geo_enabled,
+        rate_limiting_enabled: rate_limiting_enabled,
+        visitor_rate_limit: visitor_rate_limit,
+        visitor_root_rate_limit: visitor_root_rate_limit,
+        rate_limit_window: rate_limit_window,
         hooks_registered: hooks.instance_variable_get(:@registry).transform_values(&:size)
       }
     end
@@ -81,6 +91,14 @@ module RecordingStudioViews
       @actor_resolver = ->(controller) { default_actor(controller) }
       @visitor_token_digest_resolver = nil
       @bot_filter = BotFilter
+    end
+
+    def assign_rate_limit_defaults
+      @rate_limiting_enabled = true
+      @rate_limit_store = nil
+      @visitor_rate_limit = DEFAULT_VISITOR_RATE_LIMIT
+      @visitor_root_rate_limit = DEFAULT_VISITOR_ROOT_RATE_LIMIT
+      @rate_limit_window = DEFAULT_RATE_LIMIT_WINDOW
     end
 
     def assign_capture_defaults

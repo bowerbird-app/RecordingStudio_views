@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-20
+
+### Added
+- Rate limiting on `POST /recording_studio_views/views` only, via Rails 8.1 `rate_limit`. Keys are a SHA-256 digest of the masked visitor IP (never the raw address). Defaults: 120 posts per visitor per minute, and 30 per visitor per root per minute (root comes from the verified context token). Over the limit returns 429 with `Retry-After`, writes no `ViewLog` or `ViewReceipt`, and instruments `:throttled`. A raising or unreachable cache store fails open, instruments `:rate_limit_store`, and never 500s the collector or a host page.
+- Config: `rate_limiting_enabled` (default true), `rate_limit_store` (default `Rails.cache`; tests should pass a memory store), `visitor_rate_limit`, `visitor_root_rate_limit`, `rate_limit_window` (default 1 minute).
+- Collector honours `Retry-After` on 429 and does not retry immediately. 429s and network errors stay silent.
+
+### Changed
+- Default context token TTL is 2 hours (`DEFAULT_TOKEN_TTL`). Tokens are still not bound to sessions and are not capped per token, so shared-cache pages keep working.
+- Without Recording Studio Accessible, recording and root views are denied by default. Site views still follow `site_tracking_enabled`. Hosts opt back in with the existing `tracking_access_policy`.
+- Ingestion re-runs `root_ownership_policy` for recording and root contexts. A denial is a silent 204 exclusion. Policy errors deny, matching `ContextResolver`.
+- CSRF failures on the collector are rescued, instrumented as `:csrf`, and return 403 as documented (they previously raised in a before_action and surfaced as 422).
+
+### Upgrade notes
+- **Breaking:** hosts without Accessible that were recording page or root views must set `tracking_access_policy` to allow those contexts. See `UPGRADING.md`.
+- Hosts that already use Accessible, or only track explicit site pages, see no access change.
+- Rate limiting uses `Rails.cache` unless you set `rate_limit_store`. Use a store that supports `increment`. If the store is down, views still record.
+- Lower `token_ttl` if a shared cache lives less than 2 hours; raise it only as far as that cache's lifetime.
+
 ## [0.7.2] - 2026-10-20
 
 ### Changed

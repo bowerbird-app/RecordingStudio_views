@@ -4,11 +4,12 @@ module RecordingStudioViews
   class IngestView < RecordingStudio::Services::BaseService
     UUID = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
 
-    def initialize(request:, params:, actor: nil, visitor_token_digest: nil)
+    def initialize(request:, params:, actor: nil, visitor_token_digest: nil, controller: nil)
       @request = request
       @params = params
       @actor = actor
       @visitor_token_digest = visitor_token_digest
+      @controller = controller
       super()
     end
 
@@ -23,6 +24,7 @@ module RecordingStudioViews
       return excluded(:consent) unless consented?
       return excluded(:stale_target) unless live_target?(context)
       return excluded(:capability_disabled) unless capability_enabled?(context)
+      return excluded(:ownership) unless RootOwnership.allowed?(@controller, context)
       return excluded(:policy) unless access_allowed?(context)
       return excluded(:bot) if bot?
 

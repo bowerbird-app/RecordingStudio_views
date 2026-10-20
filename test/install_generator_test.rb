@@ -153,6 +153,9 @@ class InstallGeneratorTest < Minitest::Test
     assert_includes template, 'config.geoip_database_path = Rails.root.join("db/GeoLite2-City.mmdb")'
     assert_includes template, "config.maxmind_account_id = Rails.application.credentials.dig(:maxmind, :account_id)"
     assert_includes template, "config.maxmind_license_key = Rails.application.credentials.dig(:maxmind, :license_key)"
+    assert_includes template, "config.rate_limiting_enabled"
+    assert_includes template, "config.rate_limit_store"
+    assert_includes template, "config.token_ttl"
   end
 
   private

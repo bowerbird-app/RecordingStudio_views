@@ -10,6 +10,8 @@ const source = fs.readFileSync(
 
 function runCollector(options) {
   const posts = [];
+  const timeouts = [];
+  const consoleErrors = [];
   const scripts = options.scripts.map((text) => ({ textContent: text }));
   const listeners = {};
   const document = {
@@ -33,7 +35,8 @@ function runCollector(options) {
       listeners[name] = listeners[name] || [];
       listeners[name].push(fn);
     },
-    setTimeout: (fn) => {
+    setTimeout: (fn, delay) => {
+      timeouts.push(delay);
       fn();
       return 0;
     }
@@ -48,16 +51,28 @@ function runCollector(options) {
         return Promise.reject(new Error("network"));
       }
       const status = options.statusFor ? options.statusFor(posts.length) : 204;
-      return Promise.resolve({ ok: status >= 200 && status < 300, status });
+      const retryAfter = options.retryAfterFor ? options.retryAfterFor(posts.length) : null;
+      return Promise.resolve({
+        ok: status >= 200 && status < 300,
+        status,
+        headers: {
+          get: (name) => (String(name).toLowerCase() === "retry-after" ? retryAfter : null)
+        }
+      });
     },
     Promise,
     JSON,
     Date,
+    Number,
+    Math,
     URLSearchParams,
-    console
+    console: {
+      error: (...args) => consoleErrors.push(args),
+      log: () => {}
+    }
   };
   vm.runInNewContext(source, context);
-  return { listeners, posts, document };
+  return { listeners, posts, document, timeouts, consoleErrors };
 }
 
 const first = JSON.stringify({
@@ -128,6 +143,42 @@ async function main() {
   assert.strictEqual(utm.posts[0].body.utm_medium, "cpc");
   assert.strictEqual(utm.posts[0].body.utm_campaign, "spring");
   assert.strictEqual(utm.posts[0].body.other, undefined, "non-utm query keys are not sent");
+
+  const throttled = runCollector({
+    scripts: [second],
+    turbo: true,
+    statusFor: () => 429,
+    retryAfterFor: () => "5"
+  });
+  throttled.listeners["turbo:load"].forEach((fn) => fn());
+  await flush();
+  await flush();
+  assert.ok(throttled.timeouts.includes(5000), "429 waits Retry-After seconds before retry");
+  assert.ok(throttled.posts.length >= 2, "429 retries after Retry-After");
+  assert.strictEqual(throttled.consoleErrors.length, 0, "429 does not log console errors");
+
+  const throttledNoHeader = runCollector({
+    scripts: [second],
+    turbo: true,
+    statusFor: () => 429
+  });
+  throttledNoHeader.listeners["turbo:load"].forEach((fn) => fn());
+  await flush();
+  await flush();
+  assert.strictEqual(throttledNoHeader.posts.length, 1, "429 without Retry-After does not retry");
+  assert.ok(!throttledNoHeader.timeouts.includes(400), "429 does not use the immediate retry delay");
+  assert.strictEqual(throttledNoHeader.consoleErrors.length, 0);
+
+  const network = runCollector({
+    scripts: [second],
+    turbo: true,
+    failNetwork: true
+  });
+  network.listeners["turbo:load"].forEach((fn) => fn());
+  await flush();
+  await flush();
+  assert.ok(network.posts.length >= 2, "retries after a failed post");
+  assert.strictEqual(network.consoleErrors.length, 0, "network errors stay silent");
 
   console.log("collector runtime assertions passed");
 }

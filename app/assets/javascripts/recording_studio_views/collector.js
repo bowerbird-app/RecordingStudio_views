@@ -1,7 +1,6 @@
 (function () {
   const CONTEXT_SELECTOR = "[data-recording-studio-views-context]";
   const RETRY_DELAYS = [0, 400, 1200];
-  const RETRY_WINDOW_MS = 24 * 60 * 60 * 1000;
   let recordingThisTick = false;
   let awaitingVisible = false;
   let turboAvailable = typeof window.Turbo !== "undefined";
@@ -45,6 +44,30 @@
     return !!(payload && payload.dispatch === true && payload.consent === true && payload.endpoint && payload.token);
   }
 
+  function retryAfterMs(response) {
+    if (!response || !response.headers || typeof response.headers.get !== "function") return null;
+    const header = response.headers.get("Retry-After");
+    if (header == null || header === "") return null;
+    const seconds = Number(header);
+    if (!Number.isNaN(seconds) && seconds >= 0) return seconds * 1000;
+    const date = Date.parse(header);
+    if (!Number.isNaN(date)) return Math.max(0, date - Date.now());
+    return null;
+  }
+
+  function wait(ms) {
+    return new Promise(function (resolve) {
+      window.setTimeout(resolve, ms);
+    });
+  }
+
+  function retryPost(id, attempt, payload, delay) {
+    if (attempt + 1 >= RETRY_DELAYS.length) return Promise.resolve();
+    return wait(delay).then(function () {
+      return postView(id, attempt + 1, payload);
+    });
+  }
+
   function postView(id, attempt, captured) {
     const payload = captured || contextPayload();
     if (!payload) return Promise.resolve();
@@ -64,26 +87,21 @@
       body: body
     }).then(function (response) {
       if (response.ok || response.status === 204 || response.status === 409) return;
-      if (retryableStatus(response.status) && attempt + 1 < RETRY_DELAYS.length) {
-        return new Promise(function (resolve) {
-          window.setTimeout(resolve, RETRY_DELAYS[attempt + 1]);
-        }).then(function () {
-          return postView(id, attempt + 1, payload);
-        });
+      if (response.status === 429) {
+        const delay = retryAfterMs(response);
+        if (delay == null) return;
+        return retryPost(id, attempt, payload, delay);
+      }
+      if (retryableStatus(response.status)) {
+        return retryPost(id, attempt, payload, RETRY_DELAYS[attempt + 1]);
       }
     }).catch(function () {
-      if (attempt + 1 < RETRY_DELAYS.length) {
-        return new Promise(function (resolve) {
-          window.setTimeout(resolve, RETRY_DELAYS[attempt + 1]);
-        }).then(function () {
-          return postView(id, attempt + 1, payload);
-        });
-      }
+      return retryPost(id, attempt, payload, RETRY_DELAYS[attempt + 1]);
     });
   }
 
   function retryableStatus(status) {
-    return status === 503 || status === 429 || status >= 500;
+    return status === 503 || status >= 500;
   }
 
   function recordNavigation() {
@@ -103,10 +121,7 @@
       recordingThisTick = false;
     }, 0);
     awaitingVisible = false;
-    const id = eventId();
-    const startedAt = Date.now();
-    if (Date.now() - startedAt > RETRY_WINDOW_MS) return;
-    postView(id, 0, payload);
+    postView(eventId(), 0, payload);
   }
 
   function eventId() {

@@ -27,11 +27,13 @@ class IngestViewTest < Minitest::Test
     @previous_site = RecordingStudioViews.configuration.site_tracking_enabled
     @previous_store_ip = RecordingStudioViews.configuration.store_ip
     @previous_geo_path = RecordingStudioViews.configuration.geoip_database_path
+    @previous_ownership = RecordingStudioViews.configuration.root_ownership_policy
     RecordingStudioViews.configuration.tracking_access_policy = ->(*) { :allow }
     RecordingStudioViews.configuration.consent_predicate = ->(*) { true }
     RecordingStudioViews.configuration.site_tracking_enabled = true
     RecordingStudioViews.configuration.store_ip = true
     RecordingStudioViews.configuration.geoip_database_path = nil
+    RecordingStudioViews.configuration.root_ownership_policy = ->(_controller, _root) { true }
     RecordingStudioViews::GeoLookup.reset!
   end
 
@@ -41,6 +43,7 @@ class IngestViewTest < Minitest::Test
     RecordingStudioViews.configuration.site_tracking_enabled = @previous_site
     RecordingStudioViews.configuration.store_ip = @previous_store_ip
     RecordingStudioViews.configuration.geoip_database_path = @previous_geo_path
+    RecordingStudioViews.configuration.root_ownership_policy = @previous_ownership
     RecordingStudioViews::GeoLookup.reset!
   end
 
@@ -179,6 +182,22 @@ class IngestViewTest < Minitest::Test
     assert_nil fields[:utm_content]
   end
 
+  def test_ownership_denial_excludes_without_writing
+    written = false
+    writer = lambda { |**|
+      written = true
+      Success.new(success?: true)
+    }
+    result = nil
+    RecordingStudioViews::RootOwnership.stub :allowed?, false do
+      result = ingest_with_writer(writer)
+    end
+
+    assert result.success?
+    assert_equal :ownership, result.value[:reason]
+    refute written
+  end
+
   def test_source_does_not_call_logs_finalize
     source = File.read(File.expand_path("../lib/recording_studio_views.rb", __dir__))
     engine = File.read(File.expand_path("../lib/recording_studio_views/engine.rb", __dir__))
@@ -190,6 +209,31 @@ class IngestViewTest < Minitest::Test
   private
 
   Success = Struct.new(:success?, keyword_init: true)
+
+  def ingest_with_writer(writer, **request_overrides)
+    site = RecordingStudioViews::PageContext.new(
+      kind: :site,
+      recording_id: nil,
+      root_recording_id: nil,
+      resource_type: "Site",
+      page_key: "site.about",
+      version: 1
+    )
+    extra_params = request_overrides.delete(:params)
+    RecordingStudioViews::ContextToken.stub :read, site do
+      RecordingStudioViews::WriteView.stub :call, writer do
+        RecordingStudioViews::IngestView.call(
+          request: request(**request_overrides),
+          params: extra_params || {
+            event_id: "11111111-1111-1111-1111-111111111111",
+            token: "unused",
+            path: "/site/about"
+          },
+          controller: Object.new
+        )
+      end
+    end
+  end
 
   def capture_write_view(**request_overrides)
     captured = nil

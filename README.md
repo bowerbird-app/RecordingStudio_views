@@ -41,7 +41,7 @@ Default raw storage is an ordinary PostgreSQL table (`recording_studio_views_vie
 
 ## What gets recorded
 
-The helper resolves context while rendering the original page and puts a signed, purpose-specific token in the markup. The token holds target and page key, context version, and expiry. It does not hold secrets, visitor identity, actor identity, or the event UUID. The browser generates the UUID at dispatch time.
+The helper resolves context while rendering the original page and puts a signed, purpose-specific token in the markup. The token holds target and page key, context version, and expiry (default 2 hours). It does not hold secrets, visitor identity, actor identity, or the event UUID. The browser generates the UUID at dispatch time.
 
 Context states:
 
@@ -55,11 +55,13 @@ Site pages and unresolved pages are skipped by default. A missing root never gra
 
 The collector records one view for a visible full page load, a completed Turbo Drive visit, a refresh, and a visible back/forward restore. A page that opens hidden records once when it becomes visible. Turbo preview plus the final render is one view. Turbo Frame and Stream updates, hover prefetch, prerender, hash-only navigation, and later tab switches do not record. Retried POSTs reuse the same event UUID and the captured page context, not a reread of the document.
 
-Delivery is best effort. The collector uses same-origin `fetch` with credentials and the CSRF header, limited retries, and never blocks navigation. It does not use `unload` and does not claim guaranteed delivery.
+Delivery is best effort. The collector uses same-origin `fetch` with credentials and the CSRF header, limited retries, and never blocks navigation. A 429 waits for `Retry-After` or stops retrying. 429s and network errors are swallowed. It does not use `unload` and does not claim guaranteed delivery.
 
 ## Ingestion and storage
 
-`POST /recording_studio_views/views` checks method, content type, payload size, same-origin, and CSRF. It verifies the token purpose, target, and expiry, re-resolves the Recording or root, checks `:viewable`, then runs the host tracking-access policy for the current request actor. When Recording Studio Accessible is loaded, the default policy calls `RecordingStudioAccessible.authorized?(actor:, recording:, role: :view)`, the same check a private page uses. Set `tracking_access_action` to use `authorized_action?` instead when the page uses audiences (for example anonymous public). Accessible stays optional, the same `defined?` pattern as Admin. Signed context is not proof of a human view and is not authorization. Deleted or now-private content is not trackable with an old token. Anonymous views store no actor. Browser-supplied user ids are ignored.
+`POST /recording_studio_views/views` checks method, content type, payload size, same-origin, and CSRF. A CSRF failure returns 403 and instruments `:csrf`. It verifies the token purpose, target, and expiry, re-resolves the Recording or root, checks `:viewable`, re-runs `root_ownership_policy` for recording and root contexts, then runs the host tracking-access policy for the current request actor. When Recording Studio Accessible is loaded, the default policy calls `RecordingStudioAccessible.authorized?(actor:, recording:, role: :view)`, the same check a private page uses. Set `tracking_access_action` to use `authorized_action?` instead when the page uses audiences (for example anonymous public). Accessible stays optional, the same `defined?` pattern as Admin. Without Accessible, recording and root views are denied; site views still follow `site_tracking_enabled`. Opt back in with `tracking_access_policy`. Signed context is not proof of a human view and is not authorization. Deleted or now-private content is not trackable with an old token. Anonymous views store no actor. Browser-supplied user ids are ignored.
+
+The collector POST is rate limited (never host pages or `recording_studio_track_views`). Limits are per visitor (default 120/minute) and per visitor per root (default 30/minute), keyed on a digest of the masked IP. Configure `rate_limiting_enabled`, `rate_limit_store` (default `Rails.cache`), `visitor_rate_limit`, `visitor_root_rate_limit`, and `rate_limit_window`. Over the limit the collector returns 429 with `Retry-After` and writes nothing. If the rate-limit store raises, the view is still recorded.
 
 Raw model `RecordingStudioViews::ViewLog`. Fields: browser event UUID `id`, `occurred_at` (server acceptance, UTC), `arrived_at`, `root_recording_id`, `recording_id`, `resource_type`, `page_key`, normalized `path` (no query or fragment), optional actor, optional `visitor_token_digest` (off by default), masked `ip`, truncated `user_agent`, `browser`, `os`, `os_version`, `device_type`, `utm_source`, `utm_medium`, `utm_term`, `utm_content`, `utm_campaign`, `country`, `region`, `city`, `latitude`, `longitude`, timestamps. Path is descriptive only. The gem does not store referrer URLs or the raw query string. The collector reads `utm_source`, `utm_medium`, `utm_term`, `utm_content`, and `utm_campaign` from the current page URL and the server stores those five fields after validation and truncation.
 
@@ -128,7 +130,7 @@ MaxMind's license requires timely updates and [attribution](https://dev.maxmind.
 
 `RecordingStudioViews.config.geoip_database_path` is the same setting. `geo_enabled` is true only when that path is set. If the file is missing or a lookup fails, geo columns stay nil.
 
-Render only target context into shared caches. Token expiry must fit the cache lifetime. Refresh the token on a dynamic shell, or keep that shell out of the shared cache.
+Render only target context into shared caches. Token expiry (`token_ttl`, default 2 hours) must fit the shared-cache lifetime, because every visitor of a cached page receives the same token. Do not bind tokens to sessions or cap views per token. Refresh the token on a dynamic shell, or keep that shell out of the shared cache.
 
 ## Dummy app
 
