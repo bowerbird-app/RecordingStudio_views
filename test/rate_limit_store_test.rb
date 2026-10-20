@@ -26,16 +26,20 @@ class RateLimitStoreTest < Minitest::Test
     end
 
     assert_nil RecordingStudioViews::RateLimitStore.new.increment("views-test", 1, expires_in: 60)
-    assert events.any? { |event| event.payload[:reason] == "rate_limit_store" }
+    assert(events.any? { |event| event.payload[:reason] == "rate_limit_store" })
   ensure
     RecordingStudioViews.configuration.rate_limit_store = previous
     ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
   end
 
   def test_rate_limit_lives_only_on_the_collector
-    ingest = File.read(File.expand_path("../app/controllers/recording_studio_views/ingestions_controller.rb", __dir__))
+    ingest = File.read(
+      File.expand_path("../app/controllers/recording_studio_views/ingestions_controller.rb", __dir__)
+    )
     helper = File.read(File.expand_path("../app/helpers/recording_studio_views/track_helper.rb", __dir__))
-    application = File.read(File.expand_path("../app/controllers/recording_studio_views/application_controller.rb", __dir__))
+    application = File.read(
+      File.expand_path("../app/controllers/recording_studio_views/application_controller.rb", __dir__)
+    )
 
     assert_includes ingest, "rate_limit"
     assert_includes ingest, "only: :create"
@@ -48,8 +52,8 @@ class RateLimitStoreTest < Minitest::Test
     ceiling = RecordingStudioViews::RateLimitCeiling.new(:visitor_rate_limit)
     RecordingStudioViews.configuration.visitor_rate_limit = 1
 
-    refute 1 > ceiling
-    assert 2 > ceiling
+    refute_operator 1, :>, ceiling
+    assert_operator 2, :>, ceiling
   ensure
     RecordingStudioViews.configuration.visitor_rate_limit = previous
   end

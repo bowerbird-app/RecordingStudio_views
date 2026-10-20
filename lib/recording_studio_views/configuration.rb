@@ -34,6 +34,7 @@ module RecordingStudioViews
     def initialize
       assign_core_defaults
       assign_capture_defaults
+      assign_rate_limit_defaults
     end
 
     def geo_enabled?
@@ -90,6 +91,9 @@ module RecordingStudioViews
       @actor_resolver = ->(controller) { default_actor(controller) }
       @visitor_token_digest_resolver = nil
       @bot_filter = BotFilter
+    end
+
+    def assign_rate_limit_defaults
       @rate_limiting_enabled = true
       @rate_limit_store = nil
       @visitor_rate_limit = DEFAULT_VISITOR_RATE_LIMIT

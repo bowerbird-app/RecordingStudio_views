@@ -3,10 +3,10 @@
 module RecordingStudioViews
   # Backing store for Rails `rate_limit`. Failures never raise into the collector.
   class RateLimitStore
-    def increment(name, amount = 1, options = nil)
-      backend.increment(name, amount, options)
-    rescue StandardError => error
-      Failure.report(error)
+    def increment(name, amount = 1, **)
+      backend.increment(name, amount, **)
+    rescue StandardError => e
+      Failure.report(e)
       Instrumentation.record(:rate_limit_store)
       nil
     end

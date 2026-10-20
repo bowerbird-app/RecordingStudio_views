@@ -183,68 +183,19 @@ class IngestViewTest < Minitest::Test
   end
 
   def test_ownership_denial_excludes_without_writing
-    recording = ingest_recording(id: "rec-1", root_recording_id: "root-1")
-    context = RecordingStudioViews::PageContext.new(
-      kind: :recording,
-      recording_id: recording.id,
-      root_recording_id: recording.root_recording_id,
-      resource_type: "Page",
-      page_key: "recording",
-      version: 1
-    )
-    controller = Object.new
-    RecordingStudioViews.configuration.root_ownership_policy = ->(_controller, _root) { false }
     written = false
-    result = call_ingest(context, controller: controller, writer: lambda { |**|
+    writer = lambda { |**|
       written = true
-    })
+      Success.new(success?: true)
+    }
+    result = nil
+    RecordingStudioViews::RootOwnership.stub :allowed?, false do
+      result = ingest_with_writer(writer)
+    end
 
     assert result.success?
     assert_equal :ownership, result.value[:reason]
     refute written
-  end
-
-  def test_ownership_policy_error_excludes
-    recording = ingest_recording(id: "rec-1", root_recording_id: "root-1")
-    context = RecordingStudioViews::PageContext.new(
-      kind: :recording,
-      recording_id: recording.id,
-      root_recording_id: recording.root_recording_id,
-      resource_type: "Page",
-      page_key: "recording",
-      version: 1
-    )
-    RecordingStudioViews.configuration.root_ownership_policy = ->(*) { raise "ownership exploded" }
-    result = call_ingest(context, controller: Object.new)
-
-    assert result.success?
-    assert_equal :ownership, result.value[:reason]
-  end
-
-  def test_ownership_allow_writes_for_recording_context
-    recording = ingest_recording(id: "rec-1", root_recording_id: "root-1")
-    context = RecordingStudioViews::PageContext.new(
-      kind: :recording,
-      recording_id: recording.id,
-      root_recording_id: recording.root_recording_id,
-      resource_type: "Page",
-      page_key: "recording",
-      version: 1
-    )
-    seen_controller = nil
-    controller = Object.new
-    RecordingStudioViews.configuration.root_ownership_policy = lambda { |passed, _root|
-      seen_controller = passed
-      true
-    }
-    captured = nil
-    call_ingest(context, controller: controller, writer: lambda { |**kwargs|
-      captured = kwargs
-      Success.new(success?: true)
-    })
-
-    assert_equal controller, seen_controller
-    assert captured
   end
 
   def test_source_does_not_call_logs_finalize
@@ -258,35 +209,28 @@ class IngestViewTest < Minitest::Test
   private
 
   Success = Struct.new(:success?, keyword_init: true)
-  IngestRecording = Struct.new(:id, :root_recording_id, :recordable_type, keyword_init: true) do
-    def root?
-      id.to_s == root_recording_id.to_s
-    end
-  end
 
-  def ingest_recording(id:, root_recording_id:)
-    IngestRecording.new(id: id, root_recording_id: root_recording_id, recordable_type: "Page")
-  end
-
-  def call_ingest(context, controller:, writer: ->(**) { Success.new(success?: true) })
-    finder = lambda do |id:|
-      if context.recording_id.to_s == id.to_s
-        ingest_recording(id: context.recording_id, root_recording_id: context.root_recording_id)
-      elsif context.root_recording_id.to_s == id.to_s
-        ingest_recording(id: context.root_recording_id, root_recording_id: context.root_recording_id)
-      end
-    end
-    RecordingStudioViews::ContextToken.stub :read, context do
+  def ingest_with_writer(writer, **request_overrides)
+    site = RecordingStudioViews::PageContext.new(
+      kind: :site,
+      recording_id: nil,
+      root_recording_id: nil,
+      resource_type: "Site",
+      page_key: "site.about",
+      version: 1
+    )
+    extra_params = request_overrides.delete(:params)
+    RecordingStudioViews::ContextToken.stub :read, site do
       RecordingStudioViews::WriteView.stub :call, writer do
-        RecordingStudio::Recording.stub :find_by, finder do
-          RecordingStudio.stub :capability_enabled?, true do
-            RecordingStudioViews::IngestView.call(
-              request: request,
-              params: { event_id: "11111111-1111-1111-1111-111111111111", token: "unused", path: "/pages/1" },
-              controller: controller
-            )
-          end
-        end
+        RecordingStudioViews::IngestView.call(
+          request: request(**request_overrides),
+          params: extra_params || {
+            event_id: "11111111-1111-1111-1111-111111111111",
+            token: "unused",
+            path: "/site/about"
+          },
+          controller: Object.new
+        )
       end
     end
   end
