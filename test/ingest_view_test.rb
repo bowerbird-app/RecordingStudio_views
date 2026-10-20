@@ -27,11 +27,13 @@ class IngestViewTest < Minitest::Test
     @previous_site = RecordingStudioViews.configuration.site_tracking_enabled
     @previous_store_ip = RecordingStudioViews.configuration.store_ip
     @previous_geo_path = RecordingStudioViews.configuration.geoip_database_path
+    @previous_ownership = RecordingStudioViews.configuration.root_ownership_policy
     RecordingStudioViews.configuration.tracking_access_policy = ->(*) { :allow }
     RecordingStudioViews.configuration.consent_predicate = ->(*) { true }
     RecordingStudioViews.configuration.site_tracking_enabled = true
     RecordingStudioViews.configuration.store_ip = true
     RecordingStudioViews.configuration.geoip_database_path = nil
+    RecordingStudioViews.configuration.root_ownership_policy = ->(_controller, _root) { true }
     RecordingStudioViews::GeoLookup.reset!
   end
 
@@ -41,6 +43,7 @@ class IngestViewTest < Minitest::Test
     RecordingStudioViews.configuration.site_tracking_enabled = @previous_site
     RecordingStudioViews.configuration.store_ip = @previous_store_ip
     RecordingStudioViews.configuration.geoip_database_path = @previous_geo_path
+    RecordingStudioViews.configuration.root_ownership_policy = @previous_ownership
     RecordingStudioViews::GeoLookup.reset!
   end
 
@@ -179,6 +182,71 @@ class IngestViewTest < Minitest::Test
     assert_nil fields[:utm_content]
   end
 
+  def test_ownership_denial_excludes_without_writing
+    recording = ingest_recording(id: "rec-1", root_recording_id: "root-1")
+    context = RecordingStudioViews::PageContext.new(
+      kind: :recording,
+      recording_id: recording.id,
+      root_recording_id: recording.root_recording_id,
+      resource_type: "Page",
+      page_key: "recording",
+      version: 1
+    )
+    controller = Object.new
+    RecordingStudioViews.configuration.root_ownership_policy = ->(_controller, _root) { false }
+    written = false
+    result = call_ingest(context, controller: controller, writer: lambda { |**|
+      written = true
+    })
+
+    assert result.success?
+    assert_equal :ownership, result.value[:reason]
+    refute written
+  end
+
+  def test_ownership_policy_error_excludes
+    recording = ingest_recording(id: "rec-1", root_recording_id: "root-1")
+    context = RecordingStudioViews::PageContext.new(
+      kind: :recording,
+      recording_id: recording.id,
+      root_recording_id: recording.root_recording_id,
+      resource_type: "Page",
+      page_key: "recording",
+      version: 1
+    )
+    RecordingStudioViews.configuration.root_ownership_policy = ->(*) { raise "ownership exploded" }
+    result = call_ingest(context, controller: Object.new)
+
+    assert result.success?
+    assert_equal :ownership, result.value[:reason]
+  end
+
+  def test_ownership_allow_writes_for_recording_context
+    recording = ingest_recording(id: "rec-1", root_recording_id: "root-1")
+    context = RecordingStudioViews::PageContext.new(
+      kind: :recording,
+      recording_id: recording.id,
+      root_recording_id: recording.root_recording_id,
+      resource_type: "Page",
+      page_key: "recording",
+      version: 1
+    )
+    seen_controller = nil
+    controller = Object.new
+    RecordingStudioViews.configuration.root_ownership_policy = lambda { |passed, _root|
+      seen_controller = passed
+      true
+    }
+    captured = nil
+    call_ingest(context, controller: controller, writer: lambda { |**kwargs|
+      captured = kwargs
+      Success.new(success?: true)
+    })
+
+    assert_equal controller, seen_controller
+    assert captured
+  end
+
   def test_source_does_not_call_logs_finalize
     source = File.read(File.expand_path("../lib/recording_studio_views.rb", __dir__))
     engine = File.read(File.expand_path("../lib/recording_studio_views/engine.rb", __dir__))
@@ -190,6 +258,38 @@ class IngestViewTest < Minitest::Test
   private
 
   Success = Struct.new(:success?, keyword_init: true)
+  IngestRecording = Struct.new(:id, :root_recording_id, :recordable_type, keyword_init: true) do
+    def root?
+      id.to_s == root_recording_id.to_s
+    end
+  end
+
+  def ingest_recording(id:, root_recording_id:)
+    IngestRecording.new(id: id, root_recording_id: root_recording_id, recordable_type: "Page")
+  end
+
+  def call_ingest(context, controller:, writer: ->(**) { Success.new(success?: true) })
+    finder = lambda do |id:|
+      if context.recording_id.to_s == id.to_s
+        ingest_recording(id: context.recording_id, root_recording_id: context.root_recording_id)
+      elsif context.root_recording_id.to_s == id.to_s
+        ingest_recording(id: context.root_recording_id, root_recording_id: context.root_recording_id)
+      end
+    end
+    RecordingStudioViews::ContextToken.stub :read, context do
+      RecordingStudioViews::WriteView.stub :call, writer do
+        RecordingStudio::Recording.stub :find_by, finder do
+          RecordingStudio.stub :capability_enabled?, true do
+            RecordingStudioViews::IngestView.call(
+              request: request,
+              params: { event_id: "11111111-1111-1111-1111-111111111111", token: "unused", path: "/pages/1" },
+              controller: controller
+            )
+          end
+        end
+      end
+    end
+  end
 
   def capture_write_view(**request_overrides)
     captured = nil

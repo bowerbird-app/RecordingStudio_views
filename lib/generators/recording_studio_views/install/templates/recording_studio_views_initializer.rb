@@ -14,7 +14,20 @@ RecordingStudioViews.configure do |config|
   # Tracking access uses Recording Studio Accessible when that gem is loaded.
   # `authorized?(:view)` is the default. Set tracking_access_action to use
   # `authorized_action?` instead, matching the viewed page.
+  # Without Accessible, recording and root views are denied. Site views still
+  # follow site_tracking_enabled. Opt back in with tracking_access_policy.
   # config.tracking_access_action = :"recording_studio_views.view"
+
+  # Collector POST rate limits. Keyed on a digest of the masked visitor IP.
+  # config.rate_limiting_enabled = true
+  # config.rate_limit_store = Rails.cache
+  # config.visitor_rate_limit = 120
+  # config.visitor_root_rate_limit = 30
+  # config.rate_limit_window = 1.minute
+
+  # Signed context tokens expire after token_ttl (default 2 hours). The TTL
+  # must fit any shared-cache lifetime for the page.
+  # config.token_ttl = 2.hours
 
   # Checked at render and again at ingestion. Disabled tracking creates no visitor identifiers.
   # config.consent_predicate = ->(_request) { true }

@@ -42,6 +42,13 @@ class ConfigurationTest < Minitest::Test
     assert_equal "env-token", configuration.api_key
     assert_equal false, configuration.enable_feature_x
     assert_equal 5, configuration.timeout
+    assert_equal 2.hours, configuration.token_ttl
+    assert_equal RecordingStudioViews::Configuration::DEFAULT_TOKEN_TTL, configuration.token_ttl
+    assert_equal true, configuration.rate_limiting_enabled
+    assert_nil configuration.rate_limit_store
+    assert_equal 120, configuration.visitor_rate_limit
+    assert_equal 30, configuration.visitor_root_rate_limit
+    assert_equal 1.minute, configuration.rate_limit_window
     assert_equal true, configuration.store_ip
     assert_nil configuration.geoip_database_path
     assert_nil configuration.maxmind_account_id

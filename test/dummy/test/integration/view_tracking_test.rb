@@ -424,6 +424,109 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     assert_equal 0, RecordingStudioViews::ViewLog.count
   end
 
+  test "throttled collector post returns 429 with retry after and writes nothing" do
+    with_rate_limits(visitor: 1, visitor_root: 100) do |store|
+      sign_in @user
+      get page_path(@page)
+      context = page_context
+      events = []
+      subscriber = ActiveSupport::Notifications.subscribe(RecordingStudioViews::Instrumentation::EVENT) do |*args|
+        events << ActiveSupport::Notifications::Event.new(*args)
+      end
+      post_ingest(context, event_id: SecureRandom.uuid, extra_headers: { "REMOTE_ADDR" => "1.2.3.4" })
+      assert_response :no_content
+      assert_equal 1, RecordingStudioViews::ViewLog.count
+
+      post_ingest(context, event_id: SecureRandom.uuid, extra_headers: { "REMOTE_ADDR" => "1.2.3.4" })
+      assert_response :too_many_requests
+      assert_equal "60", response.headers["Retry-After"]
+      assert_equal 1, RecordingStudioViews::ViewLog.count
+      assert_equal 1, RecordingStudioViews::ViewReceipt.count
+      assert events.any? { |event| event.payload[:reason] == "throttled" }
+      keys = store.instance_variable_get(:@data).keys.join
+      refute_includes keys, "1.2.3.4"
+      assert_includes keys, Digest::SHA256.hexdigest("1.2.3.0")
+    ensure
+      ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+    end
+  end
+
+  test "raising rate limit store still records the view" do
+    store = Object.new
+    store.define_singleton_method(:increment) { |*| raise "cache down" }
+    previous = RecordingStudioViews.configuration.rate_limit_store
+    RecordingStudioViews.configuration.rate_limit_store = store
+    events = []
+    subscriber = ActiveSupport::Notifications.subscribe(RecordingStudioViews::Instrumentation::EVENT) do |*args|
+      events << ActiveSupport::Notifications::Event.new(*args)
+    end
+    sign_in @user
+    get page_path(@page)
+    assert_difference -> { RecordingStudioViews::ViewLog.count }, 1 do
+      post_ingest(page_context, event_id: SecureRandom.uuid)
+    end
+    assert_response :no_content
+    assert events.any? { |event| event.payload[:reason] == "rate_limit_store" }
+  ensure
+    RecordingStudioViews.configuration.rate_limit_store = previous
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  test "host page render never touches the collector rate limiter" do
+    store = Object.new
+    called = false
+    store.define_singleton_method(:increment) do |*|
+      called = true
+      raise "limiter should not run"
+    end
+    previous = RecordingStudioViews.configuration.rate_limit_store
+    RecordingStudioViews.configuration.rate_limit_store = store
+    sign_in @user
+    get page_path(@page)
+    assert_response :success
+    refute called
+    assert page_context["dispatch"]
+  ensure
+    RecordingStudioViews.configuration.rate_limit_store = previous
+  end
+
+  test "csrf failure on the collector returns 403 and instruments csrf" do
+    sign_in @user
+    get page_path(@page)
+    context = page_context
+    events = []
+    subscriber = ActiveSupport::Notifications.subscribe(RecordingStudioViews::Instrumentation::EVENT) do |*args|
+      events << ActiveSupport::Notifications::Event.new(*args)
+    end
+    previous = RecordingStudioViews::ApplicationController.allow_forgery_protection
+    RecordingStudioViews::ApplicationController.allow_forgery_protection = true
+    post "/recording_studio_views/views",
+         params: { event_id: SecureRandom.uuid, token: context["token"], path: page_path(@page) },
+         as: :json,
+         headers: ingest_headers.merge("HTTP_X_CSRF_TOKEN" => "forged-token")
+    restore_main_app
+    assert_response :forbidden
+    assert_equal 0, RecordingStudioViews::ViewLog.count
+    assert_equal 0, RecordingStudioViews::ViewReceipt.count
+    assert events.any? { |event| event.payload[:reason] == "csrf" }
+  ensure
+    RecordingStudioViews::ApplicationController.allow_forgery_protection = previous
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  test "ownership recheck at ingest excludes a denied root" do
+    sign_in @user
+    get page_path(@page)
+    context = page_context
+    previous = RecordingStudioViews.configuration.root_ownership_policy
+    RecordingStudioViews.configuration.root_ownership_policy = ->(*) { false }
+    post_ingest(context, event_id: SecureRandom.uuid)
+    assert_response :no_content
+    assert_equal 0, RecordingStudioViews::ViewLog.count
+  ensure
+    RecordingStudioViews.configuration.root_ownership_policy = previous
+  end
+
   test "shared root ownership skips a recording from another root" do
     sign_in @user
     previous = RecordingStudioViews.configuration.root_ownership_policy
@@ -541,5 +644,22 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
   def csrf_token
     meta = css_select('meta[name="csrf-token"]').first
     meta ? meta["content"] : ""
+  end
+
+  def with_rate_limits(visitor:, visitor_root:)
+    previous = {
+      store: RecordingStudioViews.configuration.rate_limit_store,
+      visitor: RecordingStudioViews.configuration.visitor_rate_limit,
+      visitor_root: RecordingStudioViews.configuration.visitor_root_rate_limit
+    }
+    store = ActiveSupport::Cache::MemoryStore.new
+    RecordingStudioViews.configuration.rate_limit_store = store
+    RecordingStudioViews.configuration.visitor_rate_limit = visitor
+    RecordingStudioViews.configuration.visitor_root_rate_limit = visitor_root
+    yield store
+  ensure
+    RecordingStudioViews.configuration.rate_limit_store = previous[:store]
+    RecordingStudioViews.configuration.visitor_rate_limit = previous[:visitor]
+    RecordingStudioViews.configuration.visitor_root_rate_limit = previous[:visitor_root]
   end
 end

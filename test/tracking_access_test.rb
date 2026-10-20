@@ -5,25 +5,30 @@ require "test_helper"
 class TrackingAccessTest < Minitest::Test
   FakeRecording = Struct.new(:id)
 
-  def test_skipped_denies_and_missing_accessible_allows_recordings
-    skipped = RecordingStudioViews::PageContext.skipped
-    assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, skipped, nil)
+  def recording_context
+    RecordingStudioViews::PageContext.new(
+      kind: :recording,
+      recording_id: "rec-1",
+      root_recording_id: "root-1",
+      resource_type: "Page",
+      page_key: "recording",
+      version: 1
+    )
+  end
 
-    recording = FakeRecording.new("rec-1")
-    RecordingStudioViews::TrackingAccess.stub :recording_for, recording do
-      context = RecordingStudioViews::PageContext.new(
-        kind: :recording,
-        recording_id: "rec-1",
-        root_recording_id: "root-1",
-        resource_type: "Page",
-        page_key: "recording",
-        version: 1
-      )
-      refute defined?(::RecordingStudioAccessible)
-      assert_equal :allow, RecordingStudioViews::TrackingAccess.decision(nil, context, nil)
-    end
+  def root_context
+    RecordingStudioViews::PageContext.new(
+      kind: :root,
+      recording_id: nil,
+      root_recording_id: "root-1",
+      resource_type: "Workspace",
+      page_key: "workspace.search",
+      version: 1
+    )
+  end
 
-    site = RecordingStudioViews::PageContext.new(
+  def site_context
+    RecordingStudioViews::PageContext.new(
       kind: :site,
       recording_id: nil,
       root_recording_id: nil,
@@ -31,12 +36,46 @@ class TrackingAccessTest < Minitest::Test
       page_key: "site.home",
       version: 1
     )
+  end
+
+  def test_skipped_and_missing_recording_deny
+    skipped = RecordingStudioViews::PageContext.skipped
+    assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, skipped, nil)
+    assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, recording_context, nil)
+  end
+
+  def test_missing_accessible_denies_recording_and_root_views
+    recording = FakeRecording.new("rec-1")
+    refute defined?(::RecordingStudioAccessible)
+
+    RecordingStudioViews::TrackingAccess.stub :recording_for, recording do
+      assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, recording_context, nil)
+      assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, root_context, nil)
+    end
+  end
+
+  def test_site_views_still_follow_site_tracking_enabled
     previous = RecordingStudioViews.configuration.site_tracking_enabled
     RecordingStudioViews.configuration.site_tracking_enabled = true
-    assert_equal :allow, RecordingStudioViews::TrackingAccess.decision(nil, site, nil)
+    assert_equal :allow, RecordingStudioViews::TrackingAccess.decision(nil, site_context, nil)
     RecordingStudioViews.configuration.site_tracking_enabled = false
-    assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, site, nil)
+    assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, site_context, nil)
   ensure
     RecordingStudioViews.configuration.site_tracking_enabled = previous
+  end
+
+  def test_tracking_access_policy_opt_in_allows_recording_without_accessible
+    previous = RecordingStudioViews.configuration.tracking_access_policy
+    RecordingStudioViews.configuration.tracking_access_policy = lambda do |_request, context, _actor|
+      return :deny if context.nil? || context.skipped?
+
+      :allow
+    end
+    RecordingStudioViews::TrackingAccess.stub :recording_for, FakeRecording.new("rec-1") do
+      assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, recording_context, nil)
+    end
+    assert_equal :allow, RecordingStudioViews.configuration.tracking_access_policy.call(nil, recording_context, nil)
+  ensure
+    RecordingStudioViews.configuration.tracking_access_policy = previous
   end
 end
