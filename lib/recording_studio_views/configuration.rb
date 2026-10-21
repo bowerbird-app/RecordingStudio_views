@@ -11,7 +11,6 @@ module RecordingStudioViews
     MAX_PAYLOAD_BYTES = 4_096
     PATH_LIMIT = 2_048
     PAGE_KEY_LIMIT = 128
-    KIND_LIMIT = 32
     RESOURCE_TYPE_LIMIT = 128
     ACTOR_TYPE_LIMIT = 128
     IP_LIMIT = 64
@@ -23,8 +22,7 @@ module RecordingStudioViews
 
     attr_accessor :api_key, :enable_feature_x, :timeout, :hooks,
                   :recording_resolver, :root_page_resolver, :site_page_resolver,
-                  :root_ownership_policy, :tracking_access_policy, :tracking_access_action,
-                  :page_view_authorizer,
+                  :root_ownership_policy, :tracking_access_policy, :tracking_access_action, :page_view_authorizer,
                   :consent_predicate,
                   :actor_resolver, :visitor_token_digest_resolver, :skip_paths,
                   :bot_filter, :token_ttl, :site_tracking_enabled,
@@ -89,7 +87,7 @@ module RecordingStudioViews
       @root_ownership_policy = ->(_controller, _root) { true }
       @tracking_access_action = nil
       @tracking_access_policy = default_tracking_access_policy
-      @page_view_authorizer = default_page_view_authorizer
+      @page_view_authorizer = NamedPage::DEFAULT_AUTHORIZER
       @consent_predicate = ->(_request) { true }
       @actor_resolver = ->(controller) { default_actor(controller) }
       @visitor_token_digest_resolver = nil
@@ -115,12 +113,6 @@ module RecordingStudioViews
     def default_tracking_access_policy
       lambda do |request, context, actor|
         TrackingAccess.decision(request, context, actor)
-      end
-    end
-
-    def default_page_view_authorizer
-      lambda do |_request, _page_key, _actor|
-        true
       end
     end
 

@@ -45,7 +45,7 @@ module RecordingStudioViews
         end
 
         def plain_page_logs
-          ViewLog.where(kind: PageView::KIND)
+          ViewLog.where(kind: NamedPage::KIND)
         end
 
         def plain_pages_over_time_series(day_range: nil, start_date: nil, end_date: nil)
@@ -64,7 +64,7 @@ module RecordingStudioViews
         def top_plain_pages
           plain_page_logs
             .except(:order)
-            .select("page_key, COUNT(*) AS views, MIN(id) AS id")
+            .select("page_key, COUNT(*) AS views, page_key AS id")
             .group(:page_key)
             .order(Arel.sql("COUNT(*) DESC"), :page_key)
         end

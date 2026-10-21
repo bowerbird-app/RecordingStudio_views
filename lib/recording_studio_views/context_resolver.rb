@@ -69,14 +69,14 @@ module RecordingStudioViews
     end
 
     def page_context
-      page_key = PageView.assigned_key(@controller)
+      page_key = NamedPage.assigned_key(@controller)
       return if page_key.blank?
 
       PageContext.new(
         kind: :page,
         recording_id: nil,
         root_recording_id: nil,
-        resource_type: clip(PageView::RESOURCE_TYPE, Configuration::RESOURCE_TYPE_LIMIT),
+        resource_type: clip(NamedPage::RESOURCE_TYPE, Configuration::RESOURCE_TYPE_LIMIT),
         page_key: clip(page_key, Configuration::PAGE_KEY_LIMIT),
         version: Configuration::CONTEXT_VERSION
       )

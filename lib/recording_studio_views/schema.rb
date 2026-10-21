@@ -56,7 +56,7 @@ module RecordingStudioViews
       return unless connection.data_source_exists?(VIEW_LOGS)
       return if connection.column_exists?(VIEW_LOGS, :kind)
 
-      connection.add_column VIEW_LOGS, :kind, :string, limit: Configuration::KIND_LIMIT
+      connection.add_column VIEW_LOGS, :kind, :string, limit: NamedPage::KIND_LIMIT
     end
 
     def add_request_columns!(connection: ActiveRecord::Base.connection)
@@ -105,7 +105,7 @@ module RecordingStudioViews
       table.uuid :recording_id
       table.string :resource_type, limit: Configuration::RESOURCE_TYPE_LIMIT
       table.string :page_key, null: false, limit: Configuration::PAGE_KEY_LIMIT
-      table.string :kind, limit: Configuration::KIND_LIMIT
+      table.string :kind, limit: NamedPage::KIND_LIMIT
       table.string :path, null: false, limit: Configuration::PATH_LIMIT
       table.string :actor_type, limit: Configuration::ACTOR_TYPE_LIMIT
       table.string :actor_id, limit: 64

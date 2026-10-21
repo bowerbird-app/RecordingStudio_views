@@ -3,7 +3,7 @@
 module RecordingStudioViews
   module TrackHelper
     def recording_studio_track_page_view(page_key)
-      PageView.store(controller, page_key)
+      NamedPage.store(controller, page_key)
       nil
     rescue StandardError
       nil

@@ -106,7 +106,7 @@ module RecordingStudioViews
       kind = @context.kind.to_s
       return if kind.blank?
 
-      kind[0, Configuration::KIND_LIMIT]
+      kind[0, NamedPage::KIND_LIMIT]
     end
 
     def stored_ip

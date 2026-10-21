@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 module RecordingStudioViews
-  module PageView
+  module NamedPage
     REQUEST_KEY = "recording_studio_views.page_key"
     KIND = "page"
     RESOURCE_TYPE = "page"
     KEY_LIMIT = 64
+    KIND_LIMIT = 32
     KEY_PATTERN = /\A[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}\z/
+    DEFAULT_AUTHORIZER = ->(_request, _page_key, _actor) { true }
 
     module_function
 
@@ -27,6 +29,13 @@ module RecordingStudioViews
       normalize(controller.request.env[REQUEST_KEY])
     rescue StandardError
       nil
+    end
+
+    def live?(context)
+      return false if context.page_key.blank?
+      return false if context.recording_id.present? || context.root_recording_id.present?
+
+      normalize(context.page_key) == context.page_key
     end
 
     def normalize(value)

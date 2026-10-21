@@ -100,7 +100,7 @@ class ContextResolverTest < Minitest::Test
     RecordingStudioViews.configuration.recording_resolver = ->(*) {}
     RecordingStudioViews.configuration.root_page_resolver = ->(*) {}
     RecordingStudioViews.configuration.site_tracking_enabled = false
-    env = { RecordingStudioViews::PageView::REQUEST_KEY => "home" }
+    env = { RecordingStudioViews::NamedPage::REQUEST_KEY => "home" }
     controller = FakeController.new(
       request: FakeRequest.new(path: "/", env: env),
       controller_path: "home"
@@ -123,7 +123,7 @@ class ContextResolverTest < Minitest::Test
     RecordingStudioViews.configuration.consent_predicate = ->(*) { true }
     RecordingStudioViews.configuration.recording_resolver = ->(*) { recording }
     RecordingStudioViews.configuration.root_ownership_policy = ->(*) { true }
-    env = { RecordingStudioViews::PageView::REQUEST_KEY => "home" }
+    env = { RecordingStudioViews::NamedPage::REQUEST_KEY => "home" }
     RecordingStudio.stub :capability_enabled?, ->(name, **kwargs) { name == :viewable && kwargs[:for] == "Page" } do
       controller = FakeController.new(
         request: FakeRequest.new(path: "/pages/1", env: env),

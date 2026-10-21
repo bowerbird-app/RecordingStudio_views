@@ -39,7 +39,7 @@ class RootOwnershipTest < Minitest::Test
     )
   end
 
-    def test_site_is_allowed_without_a_controller
+  def test_site_is_allowed_without_a_controller
     assert RecordingStudioViews::RootOwnership.allowed?(nil, site_context)
   end
 
