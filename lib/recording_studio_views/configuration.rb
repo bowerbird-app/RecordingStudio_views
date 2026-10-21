@@ -37,9 +37,7 @@ module RecordingStudioViews
       assign_rate_limit_defaults
     end
 
-    def geo_enabled?
-      geoip_database_path.present?
-    end
+    def geo_enabled? = geoip_database_path.present?
     alias geo_enabled geo_enabled?
 
     def to_h
