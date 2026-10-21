@@ -9,6 +9,7 @@ class AdminRegistrationTest < Minitest::Test
     section = File.read(File.expand_path("../lib/recording_studio_views/admin/section.rb", __dir__))
     screen = File.read(File.expand_path("../lib/recording_studio_views/admin/page_views_screen.rb", __dir__))
     chart = File.read(File.expand_path("../lib/recording_studio_views/admin/queries/chart_series.rb", __dir__))
+    summaries = File.read(File.expand_path("../lib/recording_studio_views/admin/queries/chart_summaries.rb", __dir__))
     widgets = File.read(File.expand_path("../lib/recording_studio_views/admin/widgets.rb", __dir__))
 
     assert_includes engine, 'initializer "recording_studio_views.admin"'
@@ -29,8 +30,9 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes screen, "filter :date_range, field: :occurred_at"
     assert_includes screen, "filter :group_by, values: %i[day week month], default: :day"
     assert_includes screen, "Queries.screen_page_views_series"
-    assert_includes chart, "DailyViewSummary"
-    assert_includes chart, "unsummarized_view_logs"
+    assert_includes chart, "daily_view_counts"
+    assert_includes summaries, "DailyViewSummary"
+    assert_includes summaries, "unsummarized_view_logs"
     assert_includes screen, "filter :root"
     assert_includes screen, "filter :resource_type"
     assert_includes screen, "filter :page_key"

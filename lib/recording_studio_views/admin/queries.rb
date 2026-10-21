@@ -2,6 +2,7 @@
 
 require_relative "queries/actor_labels"
 require_relative "queries/chart_series"
+require_relative "queries/chart_summaries"
 require_relative "queries/filters"
 require_relative "queries/row_values"
 
@@ -17,6 +18,7 @@ module RecordingStudioViews
       class << self
         include ActorLabels
         include ChartSeries
+        include ChartSummaries
         include Filters
         include RowValues
 
