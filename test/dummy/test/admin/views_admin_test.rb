@@ -285,8 +285,19 @@ class ViewsAdminTest < ActiveSupport::TestCase
     today, older, studio, client = summary_filter_fixtures
     insert_summary(day: older, root_recording_id: studio.id, page_key: "docs.home", views: 5)
     insert_summary(day: older, root_recording_id: client.id, page_key: "docs.home", views: 9)
+    insert_view(root_recording_id: studio.id, page_key: "docs.home")
 
     points = chart_points(filters: { root: "Studio Workspace" }, start_date: older, end_date: today)
+
+    assert_equal 5, points.fetch(older).fetch(:y)
+  end
+
+  test "screen chart applies an exact root recording id filter to summaries" do
+    today, older, studio, client = summary_filter_fixtures
+    insert_summary(day: older, root_recording_id: studio.id, page_key: "docs.home", views: 5)
+    insert_summary(day: older, root_recording_id: client.id, page_key: "docs.home", views: 9)
+
+    points = chart_points(filters: { root_recording_id: studio.id }, start_date: older, end_date: today)
 
     assert_equal 5, points.fetch(older).fetch(:y)
   end
@@ -334,6 +345,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
 
   test "chart filters from the screen map page key search and root labels" do
     studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
+    insert_view(root_recording_id: studio.id, page_key: "docs.getting-started")
     queries = RecordingStudioViews::Admin::Queries
     context = screen_filter_context(
       root: "Studio Workspace",
