@@ -4,24 +4,22 @@ module RecordingStudioViews
   module Admin
     module Queries
       module ChartSummaries
-        SUMMARY_FILTER_COLUMNS = %w[root_recording_id recording_id resource_type page_key].freeze
-        SUMMARY_COMPATIBLE_COLUMNS = (SUMMARY_FILTER_COLUMNS + %w[occurred_at]).freeze
+        SUMMARY_FILTER_COLUMNS = %i[root_recording_id recording_id resource_type page_key].freeze
 
-        def daily_view_counts(relation, range_start: nil, range_end: nil)
-          relation = chart_relation(relation)
-          return raw_views_by_day_utc(relation) if summary_incompatible?(relation)
+        def daily_view_counts(relation, range_start: nil, range_end: nil, filters: {})
+          filters = normalize_chart_filters(filters)
+          relation = apply_chart_filters_to_logs(chart_relation(relation), filters)
+          return raw_views_by_day_utc(relation) if summary_incompatible?(filters)
 
-          counts = summary_views_by_day(relation, range_start, range_end)
+          counts = summary_views_by_day(filters, range_start, range_end)
           raw_views_by_day_utc(unsummarized_view_logs(relation)).each do |day, count|
             counts[day] = counts[day].to_i + count.to_i
           end
           counts
         end
 
-        def summary_incompatible?(relation)
-          filtered_where_columns(relation).any? do |column|
-            SUMMARY_COMPATIBLE_COLUMNS.exclude?(column)
-          end
+        def summary_incompatible?(filters)
+          filters.key?(:visit_kind) || filters.key?(:path)
         end
 
         def summarized_utc_days
@@ -47,50 +45,22 @@ module RecordingStudioViews
           end
         end
 
-        def summary_views_by_day(relation, range_start, range_end)
+        def summary_views_by_day(filters, range_start, range_end)
           scope = DailyViewSummary.all
           scope = scope.where(day: range_start..range_end) if range_start && range_end
-          apply_summary_filters(scope, relation).group(:day).sum(:views).each_with_object({}) do |(day, views), memo|
+          apply_summary_filters(scope, filters).group(:day).sum(:views).each_with_object({}) do |(day, views), memo|
             date = coerce_utc_date(day)
             memo[date] = memo[date].to_i + views.to_i if date
           end
         end
 
-        def apply_summary_filters(scope, relation)
-          hash = relation.where_values_hash
+        def apply_summary_filters(scope, filters)
           SUMMARY_FILTER_COLUMNS.each do |column|
-            scope = scope.where(column => hash[column]) if hash.key?(column)
+            scope = scope.where(column => filters[column]) if filters.key?(column)
           end
-          return scope if hash.key?("page_key")
+          return scope unless filters.key?(:page_key_contains)
 
-          pattern = contains_bind_pattern(relation)
-          return scope unless pattern
-
-          quoted = DailyViewSummary.connection.quote_column_name("page_key")
-          scope.where("#{quoted} ILIKE ?", pattern)
-        end
-
-        def contains_bind_pattern(relation)
-          patterns = where_fragment(relation).scan(/ILIKE\s+'((?:[^']|'')*)'/i).flatten
-          patterns.map { |value| value.gsub("''", "'") }.find do |value|
-            value.start_with?("%") && value.end_with?("%")
-          end
-        end
-
-        def filtered_where_columns(relation)
-          fragment = where_fragment(relation)
-          return [] if fragment.empty?
-
-          ViewLog.column_names.select do |column|
-            quoted = ViewLog.connection.quote_column_name(column)
-            fragment.include?(quoted) || fragment.match?(/\b#{Regexp.escape(column)}\b/)
-          end
-        end
-
-        def where_fragment(relation)
-          sql = chart_relation(relation).to_sql
-          match = sql.match(/ where /i)
-          match ? sql[match.begin(0)..] : ""
+          contains_match(scope, :page_key, filters[:page_key_contains])
         end
       end
     end
