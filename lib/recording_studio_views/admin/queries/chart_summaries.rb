@@ -71,16 +71,10 @@ module RecordingStudioViews
         end
 
         def contains_bind_pattern(relation)
-          relation.where_clause.binds.map { |bind| bind_database_value(bind) }.find do |value|
-            value.is_a?(String) && value.start_with?("%") && value.end_with?("%")
+          patterns = where_fragment(relation).scan(/ILIKE\s+'((?:[^']|'')*)'/i).flatten
+          patterns.map { |value| value.gsub("''", "'") }.find do |value|
+            value.start_with?("%") && value.end_with?("%")
           end
-        end
-
-        def bind_database_value(bind)
-          return bind.value_for_database if bind.respond_to?(:value_for_database)
-          return bind.value if bind.respond_to?(:value)
-
-          bind
         end
 
         def filtered_where_columns(relation)
