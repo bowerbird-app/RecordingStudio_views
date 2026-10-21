@@ -25,17 +25,7 @@ module RecordingStudioViews
         end
 
         def total_views
-          summary_total = DailyViewSummary.sum(:views).to_i
-          days = DailyViewSummary.distinct.pluck(:day)
-          raw_total = if days.empty?
-                        ViewLog.count
-                      else
-                        quoted_days = days.map { |day| ViewLog.connection.quote(day) }.join(", ")
-                        ViewLog.where(
-                          "((#{quoted_occurred_at} AT TIME ZONE 'UTC')::date) NOT IN (#{quoted_days})"
-                        ).count
-                      end
-          summary_total + raw_total
+          DailyViewSummary.sum(:views).to_i + unsummarized_view_logs.count
         end
 
         def page_views_over_time_series(day_range: default_day_range)
@@ -46,11 +36,8 @@ module RecordingStudioViews
 
         def views_by_day_utc(day_range)
           day_sql = "(#{quoted_occurred_at} AT TIME ZONE 'UTC')::date"
-          grouped = ViewLog.except(:order)
-                           .where("#{day_sql} BETWEEN ? AND ?", day_range.begin, day_range.end)
-                           .group(Arel.sql(day_sql))
-                           .count
-          grouped.transform_keys(&:to_date)
+          relation = ViewLog.where("#{day_sql} BETWEEN ? AND ?", day_range.begin, day_range.end)
+          views_by_bucket_utc(relation, :day, range_start: day_range.begin, range_end: day_range.end)
         end
 
         def default_day_range
