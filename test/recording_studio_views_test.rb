@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioViewsTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.8.0", ::RecordingStudioViews::VERSION
+    assert_equal "0.9.0", ::RecordingStudioViews::VERSION
   end
 
   def test_engine_exists
@@ -266,6 +266,7 @@ class RecordingStudioViewsTest < Minitest::Test
 
     assert_includes view_source, 'title: "Template Demo"'
     assert_includes view_source, 'subtitle: "This dummy app is the browser-facing demo surface for the template."'
+    assert_includes view_source, 'recording_studio_track_page_view("home")'
     assert_includes view_source, "FlatPack::Card::Component"
     refute_includes view_source, "dummy_page_nav"
     refute_includes view_source, 'title: "Demo"'

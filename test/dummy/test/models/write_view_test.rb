@@ -121,6 +121,28 @@ class WriteViewTest < ActiveSupport::TestCase
     assert_equal "hero", stored.utm_content
     assert_equal RecordingStudioViews::Configuration::UTM_LIMIT, stored.utm_campaign.length
     assert_equal "10", stored.os_version
+    assert_equal "site", stored.kind
+  end
+
+  test "write view stores page kind and page key without a recording" do
+    context = RecordingStudioViews::PageContext.new(
+      kind: :page,
+      recording_id: nil,
+      root_recording_id: nil,
+      resource_type: "page",
+      page_key: "home",
+      version: 1
+    )
+    stored = RecordingStudioViews::WriteView.call(
+      event_id: SecureRandom.uuid,
+      context: context,
+      path: "/"
+    ).value[:view]
+
+    assert_equal "page", stored.kind
+    assert_equal "home", stored.page_key
+    assert_nil stored.recording_id
+    assert_nil stored.root_recording_id
   end
 
   test "receipt cleanup expires old claims" do

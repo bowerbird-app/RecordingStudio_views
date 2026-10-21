@@ -25,6 +25,9 @@ class MigrationsGeneratorTest < Minitest::Test
     assert_includes schema, "table.decimal :latitude, precision: 10, scale: 6"
     assert_includes schema, "def add_request_columns!"
     assert_includes generator, "add_ip_and_user_agent_to_recording_studio_views_view_logs.rb"
+    assert_includes generator, "add_kind_to_recording_studio_views_view_logs.rb"
+    assert_includes schema, "def add_kind_column!"
+    assert_includes schema, "table.string :kind, limit: Configuration::KIND_LIMIT"
     assert_includes migration, "RecordingStudioViews::Schema.add_request_columns!"
     %i[
       ip user_agent browser os os_version device_type

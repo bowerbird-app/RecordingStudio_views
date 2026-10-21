@@ -16,6 +16,11 @@ Installing this gem does not start tracking.
 
        <%= recording_studio_track_views %>
 
+   Call it after the page body so per-page helpers can run first. On a named
+   page that is not a recording, opt in with:
+
+       <% recording_studio_track_page_view("home") %>
+
 7. Pin and import the collector with the host asset setup, for importmap:
 
        pin "recording_studio_views/collector", to: "recording_studio_views/collector.js"

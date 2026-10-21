@@ -27,6 +27,17 @@ class TrackingAccessTest < Minitest::Test
     )
   end
 
+  def page_context
+    RecordingStudioViews::PageContext.new(
+      kind: :page,
+      recording_id: nil,
+      root_recording_id: nil,
+      resource_type: "page",
+      page_key: "home",
+      version: 1
+    )
+  end
+
   def site_context
     RecordingStudioViews::PageContext.new(
       kind: :site,
@@ -52,6 +63,30 @@ class TrackingAccessTest < Minitest::Test
       assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, recording_context, nil)
       assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, root_context, nil)
     end
+  end
+
+  def test_page_views_are_public_by_default
+    previous = RecordingStudioViews.configuration.site_tracking_enabled
+    RecordingStudioViews.configuration.site_tracking_enabled = false
+    assert_equal :allow, RecordingStudioViews::TrackingAccess.decision(nil, page_context, nil)
+  ensure
+    RecordingStudioViews.configuration.site_tracking_enabled = previous
+  end
+
+  def test_page_view_authorizer_can_deny
+    previous = RecordingStudioViews.configuration.page_view_authorizer
+    RecordingStudioViews.configuration.page_view_authorizer = ->(*) { false }
+    assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, page_context, nil)
+  ensure
+    RecordingStudioViews.configuration.page_view_authorizer = previous
+  end
+
+  def test_page_view_authorizer_errors_deny
+    previous = RecordingStudioViews.configuration.page_view_authorizer
+    RecordingStudioViews.configuration.page_view_authorizer = ->(*) { raise "nope" }
+    assert_equal :deny, RecordingStudioViews::TrackingAccess.decision(nil, page_context, nil)
+  ensure
+    RecordingStudioViews.configuration.page_view_authorizer = previous
   end
 
   def test_site_views_still_follow_site_tracking_enabled

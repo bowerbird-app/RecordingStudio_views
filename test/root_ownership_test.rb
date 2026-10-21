@@ -39,8 +39,20 @@ class RootOwnershipTest < Minitest::Test
     )
   end
 
-  def test_site_is_allowed_without_a_controller
+    def test_site_is_allowed_without_a_controller
     assert RecordingStudioViews::RootOwnership.allowed?(nil, site_context)
+  end
+
+  def test_page_is_allowed_without_a_controller
+    page = RecordingStudioViews::PageContext.new(
+      kind: :page,
+      recording_id: nil,
+      root_recording_id: nil,
+      resource_type: "page",
+      page_key: "home",
+      version: 1
+    )
+    assert RecordingStudioViews::RootOwnership.allowed?(nil, page)
   end
 
   def test_recording_without_controller_is_denied

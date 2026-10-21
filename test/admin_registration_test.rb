@@ -15,11 +15,17 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes engine, "RecordingStudioViews::Admin.register!"
     assert_includes admin, "RecordingStudioAdmin.register_section(Section)"
     assert_includes admin, "RecordingStudioAdmin.register_screen(PageViewsScreen)"
+    assert_includes admin, "RecordingStudioAdmin.register_screen(PagesScreen)"
     assert_includes admin, "RecordingStudioAdmin.register_widget(Widgets::PAGE_VIEWS_OVER_TIME)"
     assert_includes admin, "RecordingStudioAdmin.register_widget(Widgets::TOTAL_VIEWS)"
+    assert_includes admin, "RecordingStudioAdmin.register_widget(Widgets::PAGES_OVER_TIME)"
+    assert_includes admin, "RecordingStudioAdmin.register_widget(Widgets::TOP_PAGES)"
     assert_includes section, 'key "views"'
     assert_includes section, 'widget "widgets.views.page_views_over_time", view_variant: :compact'
     assert_includes section, 'widget "widgets.views.total_views", view_variant: :compact'
+    assert_includes section, 'widget "widgets.views.pages_over_time", view_variant: :compact'
+    assert_includes section, 'widget "widgets.views.top_pages", view_variant: :compact'
+    assert_includes section, 'text: "Pages"'
     assert_includes section, "style: :secondary"
     refute_includes section, "style: :primary"
     assert_includes screen, 'key "views_page_views"'
@@ -46,6 +52,11 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes widgets, "xaxis: { labels: { show: false } }"
     assert_includes widgets, "tooltip: { enabled: true }"
     assert_includes widgets, "Queries.total_views"
+    assert_includes widgets, "Queries.plain_pages_over_time_series"
+    assert_includes widgets, "Queries.top_plain_page_items"
+    pages_screen = File.read(File.expand_path("../lib/recording_studio_views/admin/pages_screen.rb", __dir__))
+    assert_includes pages_screen, 'key "views_pages"'
+    assert_includes pages_screen, "Queries.top_plain_pages"
   end
 
   def test_gemspec_does_not_require_admin

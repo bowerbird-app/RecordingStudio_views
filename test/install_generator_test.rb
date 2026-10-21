@@ -138,6 +138,7 @@ class InstallGeneratorTest < Minitest::Test
     assert_includes install_guide, "bin/rails generate recording_studio_views:migrations"
     assert_includes install_guide, "bin/rails db:migrate"
     assert_includes install_guide, "recording_studio_track_views"
+    assert_includes install_guide, "recording_studio_track_page_view"
     assert_includes install_guide, "recording_studio_recordable"
     refute_includes install_guide, "RecordingStudio v3"
   end
@@ -156,6 +157,7 @@ class InstallGeneratorTest < Minitest::Test
     assert_includes template, "config.rate_limiting_enabled"
     assert_includes template, "config.rate_limit_store"
     assert_includes template, "config.token_ttl"
+    assert_includes template, "config.page_view_authorizer"
   end
 
   private

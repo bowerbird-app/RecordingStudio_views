@@ -21,10 +21,13 @@ class ViewsAdminTest < ActiveSupport::TestCase
   test "dummy registers the Views admin section screen and widgets" do
     assert_equal RecordingStudioViews::Admin::Section, RecordingStudioAdmin.section_for("views")
     assert_equal RecordingStudioViews::Admin::PageViewsScreen, RecordingStudioAdmin.screen_for("views_page_views")
+    assert_equal RecordingStudioViews::Admin::PagesScreen, RecordingStudioAdmin.screen_for("views_pages")
     assert RecordingStudioAdmin.widget_for("widgets.views.page_views_over_time")
     assert RecordingStudioAdmin.widget_for("widgets.views.total_views")
+    assert RecordingStudioAdmin.widget_for("widgets.views.pages_over_time")
+    assert RecordingStudioAdmin.widget_for("widgets.views.top_pages")
     usages = RecordingStudioViews::Admin::Section.widget_usages
-    assert_equal [:compact, :compact], usages.map(&:view_variant)
+    assert_equal [:compact, :compact, :compact, :compact], usages.map(&:view_variant)
     chart_widget = RecordingStudioAdmin.widget_for("widgets.views.page_views_over_time")
     options = chart_widget.chart_options
     options = options.call if options.respond_to?(:call)
@@ -258,6 +261,26 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_equal "London", queries.city_value(row, nil)
     assert_in_delta 51.5142, queries.latitude_value(row, nil), 0.0001
     assert_in_delta(-0.0931, queries.longitude_value(row, nil), 0.0001)
+  end
+
+  test "pages breakdown counts named pages over time and ranks top pages" do
+    today = Time.now.utc.to_date
+    insert_view(kind: "page", page_key: "home", occurred_at: Time.utc(today.year, today.month, today.day, 12))
+    insert_view(kind: "page", page_key: "home", occurred_at: Time.utc(today.year, today.month, today.day, 15))
+    insert_view(kind: "page", page_key: "login", occurred_at: Time.utc(today.year, today.month, today.day, 16))
+    insert_view(kind: "recording", page_key: "recording", occurred_at: Time.utc(today.year, today.month, today.day, 17))
+
+    queries = RecordingStudioViews::Admin::Queries
+    series = queries.plain_pages_over_time_series(day_range: today..today)
+    assert_equal "Pages", series.first.fetch(:name)
+    assert_equal 3, series.first.fetch(:data).first.fetch(:y)
+
+    ranked = queries.top_plain_pages.to_a
+    assert_equal %w[home login], ranked.map(&:page_key)
+    assert_equal [2, 1], ranked.map { |row| row.views.to_i }
+
+    items = queries.top_plain_page_items
+    assert_equal({ text: "home", trailing: "2" }, items.first)
   end
 
   private

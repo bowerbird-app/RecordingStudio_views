@@ -5,7 +5,7 @@ module RecordingStudioViews
     module_function
 
     def allowed?(controller, context)
-      return true if context.site?
+      return true if context.site? || context.page?
       return false unless controller
 
       root = RecordingStudioViews::RootOwnership.root_for(context)

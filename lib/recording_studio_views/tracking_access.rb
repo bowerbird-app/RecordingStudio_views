@@ -8,6 +8,7 @@ module RecordingStudioViews
 
     def decision(_request, context, actor)
       return :deny if context.nil? || context.skipped?
+      return page_decision(_request, context, actor) if context.page?
       return site_decision if context.site?
 
       recording = recording_for(context)
@@ -34,6 +35,13 @@ module RecordingStudioViews
 
     def site_decision
       RecordingStudioViews.configuration.site_tracking_enabled ? :allow : :deny
+    end
+
+    def page_decision(request, context, actor)
+      result = RecordingStudioViews.configuration.page_view_authorizer.call(request, context.page_key, actor)
+      result == true || result == :allow ? :allow : :deny
+    rescue StandardError
+      :deny
     end
 
     def recording_for(context)

@@ -378,12 +378,60 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
 
     get root_path
     assert_response :success
-    assert_equal "site.home", ingest_from_last_page.page_key
+    home = ingest_from_last_page
+    assert_equal "home", home.page_key
+    assert_equal "page", home.kind
+    assert_nil home.recording_id
 
     sign_in @user
     get docs_install_path
     assert_response :success
     assert_equal false, page_context["dispatch"]
+  end
+
+  test "plain page helper stays off unless called and leaves recording tracking unchanged" do
+    previous_site = RecordingStudioViews.configuration.site_tracking_enabled
+    RecordingStudioViews.configuration.site_tracking_enabled = false
+
+    sign_in @user
+    get page_path(@page)
+    recording_view = ingest_from_last_page
+    assert_equal @page_recording.id, recording_view.recording_id
+    assert_equal "recording", recording_view.kind
+
+    get docs_install_path
+    assert_response :success
+    assert_equal false, page_context["dispatch"]
+  ensure
+    RecordingStudioViews.configuration.site_tracking_enabled = previous_site
+  end
+
+  test "home page helper still records when site tracking is off" do
+    previous_site = RecordingStudioViews.configuration.site_tracking_enabled
+    RecordingStudioViews.configuration.site_tracking_enabled = false
+
+    get root_path
+    assert_response :success
+    view = ingest_from_last_page
+    assert_equal "home", view.page_key
+    assert_equal "page", view.kind
+    assert_nil view.root_recording_id
+  ensure
+    RecordingStudioViews.configuration.site_tracking_enabled = previous_site
+  end
+
+  test "page view authorizer can block a named page without 500" do
+    previous = RecordingStudioViews.configuration.page_view_authorizer
+    RecordingStudioViews.configuration.page_view_authorizer = lambda { |*|
+      raise "authorizer exploded"
+    }
+
+    get root_path
+    assert_response :success
+    assert_includes response.body, "Template Demo"
+    assert_equal false, page_context["dispatch"]
+  ensure
+    RecordingStudioViews.configuration.page_view_authorizer = previous
   end
 
   test "a tracking error leaves the html page usable" do

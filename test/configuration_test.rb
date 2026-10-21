@@ -55,6 +55,7 @@ class ConfigurationTest < Minitest::Test
     assert_nil configuration.maxmind_license_key
     assert_equal 7.days, configuration.geoip_max_age
     assert_equal false, configuration.geo_enabled
+    assert_equal true, configuration.page_view_authorizer.call(nil, "home", nil)
     assert_instance_of RecordingStudio::Hooks, configuration.hooks
   ensure
     ENV["RECORDING_STUDIO_VIEWS_API_KEY"] = previous_value

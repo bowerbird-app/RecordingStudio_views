@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-21
+
+### Added
+- Opt-in named page views via `recording_studio_track_page_view("home")`. Hosts choose a stable page key. Nothing is counted unless that helper runs. Recording, root, and site tracking stay as they are.
+- Page keys are validated (`[A-Za-z0-9._-]`, max 64). The stored identity is the key, never a raw URL. Path, UTM, geo, IP, and user agent stay on the same `ViewLog` row.
+- `config.page_view_authorizer` (default allow). Named pages have no recording to authorize against. Return false or `:deny` to block one.
+- Additive `kind` on `recording_studio_views_view_logs` (`recording`, `root`, `site`, `page`). Daily summary grouping is unchanged. Named pages still register through the existing Logs view-log aggregation.
+- Admin Views: Pages link, Pages over time, and Top pages (UTC), for rows with `kind = page`.
+- Dummy home page calls `recording_studio_track_page_view("home")`.
+
+### Upgrade notes
+- Generate and run `add_kind_to_recording_studio_views_view_logs`.
+- Put `recording_studio_track_views` after the page body so the per-page helper can run first.
+- Call `recording_studio_track_page_view("home")` on each named page you want counted.
+- Set `page_view_authorizer` only if those pages should not be public.
+
 ## [0.8.0] - 2026-10-20
 
 ### Added

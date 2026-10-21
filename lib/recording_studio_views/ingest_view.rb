@@ -111,6 +111,8 @@ module RecordingStudioViews
         root.present? && root.root?
       when :site
         context.root_recording_id.blank? && RecordingStudioViews.configuration.site_tracking_enabled
+      when :page
+        live_page?(context)
       else
         false
       end
@@ -120,8 +122,15 @@ module RecordingStudioViews
       RecordingStudio.capability_enabled?(:viewable, for: recording.recordable_type)
     end
 
+    def live_page?(context)
+      return false if context.page_key.blank?
+      return false if context.recording_id.present? || context.root_recording_id.present?
+
+      PageView.normalize(context.page_key) == context.page_key
+    end
+
     def capability_enabled?(context)
-      return true if %i[root site].include?(context.kind)
+      return true if %i[root site page].include?(context.kind)
       return false if context.recording_id.blank?
 
       recording = RecordingStudio::Recording.find_by(id: context.recording_id)

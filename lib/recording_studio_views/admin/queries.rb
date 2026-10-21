@@ -44,12 +44,43 @@ module RecordingStudioViews
           [{ name: "Page views", data: data }]
         end
 
-        def views_by_day_utc(day_range)
+        def plain_page_logs
+          ViewLog.where(kind: PageView::KIND)
+        end
+
+        def plain_pages_over_time_series(day_range: nil, start_date: nil, end_date: nil)
+          range = day_range.presence || plain_pages_day_range(start_date, end_date)
+          counts = views_by_day_utc(range, relation: plain_page_logs)
+          data = range.map { |day| { x: day, y: counts[day].to_i } }
+          [{ name: "Pages", data: data }]
+        end
+
+        def plain_pages_day_range(start_date, end_date)
+          first = start_date.presence || default_day_range.begin
+          last = end_date.presence || default_day_range.end
+          first..last
+        end
+
+        def top_plain_pages
+          plain_page_logs
+            .except(:order)
+            .select("page_key, COUNT(*) AS views, MIN(id) AS id")
+            .group(:page_key)
+            .order(Arel.sql("COUNT(*) DESC"), :page_key)
+        end
+
+        def top_plain_page_items(limit: 8)
+          top_plain_pages.limit(limit).map do |row|
+            { text: row.page_key, trailing: row.views.to_i.to_s }
+          end
+        end
+
+        def views_by_day_utc(day_range, relation: ViewLog)
           day_sql = "(#{quoted_occurred_at} AT TIME ZONE 'UTC')::date"
-          grouped = ViewLog.except(:order)
-                           .where("#{day_sql} BETWEEN ? AND ?", day_range.begin, day_range.end)
-                           .group(Arel.sql(day_sql))
-                           .count
+          grouped = relation.except(:order)
+                            .where("#{day_sql} BETWEEN ? AND ?", day_range.begin, day_range.end)
+                            .group(Arel.sql(day_sql))
+                            .count
           grouped.transform_keys(&:to_date)
         end
 

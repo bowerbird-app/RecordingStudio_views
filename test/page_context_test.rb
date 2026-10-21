@@ -7,6 +7,7 @@ class PageContextTest < Minitest::Test
     skipped = RecordingStudioViews::PageContext.skipped
     assert skipped.skipped?
     refute skipped.site?
+    refute skipped.page?
 
     site = RecordingStudioViews::PageContext.new(
       kind: :site,
@@ -17,7 +18,19 @@ class PageContextTest < Minitest::Test
       version: 1
     )
     assert site.site?
+    refute site.page?
     refute site.skipped?
+
+    page = RecordingStudioViews::PageContext.new(
+      kind: :page,
+      recording_id: nil,
+      root_recording_id: nil,
+      resource_type: "page",
+      page_key: "home",
+      version: 1
+    )
+    assert page.page?
+    refute page.site?
   end
 
   def test_fingerprint_changes_with_target

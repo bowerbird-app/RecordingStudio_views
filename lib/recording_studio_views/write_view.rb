@@ -73,6 +73,7 @@ module RecordingStudioViews
         recording_id: @context.recording_id,
         resource_type: @context.resource_type,
         page_key: @context.page_key,
+        kind: stored_kind,
         path: PathNormalizer.call(@path) || "/",
         actor_type: actor_type,
         actor_id: actor_id,
@@ -99,6 +100,13 @@ module RecordingStudioViews
         latitude: captured_value(:latitude),
         longitude: captured_value(:longitude)
       }
+    end
+
+    def stored_kind
+      kind = @context.kind.to_s
+      return if kind.blank?
+
+      kind[0, Configuration::KIND_LIMIT]
     end
 
     def stored_ip

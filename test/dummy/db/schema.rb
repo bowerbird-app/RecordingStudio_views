@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_20_030500) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_21_043500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -178,6 +178,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_030500) do
     t.uuid "recording_id"
     t.string "resource_type", limit: 128
     t.string "page_key", limit: 128, null: false
+    t.string "kind", limit: 32
     t.string "path", limit: 2048, null: false
     t.string "actor_type", limit: 128
     t.string "actor_id", limit: 64

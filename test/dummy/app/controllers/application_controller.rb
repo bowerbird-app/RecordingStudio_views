@@ -4,13 +4,11 @@ class ApplicationController < ActionController::Base
   PAGE_VIEW_ACTION = :"recording_studio_views.view"
 
   SITE_PAGE_KEYS = {
-    "home" => "site.home",
     "devise/sessions" => "site.sign_in",
     "devise/registrations" => "site.sign_up",
     "site_pages" => "site.about"
   }.freeze
   SITE_PAGE_PATHS = {
-    "/" => "site.home",
     "/users/sign_in" => "site.sign_in",
     "/users/sign_up" => "site.sign_up",
     "/site/about" => "site.about"

@@ -18,6 +18,10 @@ RecordingStudioViews.configure do |config|
   # follow site_tracking_enabled. Opt back in with tracking_access_policy.
   # config.tracking_access_action = :"recording_studio_views.view"
 
+  # Named pages (home, login) have no recording to authorize against. They are
+  # public unless this hook returns false or :deny.
+  # config.page_view_authorizer = ->(_request, _page_key, _actor) { true }
+
   # Collector POST rate limits. Keyed on a digest of the masked visitor IP.
   # config.rate_limiting_enabled = true
   # config.rate_limit_store = Rails.cache

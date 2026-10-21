@@ -23,7 +23,6 @@
   </head>
 
   <body class="m-0 h-full overflow-hidden overscroll-none bg-[var(--surface-page-background-color)] text-[var(--surface-content-color)]">
-    <%= recording_studio_track_views %>
     <%= render FlatPack::SidebarLayout::Component.new(side: :left, storage_key: "flat-pack-sidebar-layout") do |layout| %>
       <% layout.sidebar do %>
         <%= render "layouts/flat_pack/sidebar", sidebar_side: :left %>
@@ -48,5 +47,6 @@
         </main>
       <% end %>
     <% end %>
+    <%= recording_studio_track_views %>
   </body>
 </html>

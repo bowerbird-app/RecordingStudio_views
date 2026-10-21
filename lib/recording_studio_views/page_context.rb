@@ -25,6 +25,10 @@ module RecordingStudioViews
       kind == :site
     end
 
+    def page?
+      kind == :page
+    end
+
     def fingerprint
       Digest::SHA256.hexdigest(
         [kind, recording_id, root_recording_id, resource_type, page_key].join(":")

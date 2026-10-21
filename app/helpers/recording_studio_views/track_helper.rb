@@ -2,6 +2,13 @@
 
 module RecordingStudioViews
   module TrackHelper
+    def recording_studio_track_page_view(page_key)
+      PageView.store(controller, page_key)
+      nil
+    rescue StandardError
+      nil
+    end
+
     def recording_studio_track_views(context: nil)
       if error_response?
         return context_script({ endpoint: views_endpoint, token: nil, consent: false, dispatch: false })

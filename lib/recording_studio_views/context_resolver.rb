@@ -14,7 +14,7 @@ module RecordingStudioViews
       recording = resolve_recording
       return recording_context(recording) if recording.present?
 
-      root_context || site_context || PageContext.skipped
+      root_context || page_context || site_context || PageContext.skipped
     end
 
     private
@@ -64,6 +64,20 @@ module RecordingStudioViews
         root_recording_id: root.id,
         resource_type: clip(details[:resource_type] || root.recordable_type, Configuration::RESOURCE_TYPE_LIMIT),
         page_key: clip(details[:page_key] || "root", Configuration::PAGE_KEY_LIMIT),
+        version: Configuration::CONTEXT_VERSION
+      )
+    end
+
+    def page_context
+      page_key = PageView.assigned_key(@controller)
+      return if page_key.blank?
+
+      PageContext.new(
+        kind: :page,
+        recording_id: nil,
+        root_recording_id: nil,
+        resource_type: clip(PageView::RESOURCE_TYPE, Configuration::RESOURCE_TYPE_LIMIT),
+        page_key: clip(page_key, Configuration::PAGE_KEY_LIMIT),
         version: Configuration::CONTEXT_VERSION
       )
     end

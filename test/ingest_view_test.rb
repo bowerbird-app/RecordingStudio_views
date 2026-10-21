@@ -182,6 +182,38 @@ class IngestViewTest < Minitest::Test
     assert_nil fields[:utm_content]
   end
 
+  def test_page_context_is_a_live_target_without_site_tracking
+    RecordingStudioViews.configuration.site_tracking_enabled = false
+    page = RecordingStudioViews::PageContext.new(
+      kind: :page,
+      recording_id: nil,
+      root_recording_id: nil,
+      resource_type: "page",
+      page_key: "home",
+      version: 1
+    )
+    written = false
+    writer = lambda { |**|
+      written = true
+      Success.new(success?: true)
+    }
+    RecordingStudioViews::ContextToken.stub :read, page do
+      RecordingStudioViews::WriteView.stub :call, writer do
+        result = RecordingStudioViews::IngestView.call(
+          request: request,
+          params: {
+            event_id: "11111111-1111-1111-1111-111111111111",
+            token: "unused",
+            path: "/"
+          },
+          controller: Object.new
+        )
+        assert result.success?
+      end
+    end
+    assert written
+  end
+
   def test_ownership_denial_excludes_without_writing
     written = false
     writer = lambda { |**|

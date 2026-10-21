@@ -5,7 +5,7 @@ Page views for Recording Studio apps. Installing the gem does not start tracking
 V1 records page views only. It does not create sessions, funnels, conversions, unique visitors, or engagement duration. It never writes a Recording, revision, or timeline Event per view.
 
 ```ruby
-gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.7.0"
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.8.0"
 gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.4.0"
 ```
 
@@ -19,11 +19,11 @@ gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: 
 
        mount RecordingStudioViews::Engine, at: "/recording_studio_views"
 
-5. In the shared layout **body** (not `<head>`), outside any Turbo permanent element:
+5. In the shared layout **body** (not `<head>`), outside any Turbo permanent element, **after** the page content:
 
        <%= recording_studio_track_views %>
 
-   The collector reads the last context script in the document, so a Turbo Drive visit posts the current page. Head scripts stay on the first page's token.
+   The collector reads the last context script in the document, so a Turbo Drive visit posts the current page. Head scripts stay on the first page's token. Put the helper after `yield` so `recording_studio_track_page_view` can run first.
 
 6. Pin the collector with the host asset setup. Importmap:
 
@@ -37,6 +37,12 @@ gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: 
 
 8. Implement `current_recording`, or configure `recording_resolver` once.
 
+9. For a named page that is not a recording (home, login), opt in on that page:
+
+       <% recording_studio_track_page_view("home") %>
+
+   The key is a short, safe string you choose. Nothing is counted until you call this. Recording tracking does not change.
+
 Default raw storage is an ordinary PostgreSQL table (`recording_studio_views_view_logs`) with UUID primary key. `partition_interval` is `nil`. There are no partition jobs. Monthly partitions are an explicit install-time option.
 
 ## What gets recorded
@@ -47,9 +53,10 @@ Context states:
 
 - Recording page: enabled Recording plus verified owning root
 - Root page: named page with a root and no target Recording
+- Named page: `recording_studio_track_page_view` ran with a valid key, no target Recording
 - Site page: explicitly allowed, no root
 - Skipped: no valid context, disabled capability, excluded route, 4xx/5xx response, or denied policy
-- A recording without `:viewable` is skipped. Resolvers do not fall through to a root or site page.
+- A recording without `:viewable` is skipped. Resolvers do not fall through to a root, named page, or site page.
 
 Site pages and unresolved pages are skipped by default. A missing root never grants site-wide access. Shared roots need `root_ownership_policy`.
 
@@ -59,11 +66,11 @@ Delivery is best effort. The collector uses same-origin `fetch` with credentials
 
 ## Ingestion and storage
 
-`POST /recording_studio_views/views` checks method, content type, payload size, same-origin, and CSRF. A CSRF failure returns 403 and instruments `:csrf`. It verifies the token purpose, target, and expiry, re-resolves the Recording or root, checks `:viewable`, re-runs `root_ownership_policy` for recording and root contexts, then runs the host tracking-access policy for the current request actor. When Recording Studio Accessible is loaded, the default policy calls `RecordingStudioAccessible.authorized?(actor:, recording:, role: :view)`, the same check a private page uses. Set `tracking_access_action` to use `authorized_action?` instead when the page uses audiences (for example anonymous public). Accessible stays optional, the same `defined?` pattern as Admin. Without Accessible, recording and root views are denied; site views still follow `site_tracking_enabled`. Opt back in with `tracking_access_policy`. Signed context is not proof of a human view and is not authorization. Deleted or now-private content is not trackable with an old token. Anonymous views store no actor. Browser-supplied user ids are ignored.
+`POST /recording_studio_views/views` checks method, content type, payload size, same-origin, and CSRF. A CSRF failure returns 403 and instruments `:csrf`. It verifies the token purpose, target, and expiry, re-resolves the Recording or root, checks `:viewable`, re-runs `root_ownership_policy` for recording and root contexts, then runs the host tracking-access policy for the current request actor. Named pages skip Accessible and are allowed unless `page_view_authorizer` returns false or `:deny`. When Recording Studio Accessible is loaded, the default policy calls `RecordingStudioAccessible.authorized?(actor:, recording:, role: :view)`, the same check a private page uses. Set `tracking_access_action` to use `authorized_action?` instead when the page uses audiences (for example anonymous public). Accessible stays optional, the same `defined?` pattern as Admin. Without Accessible, recording and root views are denied; site views still follow `site_tracking_enabled`; named pages stay public. Opt recording/root back in with `tracking_access_policy`. Signed context is not proof of a human view and is not authorization. Deleted or now-private content is not trackable with an old token. Anonymous views store no actor. Browser-supplied user ids are ignored.
 
 The collector POST is rate limited (never host pages or `recording_studio_track_views`). Limits are per visitor (default 120/minute) and per visitor per root (default 30/minute), keyed on a digest of the masked IP. Configure `rate_limiting_enabled`, `rate_limit_store` (default `Rails.cache`), `visitor_rate_limit`, `visitor_root_rate_limit`, and `rate_limit_window`. Over the limit the collector returns 429 with `Retry-After` and writes nothing. If the rate-limit store raises, the view is still recorded.
 
-Raw model `RecordingStudioViews::ViewLog`. Fields: browser event UUID `id`, `occurred_at` (server acceptance, UTC), `arrived_at`, `root_recording_id`, `recording_id`, `resource_type`, `page_key`, normalized `path` (no query or fragment), optional actor, optional `visitor_token_digest` (off by default), masked `ip`, truncated `user_agent`, `browser`, `os`, `os_version`, `device_type`, `utm_source`, `utm_medium`, `utm_term`, `utm_content`, `utm_campaign`, `country`, `region`, `city`, `latitude`, `longitude`, timestamps. Path is descriptive only. The gem does not store referrer URLs or the raw query string. The collector reads `utm_source`, `utm_medium`, `utm_term`, `utm_content`, and `utm_campaign` from the current page URL and the server stores those five fields after validation and truncation.
+Raw model `RecordingStudioViews::ViewLog`. Fields: browser event UUID `id`, `occurred_at` (server acceptance, UTC), `arrived_at`, `root_recording_id`, `recording_id`, `resource_type`, `page_key`, `kind` (`recording`, `root`, `site`, `page`), normalized `path` (no query or fragment), optional actor, optional `visitor_token_digest` (off by default), masked `ip`, truncated `user_agent`, `browser`, `os`, `os_version`, `device_type`, `utm_source`, `utm_medium`, `utm_term`, `utm_content`, `utm_campaign`, `country`, `region`, `city`, `latitude`, `longitude`, timestamps. Path is descriptive only. The gem does not store referrer URLs or the raw query string. Named pages store the helper's page key as identity, not the URL. The collector reads `utm_source`, `utm_medium`, `utm_term`, `utm_content`, and `utm_campaign` from the current page URL and the server stores those five fields after validation and truncation.
 
 `ip` comes from Rails `request.remote_ip` on the collector POST and is masked before it is stored: IPv4 last octet is zeroed (`1.2.3.4` → `1.2.3.0`); IPv6 keeps the /48. Masking uses stdlib `IPAddr` only. `config.store_ip` defaults to true; set it to `false` to store nil and skip the address. The full IP is never written to the database, logs, or job arguments. `user_agent` is the raw `User-Agent` header, truncated to 1024 characters. `browser`, `os`, `os_version`, and `device_type` are parsed from that string with `device_detector` at capture time. Geo fields are filled from a local MaxMind lookup of the full IP in memory, then only the masked IP is persisted. Any of these fields may be nil when missing.
 
@@ -87,7 +94,7 @@ recording_studio_admin_sections do
 end
 ```
 
-The hub shows a UTC daily chart from `DailyViewSummary` (`widgets.views.page_views_over_time`) and an all-time total from daily summaries plus raw rows that have not been aggregated. Page views is a table of `ViewLog` rows. Date range and group by stay inline; other filters use Admin's filter modal (`filter_presentation :modal, inline_count: 2`). Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
+The hub shows a UTC daily chart from raw `ViewLog` rows (`widgets.views.page_views_over_time`), an all-time total from daily summaries plus raw rows that have not been aggregated, a Pages over time chart, and a Top pages list for named-page rows (`kind = page`). Page views is a table of `ViewLog` rows. Pages is named pages over time plus top page keys. Date range and group by stay inline on Page views; other filters use Admin's filter modal (`filter_presentation :modal, inline_count: 2`). Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
 
 ## Retention and deletion
 
@@ -134,7 +141,7 @@ Render only target context into shared caches. Token expiry (`token_ttl`, defaul
 
 ## Dummy app
 
-The dummy host at `test/dummy` proves the gem. It has two trackable pages under different workspace roots, shared-layout tracking, a named workspace search page, explicit site pages (`site.home`, `site.sign_in`, `site.sign_up`, `site.about`), anonymous public views through Accessible audiences, and authenticated private pages through `authorized_action?`. It mounts Recording Studio Admin at `/admin` with the Views section enabled. Operation is non-partitioned by default. Partitioned insert coverage lives in the test suite. Dummy uses the shared `test/dummy/config/credentials.yml.enc` (no per-environment credential files). MaxMind keys live in that file; without the master key (as in CI) geo stays off.
+The dummy host at `test/dummy` proves the gem. It has two trackable pages under different workspace roots, shared-layout tracking, a home page that calls `recording_studio_track_page_view("home")`, a named workspace search page, explicit site pages (`site.sign_in`, `site.sign_up`, `site.about`), anonymous public views through Accessible audiences, and authenticated private pages through `authorized_action?`. It mounts Recording Studio Admin at `/admin` with the Views section enabled. Operation is non-partitioned by default. Partitioned insert coverage lives in the test suite. Dummy uses the shared `test/dummy/config/credentials.yml.enc` (no per-environment credential files). MaxMind keys live in that file; without the master key (as in CI) geo stays off.
 
 Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Password`.
 
@@ -155,7 +162,7 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 
 ### Useful Routes
 
-- `/` — dummy app home page
+- `/` — dummy app home page (named page key `home`)
 - `/users/sign_in` — Devise sign-in
 - `/pages/:id` — authenticated private Page
 - `/public/pages/:id` — anonymous public Page
