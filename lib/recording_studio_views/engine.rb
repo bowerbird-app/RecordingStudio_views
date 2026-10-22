@@ -13,30 +13,6 @@ module RecordingStudioViews
         apply_extensions(target, extensions_for(:controller, extension_keys_for(target)))
       end
 
-      def load_x_config(app)
-        return unless app.config.respond_to?(:x) && app.config.x.respond_to?(:recording_studio_views)
-
-        merge_x_config(app.config.x.recording_studio_views)
-      end
-
-      def merge_x_config(xcfg)
-        return RecordingStudioViews.configuration.merge!(xcfg.to_h) if xcfg.respond_to?(:to_h)
-        return unless xcfg.respond_to?(:each_pair)
-
-        hash = {}
-        xcfg.each_pair { |key, value| hash[key] = value }
-        RecordingStudioViews.configuration.merge!(hash) if hash.any?
-      end
-
-      def yaml_config_path(app)
-        if app.respond_to?(:paths) && (config_paths = app.paths["config"])
-          first = Array(config_paths.respond_to?(:existent) ? config_paths.existent : config_paths).first
-          File.join(first, "recording_studio_views.yml") if first
-        elsif app.respond_to?(:root) && app.root
-          File.join(app.root, "config", "recording_studio_views.yml")
-        end
-      end
-
       private
 
       def extensions_for(kind, names)
