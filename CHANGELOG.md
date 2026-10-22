@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Accept `recording_studio_logs` `>= 0.4.0`, `< 1.0`. Dummy and root Gemfiles pin Logs `v0.7.0` and Metrics `v0.6.1`. Logs registers daily summaries through Metrics with `fill_gaps: true` (empty UTC days are zeros).
 - Dummy Admin pin `v2.3.0` → `v2.6.2`, Root Switchable `v0.9.0` → `v0.9.7`, FlatPack `v0.1.213` → `v0.1.254` so Logs 0.7.0 and Metrics 0.6.1 resolve.
 - Collector `rate_limit_window` is the cache TTL and the controller `Retry-After` header. Rails `rate_limit within:` stays the default one-minute window.
-- Admin actor labels cache in a Hash built per table render, not `instance_variable_get`.
+- Admin actor labels resolve per row (name, then email, then type and id). A per-render cache needs an Admin seam.
 
 ### Removed
 - Gem-template leftovers: unused `api_key` / `enable_feature_x` / `timeout`, install-generator Tailwind `@source` injection, dummy Template Demo page, `docs/gem_template`, `.github/agents`, `bin/rename_gem`, committed `coverage/` output, dead `filter_by_visibility`.

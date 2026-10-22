@@ -5,7 +5,7 @@ module RecordingStudioViews
   # Rails does not send Retry-After; IngestionsController builds that header from config.
   class RateLimitStore
     def increment(name, amount = 1, **options)
-      options[:expires_in] = RecordingStudioViews.configuration.rate_limit_window.to_f
+      options[:expires_in] = expires_in_seconds
       backend.increment(name, amount, **options)
     rescue StandardError => e
       Failure.report(e)
@@ -15,6 +15,14 @@ module RecordingStudioViews
 
     def backend
       RecordingStudioViews.configuration.rate_limit_store || Rails.cache
+    end
+
+    private
+
+    def expires_in_seconds
+      window = RecordingStudioViews.configuration.rate_limit_window
+      seconds = window.respond_to?(:to_f) ? window.to_f : Configuration::DEFAULT_RATE_LIMIT_WINDOW.to_f
+      seconds.positive? ? seconds : Configuration::DEFAULT_RATE_LIMIT_WINDOW.to_f
     end
   end
 

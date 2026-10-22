@@ -78,21 +78,8 @@ module RecordingStudioViews
         filter :page_key, apply: PAGE_KEY_FILTER
         filter :path, apply: PATH_FILTER
         TABLE_COLUMNS.each do |key, title, sortable|
-          value = if key == :actor
-                    lambda do |row, context|
-                      cache = {}
-                      if context
-                        unless context.respond_to?(:actor_label_cache)
-                          context.define_singleton_method(:actor_label_cache) { @actor_label_cache ||= {} }
-                        end
-                        cache = context.actor_label_cache
-                      end
-                      Queries.actor_value(row, context, cache)
-                    end
-                  else
-                    ->(row, context) { Queries.public_send(:"#{key}_value", row, context) }
-                  end
-          column key, title: title, sortable: sortable, value: value
+          column key, title: title, sortable: sortable,
+                      value: ->(row, context) { Queries.public_send(:"#{key}_value", row, context) }
         end
         paginate per_page: 25
         default_sort :occurred_at, direction: :desc

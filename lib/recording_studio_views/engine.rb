@@ -76,7 +76,7 @@ module RecordingStudioViews
         else
           begin
             hash = {}
-            xcfg.each_pair { |key, value| hash[key] = value } if xcfg.respond_to?(:each_pair)
+            xcfg.each_pair { |k, v| hash[k] = v } if xcfg.respond_to?(:each_pair)
             RecordingStudioViews.configuration.merge!(hash) if hash&.any?
           rescue StandardError
             nil

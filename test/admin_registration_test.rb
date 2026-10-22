@@ -75,7 +75,6 @@ class AdminRegistrationTest < Minitest::Test
     ]
     table_result = Struct.new(:rows).new(rows)
     context = Struct.new(:table_result).new(table_result)
-    cache = {}
     actor = Struct.new(:name, :email)
     records = {
       "11" => actor.new("Ada", "ada@example.com"),
@@ -84,9 +83,9 @@ class AdminRegistrationTest < Minitest::Test
     queries = RecordingStudioViews::Admin::Queries
 
     queries.stub(:actor_records_by_id, ->(_klass, ids) { records.slice(*ids.map(&:to_s)) }) do
-      assert_equal "Ada", queries.actor_value(rows[0], context, cache)
-      assert_equal "bea@example.com", queries.actor_value(rows[1], context, cache)
-      assert_equal "Anonymous", queries.actor_value(rows[2], context, cache)
+      assert_equal "Ada", queries.actor_value(rows[0], context)
+      assert_equal "bea@example.com", queries.actor_value(rows[1], context)
+      assert_equal "Anonymous", queries.actor_value(rows[2], context)
     end
   end
 

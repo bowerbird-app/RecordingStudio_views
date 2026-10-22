@@ -77,4 +77,30 @@ class RateLimitStoreTest < Minitest::Test
     RecordingStudioViews.configuration.rate_limit_store = previous_store
     RecordingStudioViews.configuration.rate_limit_window = previous_window
   end
+
+  def test_increment_falls_back_to_default_window_when_unset_or_not_positive
+    seen = []
+    store = Object.new
+    store.define_singleton_method(:increment) do |_name, _amount = 1, **options|
+      seen << options[:expires_in]
+      1
+    end
+    previous_store = RecordingStudioViews.configuration.rate_limit_store
+    previous_window = RecordingStudioViews.configuration.rate_limit_window
+    RecordingStudioViews.configuration.rate_limit_store = store
+    limiter = RecordingStudioViews::RateLimitStore.new
+    default = RecordingStudioViews::Configuration::DEFAULT_RATE_LIMIT_WINDOW.to_f
+
+    RecordingStudioViews.configuration.rate_limit_window = nil
+    limiter.increment("views-test-nil", 1)
+    RecordingStudioViews.configuration.rate_limit_window = 0
+    limiter.increment("views-test-zero", 1)
+    RecordingStudioViews.configuration.rate_limit_window = -5
+    limiter.increment("views-test-negative", 1)
+
+    assert_equal [default, default, default], seen
+  ensure
+    RecordingStudioViews.configuration.rate_limit_store = previous_store
+    RecordingStudioViews.configuration.rate_limit_window = previous_window
+  end
 end
