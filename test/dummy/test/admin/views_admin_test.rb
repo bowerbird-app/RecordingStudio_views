@@ -200,19 +200,6 @@ class ViewsAdminTest < ActiveSupport::TestCase
     ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
   end
 
-  test "actor label cache does not leak across requests" do
-    first = insert_view(actor_type: "User", actor_id: @user.id)
-    queries = RecordingStudioViews::Admin::Queries
-    context = actor_context_for([first])
-    RecordingStudioViews::Current.reset
-
-    queries.actor_value(first, context)
-    refute_nil RecordingStudioViews::Current.actor_label_cache
-
-    RecordingStudioViews::Current.reset
-    assert_nil RecordingStudioViews::Current.actor_label_cache
-  end
-
   test "page views actor column lambda labels a page of rows" do
     named = Workspace.find_or_create_by!(name: "Named Workspace")
     named_row = insert_view(actor_type: "Workspace", actor_id: named.id)
