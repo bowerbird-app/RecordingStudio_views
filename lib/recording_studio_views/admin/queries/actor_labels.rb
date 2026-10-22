@@ -4,7 +4,7 @@ module RecordingStudioViews
   module Admin
     module Queries
       module ActorLabels
-        CACHE_IVAR = :@_recording_studio_views_actor_labels
+        CACHES = ObjectSpace::WeakMap.new
 
         def actor_value(row, context = nil)
           return ANONYMOUS_ACTOR if row.actor_id.blank?
@@ -22,8 +22,7 @@ module RecordingStudioViews
         def actor_label_cache(context)
           return {} unless context
 
-          context.instance_variable_get(CACHE_IVAR) ||
-            context.instance_variable_set(CACHE_IVAR, {})
+          CACHES[context] ||= {}
         end
 
         def preload_actor_labels(cache, rows)

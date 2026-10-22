@@ -51,39 +51,45 @@ module RecordingStudioViews
       end
     end
 
+    class << self
+      def load_x_config(app)
+        return unless app.config.respond_to?(:x) && app.config.x.respond_to?(:recording_studio_views)
+
+        merge_x_config(app.config.x.recording_studio_views)
+      end
+
+      def merge_x_config(xcfg)
+        return RecordingStudioViews.configuration.merge!(xcfg.to_h) if xcfg.respond_to?(:to_h)
+        return unless xcfg.respond_to?(:each_pair)
+
+        hash = {}
+        xcfg.each_pair { |key, value| hash[key] = value }
+        RecordingStudioViews.configuration.merge!(hash) if hash.any?
+      end
+
+      def yaml_config_path(app)
+        if app.respond_to?(:paths) && (config_paths = app.paths["config"])
+          first = Array(config_paths.respond_to?(:existent) ? config_paths.existent : config_paths).first
+          File.join(first, "recording_studio_views.yml") if first
+        elsif app.respond_to?(:root) && app.root
+          File.join(app.root, "config", "recording_studio_views.yml")
+        end
+      end
+    end
+
     initializer "recording_studio_views.before_initialize", before: "recording_studio_views.load_config" do |_app|
       RecordingStudioViews.configuration.hooks.run(:before_initialize, self)
     end
 
     initializer "recording_studio_views.load_config" do |app|
       if app.respond_to?(:config_for)
-        begin
-          yaml = begin
-            app.config_for(:recording_studio_views)
-          rescue StandardError
-            nil
-          end
+        path = Engine.yaml_config_path(app)
+        if path && File.exist?(path)
+          yaml = app.config_for(:recording_studio_views)
           RecordingStudioViews.configuration.merge!(yaml) if yaml.respond_to?(:each)
-        rescue StandardError
-          nil
         end
       end
-
-      if app.config.respond_to?(:x) && app.config.x.respond_to?(:recording_studio_views)
-        xcfg = app.config.x.recording_studio_views
-        if xcfg.respond_to?(:to_h)
-          RecordingStudioViews.configuration.merge!(xcfg.to_h)
-        else
-          begin
-            hash = {}
-            xcfg.each_pair { |k, v| hash[k] = v } if xcfg.respond_to?(:each_pair)
-            RecordingStudioViews.configuration.merge!(hash) if hash&.any?
-          rescue StandardError
-            nil
-          end
-        end
-      end
-
+      Engine.load_x_config(app)
       RecordingStudioViews.configuration.hooks.run(:on_configuration, RecordingStudioViews.configuration)
     end
 

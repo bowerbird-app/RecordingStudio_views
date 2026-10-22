@@ -1,5 +1,25 @@
 # Upgrading
 
+## 0.10.0
+
+### Logs and Metrics
+
+Pin `recording_studio_logs` to GitHub tag `v0.7.0` (`>= 0.4.0`, `< 1.0`). Logs 0.7.0 registers daily summaries through Metrics, so also pin `recording_studio_metrics` to `v0.6.1`. Empty UTC days come back as zeros (`fill_gaps: true`). No Views migration.
+
+Hosts that still pin Admin or Root Switchable to older tags that cap Logs or Metrics below 1.0 need Admin `v2.6.2` and Root Switchable `v0.9.7`. Dummy pins FlatPack `v0.1.254` because Admin 2.6.2 requires `~> 0.1.254`. Later FlatPack tags drop PageNav `anchor_label` / Card `style`, which Admin 2.6.2 still uses.
+
+### Collector rate-limit window
+
+`config.rate_limit_window` now applies to both the Rails limiter window and `Retry-After`. It previously only changed the header.
+
+### Install generator
+
+The install generator no longer injects Tailwind or Flatpack `@source` paths. Dummy already scans engines itself.
+
+### Template leftovers
+
+`api_key`, `enable_feature_x`, and `timeout` are removed. Missing `config/recording_studio_views.yml` is skipped; invalid YAML raises.
+
 ## 0.9.0
 
 ### Admin charts read daily summaries

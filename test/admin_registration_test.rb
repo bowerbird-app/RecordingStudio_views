@@ -56,6 +56,15 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes widgets, "xaxis: { labels: { show: false } }"
     assert_includes widgets, "tooltip: { enabled: true }"
     assert_includes widgets, "Queries.total_views"
+    queries = File.read(File.expand_path("../lib/recording_studio_views/admin/queries.rb", __dir__))
+    filters = File.read(File.expand_path("../lib/recording_studio_views/admin/queries/filters.rb", __dir__))
+    labels = File.read(File.expand_path("../lib/recording_studio_views/admin/queries/actor_labels.rb", __dir__))
+    refute_includes queries, "PUBLIC ="
+    refute_includes queries, "PRIVATE ="
+    refute_includes filters, "filter_by_visibility"
+    refute_includes filters, "visibility_to_visit_kind"
+    refute_includes labels, "instance_variable_get"
+    assert_includes labels, "ObjectSpace::WeakMap"
   end
 
   def test_gemspec_does_not_require_admin

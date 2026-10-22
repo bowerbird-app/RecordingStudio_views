@@ -57,4 +57,15 @@ class RateLimitStoreTest < Minitest::Test
   ensure
     RecordingStudioViews.configuration.visitor_rate_limit = previous
   end
+
+  def test_window_reads_live_config
+    previous = RecordingStudioViews.configuration.rate_limit_window
+    window = RecordingStudioViews::RateLimitWindow.new
+    RecordingStudioViews.configuration.rate_limit_window = 2.seconds
+
+    assert_equal 2, window.to_i
+    assert_in_delta 2.0, window.to_f
+  ensure
+    RecordingStudioViews.configuration.rate_limit_window = previous
+  end
 end

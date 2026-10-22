@@ -424,6 +424,26 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     assert_equal 0, RecordingStudioViews::ViewLog.count
   end
 
+  test "collector honors the configured rate limit window" do
+    with_rate_limits(visitor: 1, visitor_root: 100, window: 2.seconds) do
+      sign_in @user
+      get page_path(@page)
+      context = page_context
+      freeze_time do
+        post_ingest(context, event_id: SecureRandom.uuid, extra_headers: { "REMOTE_ADDR" => "9.8.7.6" })
+        assert_response :no_content
+
+        post_ingest(context, event_id: SecureRandom.uuid, extra_headers: { "REMOTE_ADDR" => "9.8.7.6" })
+        assert_response :too_many_requests
+        assert_equal "2", response.headers["Retry-After"]
+
+        travel 3.seconds
+        post_ingest(context, event_id: SecureRandom.uuid, extra_headers: { "REMOTE_ADDR" => "9.8.7.6" })
+        assert_response :no_content
+      end
+    end
+  end
+
   test "throttled collector post returns 429 with retry after and writes nothing" do
     with_rate_limits(visitor: 1, visitor_root: 100) do |store|
       sign_in @user
@@ -646,20 +666,23 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     meta ? meta["content"] : ""
   end
 
-  def with_rate_limits(visitor:, visitor_root:)
+  def with_rate_limits(visitor:, visitor_root:, window: nil)
     previous = {
       store: RecordingStudioViews.configuration.rate_limit_store,
       visitor: RecordingStudioViews.configuration.visitor_rate_limit,
-      visitor_root: RecordingStudioViews.configuration.visitor_root_rate_limit
+      visitor_root: RecordingStudioViews.configuration.visitor_root_rate_limit,
+      window: RecordingStudioViews.configuration.rate_limit_window
     }
     store = ActiveSupport::Cache::MemoryStore.new
     RecordingStudioViews.configuration.rate_limit_store = store
     RecordingStudioViews.configuration.visitor_rate_limit = visitor
     RecordingStudioViews.configuration.visitor_root_rate_limit = visitor_root
+    RecordingStudioViews.configuration.rate_limit_window = window if window
     yield store
   ensure
     RecordingStudioViews.configuration.rate_limit_store = previous[:store]
     RecordingStudioViews.configuration.visitor_rate_limit = previous[:visitor]
     RecordingStudioViews.configuration.visitor_root_rate_limit = previous[:visitor_root]
+    RecordingStudioViews.configuration.rate_limit_window = previous[:window]
   end
 end

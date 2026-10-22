@@ -28,15 +28,11 @@ module RecordingStudioViews
           contains_match(relation, :path, value)
         end
 
-        def filter_by_visibility(relation, value)
-          filter_by_visit_kind(relation, visibility_to_visit_kind(value))
-        end
-
         def filter_by_visit_kind(relation, value)
           case value.to_s
           when ANONYMOUS_ACTOR
             relation.where(actor_id: [nil, ""])
-          when SIGNED_IN, PRIVATE
+          when SIGNED_IN
             relation.where.not(actor_id: [nil, ""])
           else
             relation
@@ -112,14 +108,6 @@ module RecordingStudioViews
 
         def chart_filter_present?(value)
           !(value.nil? || value.to_s.strip.empty?)
-        end
-
-        def visibility_to_visit_kind(value)
-          case value.to_s
-          when PUBLIC then ANONYMOUS_ACTOR
-          when PRIVATE then SIGNED_IN
-          else value
-          end
         end
       end
     end
