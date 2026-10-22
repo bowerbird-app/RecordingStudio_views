@@ -58,14 +58,23 @@ class RateLimitStoreTest < Minitest::Test
     RecordingStudioViews.configuration.visitor_rate_limit = previous
   end
 
-  def test_window_reads_live_config
-    previous = RecordingStudioViews.configuration.rate_limit_window
-    window = RecordingStudioViews::RateLimitWindow.new
+  def test_increment_uses_configured_window
+    seen = nil
+    store = Object.new
+    store.define_singleton_method(:increment) do |_name, _amount = 1, **options|
+      seen = options[:expires_in]
+      1
+    end
+    previous_store = RecordingStudioViews.configuration.rate_limit_store
+    previous_window = RecordingStudioViews.configuration.rate_limit_window
+    RecordingStudioViews.configuration.rate_limit_store = store
     RecordingStudioViews.configuration.rate_limit_window = 2.seconds
 
-    assert_equal 2, window.to_i
-    assert_in_delta 2.0, window.to_f
+    RecordingStudioViews::RateLimitStore.new.increment("views-test", 1, expires_in: 60)
+
+    assert_in_delta 2.0, seen
   ensure
-    RecordingStudioViews.configuration.rate_limit_window = previous
+    RecordingStudioViews.configuration.rate_limit_store = previous_store
+    RecordingStudioViews.configuration.rate_limit_window = previous_window
   end
 end

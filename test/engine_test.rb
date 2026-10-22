@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "fileutils"
-require "tmpdir"
 
 class EngineTest < Minitest::Test
   def setup
@@ -45,12 +43,7 @@ class EngineTest < Minitest::Test
       end
     end.new(app_config)
 
-    Dir.mktmpdir do |dir|
-      FileUtils.mkdir_p(File.join(dir, "config"))
-      File.write(File.join(dir, "config", "recording_studio_views.yml"), "development:\n  store_ip: false\n")
-      app.define_singleton_method(:root) { dir }
-      find_initializer("recording_studio_views.load_config").block.call(app)
-    end
+    find_initializer("recording_studio_views.load_config").block.call(app)
 
     assert hook_called
     assert_equal RecordingStudioViews.configuration, hook_payload
@@ -80,16 +73,24 @@ class EngineTest < Minitest::Test
     assert_equal 15.minutes, RecordingStudioViews.configuration.token_ttl
   end
 
-  def test_load_config_skips_missing_yaml
-    app = Struct.new(:config).new(Object.new)
-    app.define_singleton_method(:config_for) { |_name| raise "missing file" }
-    app.define_singleton_method(:root) { "/tmp/missing-views-config" }
+  def test_load_config_swallow_each_pair_errors
+    bad_pair_config = Class.new do
+      def each_pair
+        raise "bad pair"
+      end
+    end.new
+
+    xcfg = Struct.new(:recording_studio_views).new(bad_pair_config)
+    app_config = Struct.new(:x).new(xcfg)
+    app = Struct.new(:config) do
+      def config_for(_name)
+        { store_ip: false }
+      end
+    end.new(app_config)
 
     find_initializer("recording_studio_views.load_config").block.call(app)
 
-    assert_equal 2.hours, RecordingStudioViews.configuration.token_ttl
-    assert_equal true, RecordingStudioViews.configuration.store_ip
-    assert_equal false, RecordingStudioViews.configuration.site_tracking_enabled
+    assert_equal false, RecordingStudioViews.configuration.store_ip
   end
 
   def test_load_config_is_noop_without_config_sources

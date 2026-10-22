@@ -5,12 +5,11 @@ require "digest"
 module RecordingStudioViews
   class IngestionsController < ApplicationController
     RATE_LIMIT_STORE = RateLimitStore.new
-    RATE_LIMIT_WINDOW = RateLimitWindow.new
     VISITOR_RATE_LIMIT = RateLimitCeiling.new(:visitor_rate_limit)
     VISITOR_ROOT_RATE_LIMIT = RateLimitCeiling.new(:visitor_root_rate_limit)
 
     rate_limit to: VISITOR_RATE_LIMIT,
-               within: RATE_LIMIT_WINDOW,
+               within: Configuration::DEFAULT_RATE_LIMIT_WINDOW,
                by: :visitor_rate_limit_key,
                with: :throttled,
                store: RATE_LIMIT_STORE,
@@ -19,7 +18,7 @@ module RecordingStudioViews
                if: :rate_limiting_enabled?
 
     rate_limit to: VISITOR_ROOT_RATE_LIMIT,
-               within: RATE_LIMIT_WINDOW,
+               within: Configuration::DEFAULT_RATE_LIMIT_WINDOW,
                by: :visitor_root_rate_limit_key,
                with: :throttled,
                store: RATE_LIMIT_STORE,

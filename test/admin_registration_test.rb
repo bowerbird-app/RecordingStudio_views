@@ -58,13 +58,36 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes widgets, "Queries.total_views"
     queries = File.read(File.expand_path("../lib/recording_studio_views/admin/queries.rb", __dir__))
     filters = File.read(File.expand_path("../lib/recording_studio_views/admin/queries/filters.rb", __dir__))
-    labels = File.read(File.expand_path("../lib/recording_studio_views/admin/queries/actor_labels.rb", __dir__))
     refute_includes queries, "PUBLIC ="
     refute_includes queries, "PRIVATE ="
     refute_includes filters, "filter_by_visibility"
     refute_includes filters, "visibility_to_visit_kind"
-    refute_includes labels, "instance_variable_get"
-    assert_includes labels, "ObjectSpace::WeakMap"
+  end
+
+  def test_actor_value_labels_a_page_of_rows
+    require "recording_studio_views/admin/queries"
+
+    row = Struct.new(:actor_id, :actor_type)
+    rows = [
+      row.new("11", "User"),
+      row.new("22", "User"),
+      row.new(nil, nil)
+    ]
+    table_result = Struct.new(:rows).new(rows)
+    context = Struct.new(:table_result).new(table_result)
+    cache = {}
+    actor = Struct.new(:name, :email)
+    records = {
+      "11" => actor.new("Ada", "ada@example.com"),
+      "22" => actor.new(nil, "bea@example.com")
+    }
+    queries = RecordingStudioViews::Admin::Queries
+
+    queries.stub(:actor_records_by_id, ->(_klass, ids) { records.slice(*ids.map(&:to_s)) }) do
+      assert_equal "Ada", queries.actor_value(rows[0], context, cache)
+      assert_equal "bea@example.com", queries.actor_value(rows[1], context, cache)
+      assert_equal "Anonymous", queries.actor_value(rows[2], context, cache)
+    end
   end
 
   def test_gemspec_does_not_require_admin

@@ -10,7 +10,7 @@ Hosts that still pin Admin or Root Switchable to older tags that cap Logs or Met
 
 ### Collector rate-limit window
 
-`config.rate_limit_window` now applies to both the Rails limiter window and `Retry-After`. It previously only changed the header.
+`config.rate_limit_window` is the cache TTL and the `Retry-After` header the collector sets. Rails does not send `Retry-After`. `rate_limit within:` stays `1.minute`.
 
 ### Install generator
 
@@ -18,7 +18,7 @@ The install generator no longer injects Tailwind or Flatpack `@source` paths. Du
 
 ### Template leftovers
 
-`api_key`, `enable_feature_x`, and `timeout` are removed. Missing `config/recording_studio_views.yml` is skipped; invalid YAML raises.
+`api_key`, `enable_feature_x`, and `timeout` are removed.
 
 ## 0.9.0
 

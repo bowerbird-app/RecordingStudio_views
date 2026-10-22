@@ -4,12 +4,11 @@ module RecordingStudioViews
   module Admin
     module Queries
       module ActorLabels
-        CACHES = ObjectSpace::WeakMap.new
-
-        def actor_value(row, context = nil)
+        def actor_value(row, context = nil, cache = nil)
           return ANONYMOUS_ACTOR if row.actor_id.blank?
 
-          cache = actor_label_cache(context)
+          cache ||= context.actor_label_cache if context.respond_to?(:actor_label_cache)
+          cache ||= {}
           preload_actor_labels(cache, actor_rows_for_page(context, row))
           cache[actor_cache_key(row)] || fallback_actor_label(row)
         end
@@ -17,12 +16,6 @@ module RecordingStudioViews
         def actor_rows_for_page(context, row)
           rows = context&.table_result&.rows
           Array(rows.presence || [row])
-        end
-
-        def actor_label_cache(context)
-          return {} unless context
-
-          CACHES[context] ||= {}
         end
 
         def preload_actor_labels(cache, rows)

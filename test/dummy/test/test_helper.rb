@@ -40,21 +40,16 @@ module ViewsAccessHelpers
     root = RecordingStudio.root_recording_for(workspace)
     return root if RecordingStudioAccessible.authorized?(actor: actor, recording: root, role: :admin)
 
-    bootstrap = RecordingStudioAccessible.bootstrap_owner_access!(recording: root, actor: actor)
-    return root if bootstrap.success?
-
     manager = User.find_by(email: "admin@admin.com")
-    if manager
-      grant = RecordingStudioAccessible.grant_access(
-        recording: root,
-        actor: actor,
-        role: :admin,
-        manager_actor: manager
-      )
-      return root if grant.success?
-    end
+    grant = RecordingStudioAccessible.grant_access(
+      recording: root,
+      actor: actor,
+      role: :admin,
+      manager_actor: manager
+    )
+    return root if grant.success?
 
-    raise "could not grant admin on #{workspace.name}: #{bootstrap.error}"
+    raise "could not grant admin on #{workspace.name}: #{grant.error}"
   end
 
   def publish_page!(page, manager, workspace)

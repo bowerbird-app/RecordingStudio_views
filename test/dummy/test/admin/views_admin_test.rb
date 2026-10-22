@@ -478,7 +478,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
 
   def actor_context_for(rows)
     table_result = Struct.new(:rows).new(rows)
-    Struct.new(:table_result).new(table_result)
+    Struct.new(:table_result, :actor_label_cache).new(table_result, {})
   end
 
   def screen_filter_context(values)
