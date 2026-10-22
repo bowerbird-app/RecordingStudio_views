@@ -28,5 +28,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "maxmind-db"
   spec.add_dependency "rails", "~> 8.1.0"
   spec.add_dependency "recording_studio", "~> 4.2"
-  spec.add_dependency "recording_studio_logs", ">= 0.4.0", "< 0.6"
+  spec.add_dependency "recording_studio_logs", ">= 0.4.0", "< 1.0"
 end

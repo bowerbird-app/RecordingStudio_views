@@ -20,7 +20,7 @@ module RecordingStudioViews
     UTM_LIMIT = 255
     UTM_KEYS = %i[utm_source utm_medium utm_term utm_content utm_campaign].freeze
 
-    attr_accessor :api_key, :enable_feature_x, :timeout, :hooks,
+    attr_accessor :hooks,
                   :recording_resolver, :root_page_resolver, :site_page_resolver,
                   :root_ownership_policy, :tracking_access_policy, :tracking_access_action,
                   :consent_predicate,
@@ -44,9 +44,6 @@ module RecordingStudioViews
 
     def to_h
       {
-        api_key: api_key,
-        enable_feature_x: enable_feature_x,
-        timeout: timeout,
         token_ttl: token_ttl,
         site_tracking_enabled: site_tracking_enabled,
         store_ip: store_ip,
@@ -57,7 +54,7 @@ module RecordingStudioViews
         visitor_rate_limit: visitor_rate_limit,
         visitor_root_rate_limit: visitor_root_rate_limit,
         rate_limit_window: rate_limit_window,
-        hooks_registered: hooks.instance_variable_get(:@registry).transform_values(&:size)
+        hooks_registered: hooks.registered_counts
       }
     end
 
@@ -73,9 +70,6 @@ module RecordingStudioViews
     private
 
     def assign_core_defaults
-      @api_key = ENV.fetch("RECORDING_STUDIO_VIEWS_API_KEY", nil)
-      @enable_feature_x = false
-      @timeout = 5
       @hooks = RecordingStudio::Hooks.new
       @token_ttl = DEFAULT_TOKEN_TTL
       @site_tracking_enabled = false

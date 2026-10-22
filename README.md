@@ -5,8 +5,9 @@ Page views for Recording Studio apps. Installing the gem does not start tracking
 V1 records page views only. It does not create sessions, funnels, conversions, unique visitors, or engagement duration. It never writes a Recording, revision, or timeline Event per view.
 
 ```ruby
-gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.7.0"
-gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.4.0"
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.10.0"
+gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.0"
+gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.6.1"
 ```
 
 ## Install
@@ -174,14 +175,15 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 | RecordingStudio | 4.x (`~> 4.2` in the gemspec; dummy GitHub tag `v4.7.0`) |
 | Accessible      | dummy GitHub tag `v0.18.0` |
 | Trashable       | dummy GitHub tag `v0.11.0` (`require: false`; query-only via Accessible) |
-| Root Switchable | dummy GitHub tag `v0.9.0` |
-| Logs            | dummy GitHub tag `v0.4.0` |
+| Root Switchable | dummy GitHub tag `v0.9.7` |
+| Logs            | dummy GitHub tag `v0.7.0` |
+| Metrics         | dummy GitHub tag `v0.6.1` |
 | device_detector | runtime (browser / OS / OS version / device type) |
 | maxmind-db      | runtime (local GeoLite2 City lookup only) |
-| Admin           | dummy GitHub tag `v2.3.0` (optional for hosts) |
-| FlatPack        | dummy GitHub tag `v0.1.213` |
+| Admin           | dummy GitHub tag `v2.6.2` (optional for hosts) |
+| FlatPack        | dummy GitHub tag `v0.1.254` |
 | Devise          | latest  |
 
 ## Documentation
 
-`docs/gem_template/` is the preserved rename reference for the original template, not the product docs for this gem.
+See this README, `UPGRADING.md`, and `CHANGELOG.md`.

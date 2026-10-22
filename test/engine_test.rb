@@ -35,11 +35,11 @@ class EngineTest < Minitest::Test
       hook_payload = cfg
     end
 
-    xcfg = Struct.new(:recording_studio_views).new({ enable_feature_x: true })
+    xcfg = Struct.new(:recording_studio_views).new({ site_tracking_enabled: true })
     app_config = Struct.new(:x).new(xcfg)
     app = Struct.new(:config) do
       def config_for(_name)
-        { api_key: "from_yaml", timeout: 12 }
+        { token_ttl: 12.minutes, store_ip: false }
       end
     end.new(app_config)
 
@@ -47,15 +47,15 @@ class EngineTest < Minitest::Test
 
     assert hook_called
     assert_equal RecordingStudioViews.configuration, hook_payload
-    assert_equal "from_yaml", RecordingStudioViews.configuration.api_key
-    assert_equal 12, RecordingStudioViews.configuration.timeout
-    assert_equal true, RecordingStudioViews.configuration.enable_feature_x
+    assert_equal 12.minutes, RecordingStudioViews.configuration.token_ttl
+    assert_equal false, RecordingStudioViews.configuration.store_ip
+    assert_equal true, RecordingStudioViews.configuration.site_tracking_enabled
   end
 
   def test_load_config_handles_errors_and_each_pair_fallback
     pair_config = Class.new do
       def each_pair
-        yield(:timeout, 15)
+        yield(:token_ttl, 15.minutes)
       end
     end.new
 
@@ -70,7 +70,7 @@ class EngineTest < Minitest::Test
 
     find_initializer("recording_studio_views.load_config").block.call(app)
 
-    assert_equal 15, RecordingStudioViews.configuration.timeout
+    assert_equal 15.minutes, RecordingStudioViews.configuration.token_ttl
   end
 
   def test_load_config_swallow_each_pair_errors
@@ -84,14 +84,13 @@ class EngineTest < Minitest::Test
     app_config = Struct.new(:x).new(xcfg)
     app = Struct.new(:config) do
       def config_for(_name)
-        { api_key: "ok" }
+        { store_ip: false }
       end
     end.new(app_config)
 
-    # Should not raise even if xcfg.each_pair fails.
     find_initializer("recording_studio_views.load_config").block.call(app)
 
-    assert_equal "ok", RecordingStudioViews.configuration.api_key
+    assert_equal false, RecordingStudioViews.configuration.store_ip
   end
 
   def test_load_config_is_noop_without_config_sources
@@ -99,9 +98,9 @@ class EngineTest < Minitest::Test
 
     find_initializer("recording_studio_views.load_config").block.call(app)
 
-    assert_nil RecordingStudioViews.configuration.api_key
-    assert_equal 5, RecordingStudioViews.configuration.timeout
-    assert_equal false, RecordingStudioViews.configuration.enable_feature_x
+    assert_equal 2.hours, RecordingStudioViews.configuration.token_ttl
+    assert_equal true, RecordingStudioViews.configuration.store_ip
+    assert_equal false, RecordingStudioViews.configuration.site_tracking_enabled
   end
 
   def test_load_config_ignores_non_enumerable_yaml_and_merge_errors
@@ -111,7 +110,7 @@ class EngineTest < Minitest::Test
       end
     end.new
 
-    xcfg = Struct.new(:recording_studio_views).new({ timeout: 22 })
+    xcfg = Struct.new(:recording_studio_views).new({ token_ttl: 22.minutes })
     app_config = Struct.new(:x).new(xcfg)
     app = Struct.new(:config) do
       attr_accessor :yaml
@@ -124,7 +123,7 @@ class EngineTest < Minitest::Test
 
     find_initializer("recording_studio_views.load_config").block.call(app)
 
-    assert_equal 22, RecordingStudioViews.configuration.timeout
+    assert_equal 22.minutes, RecordingStudioViews.configuration.token_ttl
   end
 
   def test_apply_extension_initializers_register_active_support_on_load_callbacks

@@ -187,6 +187,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
     second = insert_view(actor_type: "User", actor_id: other.id)
     queries = RecordingStudioViews::Admin::Queries
     context = actor_context_for([first, second])
+    RecordingStudioViews::Current.reset
     sql = []
     subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
       sql << payload[:sql] if payload[:sql].to_s.match?(/FROM ["']?users["']?/i)
@@ -197,6 +198,22 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_equal 1, sql.count { |query| query.match?(/WHERE/i) }
   ensure
     ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  test "page views actor column lambda labels a page of rows" do
+    named = Workspace.find_or_create_by!(name: "Named Workspace")
+    named_row = insert_view(actor_type: "Workspace", actor_id: named.id)
+    email_row = insert_view(actor_type: "User", actor_id: @user.id)
+    missing_row = insert_view(actor_type: "User", actor_id: SecureRandom.uuid)
+    anonymous = insert_view(actor_id: nil, actor_type: nil)
+    column = RecordingStudioViews::Admin::PageViewsScreen.table_value.columns.find { |entry| entry.key == :actor }
+    context = actor_context_for([named_row, email_row, missing_row, anonymous])
+
+    assert column, "expected an :actor column on PageViewsScreen"
+    assert_equal "Named Workspace", column.cell(named_row, context)
+    assert_equal @user.email, column.cell(email_row, context)
+    assert_equal "User #{missing_row.actor_id}", column.cell(missing_row, context)
+    assert_equal "Anonymous", column.cell(anonymous, context)
   end
 
   test "screen chart series buckets filtered view logs by day" do

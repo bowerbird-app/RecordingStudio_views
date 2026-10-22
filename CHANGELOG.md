@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-22
+
+### Changed
+- Accept `recording_studio_logs` `>= 0.4.0`, `< 1.0`. Dummy and root Gemfiles pin Logs `v0.7.0` and Metrics `v0.6.1`. Logs registers daily summaries through Metrics with `fill_gaps: true` (empty UTC days are zeros).
+- Dummy Admin pin `v2.3.0` → `v2.6.2`, Root Switchable `v0.9.0` → `v0.9.7`, FlatPack `v0.1.213` → `v0.1.254` so Logs 0.7.0 and Metrics 0.6.1 resolve.
+- Collector `rate_limit_window` is the cache TTL and the controller `Retry-After` header. Rails `rate_limit within:` stays the default one-minute window.
+- Admin actor labels resolve name, then email, then type and id, with a request-scoped page preload cache on `RecordingStudioViews::Current.actor_label_cache` (Rails resets it per request and per job).
+
+### Removed
+- Gem-template leftovers: unused `api_key` / `enable_feature_x` / `timeout`, install-generator Tailwind `@source` injection, dummy Template Demo page, `docs/gem_template`, `.github/agents`, `bin/rename_gem`, committed `coverage/` output, dead `filter_by_visibility`.
+
+### Upgrade notes
+- See [UPGRADING.md](UPGRADING.md). Pin Logs 0.7.0 and Metrics 0.6.1. Empty days on Logs-published Metrics series are zeros.
+
 ## [0.9.0] - 2026-10-21
 
 ### Changed
@@ -244,6 +258,8 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/pull/3
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.8.0...v0.9.0
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_views/pull/3
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_views/pull/1

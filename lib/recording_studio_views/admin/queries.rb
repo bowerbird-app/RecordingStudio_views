@@ -9,8 +9,6 @@ require_relative "queries/row_values"
 module RecordingStudioViews
   module Admin
     module Queries
-      PUBLIC = "Public"
-      PRIVATE = "Private"
       SIGNED_IN = "Signed in"
       SITE_ROOT_LABEL = "Site"
       ANONYMOUS_ACTOR = "Anonymous"

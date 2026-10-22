@@ -2,6 +2,7 @@
 
 require "test_helper"
 require "devise/test/integration_helpers"
+require "securerandom"
 
 class AdminRootSwitchTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
@@ -39,6 +40,56 @@ class AdminRootSwitchTest < ActionDispatch::IntegrationTest
 
     get "/admin/screens/views_page_views"
     assert_response :forbidden
+  end
+
+  test "actor label cache does not leak across requests" do
+    now = Time.now.utc
+    RecordingStudioViews::ViewLog.create!(
+      id: SecureRandom.uuid,
+      occurred_at: now,
+      arrived_at: now,
+      page_key: "docs.home",
+      path: "/docs/home",
+      resource_type: "Page",
+      actor_type: "User",
+      actor_id: @user.id
+    )
+    switch_root(@admin_root_recording, return_to: "/admin")
+    follow_redirect!
+
+    caches_at_start = []
+    caches_after_action = []
+    start_subscriber = ActiveSupport::Notifications.subscribe("start_processing.action_controller") do |*, payload|
+      next unless payload[:path].to_s.include?("/admin/screens/views_page_views/table")
+
+      caches_at_start << RecordingStudioViews::Current.actor_label_cache&.dup
+    end
+    action_subscriber = ActiveSupport::Notifications.subscribe("process_action.action_controller") do |*, payload|
+      next unless payload[:path].to_s.include?("/admin/screens/views_page_views/table")
+
+      caches_after_action << RecordingStudioViews::Current.actor_label_cache&.dup
+    end
+
+    get "/admin/screens/views_page_views"
+    assert_response :success
+    get "/admin/screens/views_page_views/table"
+    assert_response :success
+    assert_includes response.body, @user.email
+
+    get "/admin/screens/views_page_views"
+    assert_response :success
+    get "/admin/screens/views_page_views/table"
+    assert_response :success
+    assert_includes response.body, @user.email
+
+    assert_equal 2, caches_at_start.size
+    assert_equal 2, caches_after_action.size
+    refute_empty caches_after_action.first
+    second_start = caches_at_start.last
+    assert second_start.nil? || second_start.empty?
+  ensure
+    ActiveSupport::Notifications.unsubscribe(start_subscriber) if start_subscriber
+    ActiveSupport::Notifications.unsubscribe(action_subscriber) if action_subscriber
   end
 
   test "switching to Admin opens admin and Views screens" do

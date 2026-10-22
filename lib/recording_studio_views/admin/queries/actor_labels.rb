@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
+require "recording_studio_views/current"
+
 module RecordingStudioViews
   module Admin
     module Queries
       module ActorLabels
-        CACHE_IVAR = :@_recording_studio_views_actor_labels
-
         def actor_value(row, context = nil)
           return ANONYMOUS_ACTOR if row.actor_id.blank?
 
-          cache = actor_label_cache(context)
+          cache = actor_label_cache
           preload_actor_labels(cache, actor_rows_for_page(context, row))
           cache[actor_cache_key(row)] || fallback_actor_label(row)
         end
@@ -19,11 +19,8 @@ module RecordingStudioViews
           Array(rows.presence || [row])
         end
 
-        def actor_label_cache(context)
-          return {} unless context
-
-          context.instance_variable_get(CACHE_IVAR) ||
-            context.instance_variable_set(CACHE_IVAR, {})
+        def actor_label_cache
+          RecordingStudioViews::Current.actor_label_cache ||= {}
         end
 
         def preload_actor_labels(cache, rows)
