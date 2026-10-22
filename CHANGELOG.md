@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-21
+
+### Changed
+- Target Ruby 3.3.12 so GitHub Actions on ubuntu-latest can install the interpreter (`ruby/setup-ruby` no longer ships 3.3.6 on ubuntu-26.04).
+- Admin Page views chart (and the hub "Page views over time" widget) sums `DailyViewSummary.views` for UTC days that already have summary rows. Days with no summary yet, such as today before `DailyAggregationJob`, count raw `ViewLog` rows. Week and month buckets group those UTC days. The table is still raw `ViewLog` rows.
+- Screen filters that match summary columns (`root_recording_id`, `recording_id`, `resource_type`, `page_key`, day range) apply to the summary query. Visit kind (`actor_id`) and path are not on the summary, so those filters keep counting raw rows for the chart.
+
+### Upgrade notes
+- Charts can show today's views before nightly aggregation without reading every historical `ViewLog` row. Hosts that filter Page views by visit kind or path still get a raw-row chart for that request. No migration.
+
 ## [0.8.0] - 2026-10-20
 
 ### Added

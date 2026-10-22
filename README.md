@@ -87,7 +87,7 @@ recording_studio_admin_sections do
 end
 ```
 
-The hub shows a UTC daily chart from `DailyViewSummary` (`widgets.views.page_views_over_time`) and an all-time total from daily summaries plus raw rows that have not been aggregated. Page views is a table of `ViewLog` rows. Date range and group by stay inline; other filters use Admin's filter modal (`filter_presentation :modal, inline_count: 2`). Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
+The hub chart (`widgets.views.page_views_over_time`) and the Page views screen chart both read `DailyViewSummary.views` for UTC days that already have summary rows, and count raw `ViewLog` rows for days that do not (today, before `DailyAggregationJob`). Totals use the same split. Screen filters that match summary columns (`root_recording_id`, `recording_id`, `resource_type`, `page_key`, day range) apply to the summary query. Visit kind and path are not on the summary, so those filters count raw rows for the whole chart. Week and month buckets group those UTC days. The table is still raw `ViewLog` rows. Date range and group by stay inline; other filters use Admin's filter modal (`filter_presentation :modal, inline_count: 2`). Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
 
 ## Retention and deletion
 

@@ -65,6 +65,7 @@ module RecordingStudioViews
           range = context.filter_value(:date_range)
           Queries.screen_page_views_series(
             context.query_result.relation,
+            filters: Queries.chart_filters_from_screen(context),
             bucket: context.filter_value(:group_by) || :day,
             start_date: range&.start_date,
             end_date: range&.end_date

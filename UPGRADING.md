@@ -1,5 +1,15 @@
 # Upgrading
 
+## 0.9.0
+
+### Admin charts read daily summaries
+
+The Views hub chart and the Page views screen chart sum `DailyViewSummary` for UTC days that have been aggregated. Days without a summary row still count raw `ViewLog` rows, so today is not a false zero before `DailyAggregationJob`.
+
+Visit kind and path are not summary columns. Filtering the Page views screen by either of those counts raw rows for the chart. The table is unchanged.
+
+No migration.
+
 ## 0.8.0
 
 ### Tracking access fails closed without Accessible

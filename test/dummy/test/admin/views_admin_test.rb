@@ -221,6 +221,220 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_equal({ x: today, y: 2 }, points.fetch(today))
   end
 
+  test "screen chart sums summaries for aggregated days and raw rows for today" do
+    today = Time.now.utc.to_date
+    older = today - 2
+    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
+    insert_view(
+      root_recording_id: studio.id,
+      page_key: "docs.home",
+      occurred_at: Time.utc(older.year, older.month, older.day, 12),
+      arrived_at: Time.utc(older.year, older.month, older.day, 12)
+    )
+    insert_view(
+      root_recording_id: studio.id,
+      page_key: "docs.home",
+      occurred_at: Time.utc(today.year, today.month, today.day, 9),
+      arrived_at: Time.utc(today.year, today.month, today.day, 9)
+    )
+    insert_view(
+      root_recording_id: studio.id,
+      page_key: "docs.home",
+      occurred_at: Time.utc(today.year, today.month, today.day, 16),
+      arrived_at: Time.utc(today.year, today.month, today.day, 16)
+    )
+    insert_summary(day: older, root_recording_id: studio.id, page_key: "docs.home", views: 4)
+
+    series = RecordingStudioViews::Admin::Queries.screen_page_views_series(
+      RecordingStudioViews::Admin::Queries.view_logs,
+      bucket: :day,
+      start_date: older,
+      end_date: today
+    )
+    points = series.first.fetch(:data).index_by { |point| point.fetch(:x) }
+
+    assert_equal "Page views", series.first.fetch(:name)
+    assert_equal 4, points.fetch(older).fetch(:y)
+    assert_equal 0, points.fetch(older + 1).fetch(:y)
+    assert_equal 2, points.fetch(today).fetch(:y)
+    assert_equal 3, RecordingStudioViews::Admin::Queries.view_logs.count
+  end
+
+  test "screen chart totals from summaries match raw counts for the same data" do
+    today = Time.now.utc.to_date
+    older = today - 1
+    2.times do
+      insert_view(
+        occurred_at: Time.utc(older.year, older.month, older.day, 10),
+        arrived_at: Time.utc(older.year, older.month, older.day, 10)
+      )
+    end
+    insert_summary(day: older, page_key: "docs.home", views: 2)
+
+    series = RecordingStudioViews::Admin::Queries.screen_page_views_series(
+      RecordingStudioViews::Admin::Queries.view_logs,
+      bucket: :day,
+      start_date: older,
+      end_date: today
+    )
+
+    assert_equal 2, series.first.fetch(:data).sum { |point| point.fetch(:y) }
+  end
+
+  test "screen chart applies a root filter to summaries" do
+    today, older, studio, client = summary_filter_fixtures
+    insert_summary(day: older, root_recording_id: studio.id, page_key: "docs.home", views: 5)
+    insert_summary(day: older, root_recording_id: client.id, page_key: "docs.home", views: 9)
+    insert_view(root_recording_id: studio.id, page_key: "docs.home")
+
+    points = chart_points(filters: { root: "Studio Workspace" }, start_date: older, end_date: today)
+
+    assert_equal 5, points.fetch(older).fetch(:y)
+  end
+
+  test "screen chart applies an exact root recording id filter to summaries" do
+    today, older, studio, client = summary_filter_fixtures
+    insert_summary(day: older, root_recording_id: studio.id, page_key: "docs.home", views: 5)
+    insert_summary(day: older, root_recording_id: client.id, page_key: "docs.home", views: 9)
+
+    points = chart_points(filters: { root_recording_id: studio.id }, start_date: older, end_date: today)
+
+    assert_equal 5, points.fetch(older).fetch(:y)
+  end
+
+  test "screen chart applies a resource type filter to summaries" do
+    today, older, = summary_filter_fixtures
+    insert_summary(day: older, resource_type: "Page", page_key: "docs.home", views: 5)
+    insert_summary(day: older, resource_type: "Folder", page_key: "docs.home", views: 9)
+
+    points = chart_points(filters: { resource_type: "Page" }, start_date: older, end_date: today)
+
+    assert_equal 5, points.fetch(older).fetch(:y)
+  end
+
+  test "screen chart applies an exact page key filter to summaries" do
+    today, older, = summary_filter_fixtures
+    insert_summary(day: older, page_key: "docs.getting-started", views: 5)
+    insert_summary(day: older, page_key: "site.about", views: 9)
+
+    points = chart_points(filters: { page_key: "docs.getting-started" }, start_date: older, end_date: today)
+
+    assert_equal 5, points.fetch(older).fetch(:y)
+  end
+
+  test "screen chart applies a recording id filter to summaries" do
+    today, older, = summary_filter_fixtures
+    recording_id = SecureRandom.uuid
+    insert_summary(day: older, recording_id: recording_id, page_key: "docs.home", views: 5)
+    insert_summary(day: older, recording_id: SecureRandom.uuid, page_key: "docs.home", views: 9)
+
+    points = chart_points(filters: { recording_id: recording_id }, start_date: older, end_date: today)
+
+    assert_equal 5, points.fetch(older).fetch(:y)
+  end
+
+  test "screen chart applies a page key contains search to summaries" do
+    today, older, = summary_filter_fixtures
+    insert_summary(day: older, page_key: "docs.getting-started", views: 5)
+    insert_summary(day: older, page_key: "site.about", views: 9)
+
+    points = chart_points(filters: { page_key_contains: "getting-started" }, start_date: older, end_date: today)
+
+    assert_equal 5, points.fetch(older).fetch(:y)
+  end
+
+  test "chart filters from the screen map page key search and root labels" do
+    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
+    insert_view(root_recording_id: studio.id, page_key: "docs.getting-started")
+    queries = RecordingStudioViews::Admin::Queries
+    context = screen_filter_context(
+      root: "Studio Workspace",
+      resource_type: "Page",
+      page_key: "getting-started",
+      path: nil,
+      visit_kind: ""
+    )
+
+    filters = queries.chart_filters_from_screen(context)
+
+    assert_equal studio.id, filters.fetch(:root_recording_id)
+    assert_equal "Page", filters.fetch(:resource_type)
+    assert_equal "getting-started", filters.fetch(:page_key_contains)
+    refute filters.key?(:path)
+    refute filters.key?(:visit_kind)
+    refute filters.key?(:page_key)
+  end
+
+  test "screen chart counts raw rows when visit kind cannot be summarized" do
+    today = Time.now.utc.to_date
+    older = today - 1
+    signed_in = insert_view(
+      actor_id: @user.id,
+      actor_type: "User",
+      occurred_at: Time.utc(older.year, older.month, older.day, 12),
+      arrived_at: Time.utc(older.year, older.month, older.day, 12)
+    )
+    insert_view(
+      actor_id: nil,
+      actor_type: nil,
+      occurred_at: Time.utc(older.year, older.month, older.day, 13),
+      arrived_at: Time.utc(older.year, older.month, older.day, 13)
+    )
+    insert_summary(day: older, page_key: "docs.home", views: 40)
+    queries = RecordingStudioViews::Admin::Queries
+    scoped = queries.filter_by_visit_kind(queries.view_logs, queries::SIGNED_IN)
+
+    points = chart_points(filters: { visit_kind: queries::SIGNED_IN }, start_date: older, end_date: today)
+
+    assert_equal 1, points.fetch(older).fetch(:y)
+    assert_equal [signed_in.id], scoped.pluck(:id)
+  end
+
+  test "screen chart counts raw rows when path cannot be summarized" do
+    today = Time.now.utc.to_date
+    older = today - 1
+    matching = insert_view(
+      path: "/Docs/Home",
+      occurred_at: Time.utc(older.year, older.month, older.day, 12),
+      arrived_at: Time.utc(older.year, older.month, older.day, 12)
+    )
+    insert_view(
+      path: "/other/page",
+      occurred_at: Time.utc(older.year, older.month, older.day, 13),
+      arrived_at: Time.utc(older.year, older.month, older.day, 13)
+    )
+    insert_summary(day: older, page_key: "docs.home", views: 40)
+    queries = RecordingStudioViews::Admin::Queries
+    scoped = queries.filter_by_path(queries.view_logs, "docs/home")
+
+    points = chart_points(filters: { path: "docs/home" }, start_date: older, end_date: today)
+
+    assert_equal 1, points.fetch(older).fetch(:y)
+    assert_equal [matching.id], scoped.pluck(:id)
+  end
+
+  test "screen chart groups summary days into week buckets" do
+    today = Time.now.utc.to_date
+    week_start = (today.beginning_of_week - 7)
+    insert_summary(day: week_start, page_key: "docs.home", views: 3)
+    insert_summary(day: week_start + 1, page_key: "docs.home", views: 4)
+    insert_view(
+      occurred_at: Time.utc(today.year, today.month, today.day, 12),
+      arrived_at: Time.utc(today.year, today.month, today.day, 12)
+    )
+
+    series = RecordingStudioViews::Admin::Queries.screen_page_views_series(
+      RecordingStudioViews::Admin::Queries.view_logs,
+      bucket: :week,
+      start_date: week_start,
+      end_date: today
+    )
+    points = series.first.fetch(:data).index_by { |point| point.fetch(:x) }
+
+    assert_equal 7, points.fetch(week_start).fetch(:y)
+    assert_equal 1, points.fetch(today.beginning_of_week).fetch(:y)
+  end
+
   test "raw table values include ip user agent device and geo" do
     row = insert_view(
       ip: "1.2.3.0",
@@ -267,6 +481,31 @@ class ViewsAdminTest < ActiveSupport::TestCase
     Struct.new(:table_result).new(table_result)
   end
 
+  def screen_filter_context(values)
+    Object.new.tap do |context|
+      context.define_singleton_method(:filter_value) { |key| values[key] }
+    end
+  end
+
+  def summary_filter_fixtures
+    today = Time.now.utc.to_date
+    older = today - 3
+    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
+    client = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Client Workspace"))
+    [today, older, studio, client]
+  end
+
+  def chart_points(filters: {}, bucket: :day, start_date:, end_date:)
+    series = RecordingStudioViews::Admin::Queries.screen_page_views_series(
+      RecordingStudioViews::Admin::Queries.view_logs,
+      filters: filters,
+      bucket: bucket,
+      start_date: start_date,
+      end_date: end_date
+    )
+    series.first.fetch(:data).index_by { |point| point.fetch(:x) }
+  end
+
   def insert_view(attributes = {})
     now = Time.now.utc
     RecordingStudioViews::ViewLog.create!(
@@ -277,6 +516,17 @@ class ViewsAdminTest < ActiveSupport::TestCase
         page_key: "docs.home",
         path: "/docs/home",
         resource_type: "Page"
+      }.merge(attributes)
+    )
+  end
+
+  def insert_summary(attributes = {})
+    RecordingStudioViews::DailyViewSummary.create!(
+      {
+        day: Time.now.utc.to_date,
+        page_key: "docs.home",
+        resource_type: "Page",
+        views: 1
       }.merge(attributes)
     )
   end

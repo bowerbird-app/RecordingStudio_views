@@ -6,11 +6,17 @@ module RecordingStudioViews
       module ChartSeries
         CHART_BUCKETS = %i[day week month].freeze
 
-        def screen_page_views_series(relation, bucket: :day, start_date: nil, end_date: nil)
+        def screen_page_views_series(relation, bucket: :day, start_date: nil, end_date: nil, filters: {})
           bucket = normalize_chart_bucket(bucket)
           range_start = start_date.presence || default_day_range.begin
           range_end = end_date.presence || default_day_range.end
-          counts = views_by_bucket_utc(relation, bucket)
+          counts = views_by_bucket_utc(
+            relation,
+            bucket,
+            range_start: range_start,
+            range_end: range_end,
+            filters: filters
+          )
           data = each_bucket_start(range_start, range_end, bucket).map do |start|
             { x: start, y: counts[start].to_i }
           end
@@ -22,33 +28,13 @@ module RecordingStudioViews
           CHART_BUCKETS.include?(key) ? key : :day
         end
 
-        def views_by_bucket_utc(relation, bucket)
-          expression = bucket_group_expression(bucket)
-          grouped = chart_relation(relation).group(Arel.sql(expression)).count
-          grouped.each_with_object({}) do |(value, count), memo|
-            start = bucket_start(value, bucket)
-            memo[start] = memo[start].to_i + count.to_i if start
-          end
+        def views_by_bucket_utc(relation, bucket, range_start: nil, range_end: nil, filters: {})
+          daily = daily_view_counts(relation, range_start: range_start, range_end: range_end, filters: filters)
+          bucketed_daily_counts(daily, bucket)
         end
 
         def chart_relation(relation)
           relation.respond_to?(:except) ? relation.except(:order) : relation
-        end
-
-        def bucket_group_expression(bucket)
-          field = "#{quoted_table}.#{quoted_occurred_at} AT TIME ZONE 'UTC'"
-          case bucket
-          when :week
-            "DATE_TRUNC('week', #{field})"
-          when :month
-            "DATE_TRUNC('month', #{field})"
-          else
-            "DATE(#{field})"
-          end
-        end
-
-        def quoted_table
-          ViewLog.connection.quote_table_name(ViewLog.table_name)
         end
 
         def quoted_occurred_at
@@ -91,6 +77,15 @@ module RecordingStudioViews
           Time.parse(value.to_s).utc.to_date
         rescue ArgumentError, TypeError
           nil
+        end
+
+        private
+
+        def bucketed_daily_counts(daily, bucket)
+          daily.each_with_object({}) do |(day, count), memo|
+            start = bucket_start(day, bucket)
+            memo[start] = memo[start].to_i + count.to_i if start
+          end
         end
       end
     end
