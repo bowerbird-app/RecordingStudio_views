@@ -81,6 +81,7 @@ class AdminRegistrationTest < Minitest::Test
       "22" => actor.new(nil, "bea@example.com")
     }
     queries = RecordingStudioViews::Admin::Queries
+    RecordingStudioViews::Current.reset
 
     queries.stub(:actor_records_by_id, ->(_klass, ids) { records.slice(*ids.map(&:to_s)) }) do
       assert_equal "Ada", queries.actor_value(rows[0], context)

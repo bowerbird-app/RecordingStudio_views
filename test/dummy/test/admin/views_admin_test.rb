@@ -178,6 +178,41 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_equal "Anonymous", queries.actor_value(anonymous, context)
   end
 
+  test "actor value preloads records for the current table page" do
+    other = User.find_or_create_by!(email: "views-admin-other@example.com") do |record|
+      record.password = "Password123!"
+      record.password_confirmation = "Password123!"
+    end
+    first = insert_view(actor_type: "User", actor_id: @user.id)
+    second = insert_view(actor_type: "User", actor_id: other.id)
+    queries = RecordingStudioViews::Admin::Queries
+    context = actor_context_for([first, second])
+    RecordingStudioViews::Current.reset
+    sql = []
+    subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
+      sql << payload[:sql] if payload[:sql].to_s.match?(/FROM ["']?users["']?/i)
+    end
+
+    assert_equal @user.email, queries.actor_value(first, context)
+    assert_equal other.email, queries.actor_value(second, context)
+    assert_equal 1, sql.count { |query| query.match?(/WHERE/i) }
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  test "actor label cache does not leak across requests" do
+    first = insert_view(actor_type: "User", actor_id: @user.id)
+    queries = RecordingStudioViews::Admin::Queries
+    context = actor_context_for([first])
+    RecordingStudioViews::Current.reset
+
+    queries.actor_value(first, context)
+    refute_nil RecordingStudioViews::Current.actor_label_cache
+
+    RecordingStudioViews::Current.reset
+    assert_nil RecordingStudioViews::Current.actor_label_cache
+  end
+
   test "page views actor column lambda labels a page of rows" do
     named = Workspace.find_or_create_by!(name: "Named Workspace")
     named_row = insert_view(actor_type: "Workspace", actor_id: named.id)
