@@ -169,6 +169,8 @@ class RecordingStudioViewsTest < Minitest::Test
     assert_includes controller_source, '"flat_pack_sidebar"'
     assert_includes layout_source, "FlatPack::SidebarLayout::Component"
     assert_includes layout_source, "storage_key: \"flat-pack-sidebar-layout\""
+    assert_includes layout_source, "flat_pack_page_nav_tag"
+    assert_includes layout_source, "recording_studio_track_views"
     assert_includes sidebar_source, "FlatPack::Sidebar::Component"
     assert_includes top_nav_source, "recording_studio_root_switch_dropdown"
   end
@@ -293,7 +295,11 @@ class RecordingStudioViewsTest < Minitest::Test
     assert_includes view_source, 'title: "Page views"'
     assert_includes view_source, "recording_studio_track_views"
     assert_includes view_source, "FlatPack::Card::Component"
+    assert_includes view_source, "background: :shaded"
+    refute_includes view_source, "style: :shaded"
+    refute_includes view_source, "style: :default"
     refute_includes view_source, "dummy_page_nav"
+    refute_includes view_source, "flat_pack_page_nav"
     refute_includes view_source, "Template Demo"
     refute_includes view_source, 'title: "Demo"'
     refute_includes view_source, "FlatPack::Breadcrumb::Component"
@@ -308,7 +314,11 @@ class RecordingStudioViewsTest < Minitest::Test
     docs_view_paths.each do |view_path|
       view_source = File.read(view_path)
 
-      assert_includes view_source, "dummy_page_nav"
+      assert_includes view_source, "flat_pack_page_nav"
+      assert_includes view_source, "content_for :title"
+      assert_includes view_source, "style: :default"
+      assert_includes view_source, "back_href: root_path"
+      refute_includes view_source, "dummy_page_nav"
       assert_includes view_source, "FlatPack::PageTitle::Component"
       refute_includes view_source, "FlatPack::Card::Component"
       refute_includes view_source, "FlatPack::Breadcrumb::Component"
@@ -341,6 +351,26 @@ class RecordingStudioViewsTest < Minitest::Test
     assert_includes recording_tree_partial, "parent_builder.node"
     refute_includes recordings_tree_view, "Current structure"
     refute_includes recordings_tree_view, "This tree is generated from RecordingStudio::Recording records"
+  end
+
+  def test_dummy_back_screens_register_flat_pack_page_nav
+    paths = %w[
+      dummy/app/views/folders/show.html.erb
+      dummy/app/views/workspace_searches/show.html.erb
+    ].map { |path| File.expand_path(path, __dir__) }
+
+    paths.each do |path|
+      view_source = File.read(path)
+
+      assert_includes view_source, "flat_pack_page_nav"
+      assert_includes view_source, "content_for :title"
+      assert_includes view_source, "style: :default"
+      assert_includes view_source, "back_href: root_path"
+      refute_includes view_source, "dummy_page_nav"
+    end
+
+    helper = File.read(File.expand_path("dummy/app/helpers/application_helper.rb", __dir__))
+    refute_includes helper, "def dummy_page_nav"
   end
 
   def test_engine_does_not_ship_a_home_view

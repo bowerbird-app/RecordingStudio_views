@@ -6,7 +6,7 @@
   ) %>
 
   <div class="grid gap-6 lg:grid-cols-2">
-    <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+    <%= render FlatPack::Card::Component.new(background: :default) do |card| %>
       <% card.header do %>
         <%= render FlatPack::PageTitle::Component.new(
           title: "What's wired",
@@ -25,7 +25,7 @@
       <% end %>
     <% end %>
 
-    <%= render FlatPack::Card::Component.new(style: :shaded) do |card| %>
+    <%= render FlatPack::Card::Component.new(background: :shaded) do |card| %>
       <% card.header do %>
         <%= render FlatPack::PageTitle::Component.new(
           title: "Try it",
