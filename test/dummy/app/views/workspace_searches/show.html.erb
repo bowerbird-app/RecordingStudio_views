@@ -1,4 +1,5 @@
-<% dummy_page_nav(title: "Workspace search", back_url: root_path) %>
+<% content_for :title, "Workspace search" %>
+<% flat_pack_page_nav(round: true, style: :default, back_href: root_path, back_tooltip: "Home") %>
 
 <%= render FlatPack::PageTitle::Component.new(
   title: "Workspace search",

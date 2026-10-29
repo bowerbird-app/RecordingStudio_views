@@ -7,7 +7,7 @@ This Rails app exists to validate Recording Studio Views in a real host applicat
 - Devise authentication with a seeded admin user
 - `Current.actor` wiring for Recording Studio events
 - Root workspace plus seeded folder and page recordables
-- Recording Studio default layout, FlatPack assets, and Tailwind source scanning
+- Sidebar layout, FlatPack assets, and Tailwind source scanning
 - Mounted `RecordingStudio::Engine` route behavior inside a host app
 - Page view tracking through `recording_studio_track_views`
 - Dummy-only `/docs/*` pages for gem-specific onboarding

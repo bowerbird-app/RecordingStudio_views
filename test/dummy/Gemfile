@@ -8,14 +8,14 @@ gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"
 gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.1"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.0"
 gem "recording_studio_admin", github: "bowerbird-app/RecordingStudio_admin", tag: "v2.7.2"
-# Required by accessible 0.17+ for trashable query helpers (GitHub-only; not on RubyGems)
+# Query helpers for kept recordings. GitHub-only; not on RubyGems.
 gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.0", require: false
 
 # Root switcher for the top nav
 gem "recording_studio_root_switchable", github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.11.0"
-# Required by Logs 0.7.1 and root_switchable 0.11 (GitHub-only; not on RubyGems)
+# Logs and Root Switchable depend on Metrics. GitHub-only; not on RubyGems.
 gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.0"
-# Required by root_switchable 0.9+ (GitHub-only; not on RubyGems)
+# Root Switchable depends on Cache. GitHub-only; not on RubyGems.
 gem "recording_studio_cache", github: "bowerbird-app/RecordingStudio_cache", tag: "v0.6.0"
 
 # Devise authentication

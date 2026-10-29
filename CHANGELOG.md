@@ -7,13 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.10.1] - 2026-10-29
+## [0.11.0] - 2026-10-29
 
 ### Changed
-- Accept `recording_studio` `>= 4.2`, `< 7`. Dummy and development pins Recording Studio `v6.3.0` and FlatPack `v0.1.329`. Dummy Admin is `v2.7.2`, Accessible `v0.24.0`, Logs `v0.7.1`, Metrics `v0.7.0`, Trashable `v0.12.0`, Root Switchable `v0.11.0`, and Cache `v0.6.0`. Dummy PageNav uses `with_back`; Card `style:` is `background:`.
+- Gemspec `recording_studio` floor is `>= 6.3.0` with no minor ceiling. Root and dummy Gemfiles pin core `v6.3.0`, Logs `v0.7.1`, and Metrics `v0.7.0`.
+- Dummy pins Accessible `v0.24.0`, Admin `v2.7.2`, Trashable `v0.12.0`, Root Switchable `v0.11.0`, Cache `v0.6.0`, and Flatpack `v0.1.329`.
+- Dummy screens set `content_for :title` and call `flat_pack_page_nav`. The sidebar layout renders `flat_pack_page_nav_tag`. Cards use `background:`.
+- Dummy and root lockfiles bump `crass` to `1.0.8`. Dummy also bumps `net-ssh` to `7.3.8` so Bundler Audit is clean.
 
 ### Upgrade notes
-- See [UPGRADING.md](UPGRADING.md). Hosts that pin dummy-style GitHub tags need Recording Studio 6.1+ (this repo tests `v6.3.0`) and FlatPack `v0.1.329`.
+- See [UPGRADING.md](UPGRADING.md). Pin core `>= 6.3.0`, Logs `v0.7.1`, Metrics `v0.7.0`, and a Flatpack tag that satisfies core (`>= 0.1.315`). This release has no Views migration. Page-view collection and privacy fields stay the same.
 
 ## [0.10.0] - 2026-10-22
 
@@ -266,8 +269,8 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.10.1...HEAD
-[0.10.1]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.10.0...v0.10.1
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.8.0...v0.9.0
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_views/pull/3

@@ -1,4 +1,5 @@
-<% dummy_page_nav(title: @folder.name, back_url: root_path) %>
+<% content_for :title, @folder.name %>
+<% flat_pack_page_nav(round: true, style: :default, back_href: root_path, back_tooltip: "Home") %>
 
 <%= render FlatPack::PageTitle::Component.new(
   title: @folder.name,
