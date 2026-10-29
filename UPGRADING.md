@@ -1,5 +1,11 @@
 # Upgrading
 
+## 0.11.1
+
+### Recording Studio 6.1+
+
+Require `recording_studio` `>= 6.1.0`. Dummy and development still pin GitHub tag `v6.3.0`. Pin `recording_studio_logs` to tag `v0.7.1` and `recording_studio_metrics` to tag `v0.7.0`. No Views migration.
+
 ## 0.11.0
 
 ### Pin Recording Studio 6.3
