@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-10-29
+
+### Changed
+- Accept `recording_studio` `>= 4.2`, `< 7`. Dummy and development pins Recording Studio `v6.3.0` and FlatPack `v0.1.329`. Dummy Admin is `v2.7.2`, Accessible `v0.24.0`, Logs `v0.7.1`, Metrics `v0.7.0`, Trashable `v0.12.0`, Root Switchable `v0.11.0`, and Cache `v0.6.0`. Dummy PageNav uses `with_back`; Card `style:` is `background:`.
+
+### Upgrade notes
+- See [UPGRADING.md](UPGRADING.md). Hosts that pin dummy-style GitHub tags need Recording Studio 6.1+ (this repo tests `v6.3.0`) and FlatPack `v0.1.329`.
+
 ## [0.10.0] - 2026-10-22
 
 ### Changed
@@ -258,7 +266,8 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.8.0...v0.9.0
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_views/pull/3

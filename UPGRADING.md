@@ -1,5 +1,11 @@
 # Upgrading
 
+## 0.10.1
+
+### Recording Studio 6.1+
+
+`recording_studio` is `>= 4.2`, `< 7`. Dummy and development pins are Recording Studio `v6.3.0` and FlatPack `v0.1.329`. Hosts that still pin Admin 2.6.x or Root Switchable 0.9.x cannot resolve those with core 6.3; bump Admin to `v2.7.2`, Accessible to `v0.24.0`, Logs to `v0.7.1`, Metrics to `v0.7.0`, Trashable to `v0.12.0`, Root Switchable to `v0.11.0`, and Cache to `v0.6.0`. No Views migration.
+
 ## 0.10.0
 
 ### Logs and Metrics

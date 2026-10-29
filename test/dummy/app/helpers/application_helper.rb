@@ -3,12 +3,11 @@ module ApplicationHelper
 
   def dummy_page_nav(title:, back_url: nil, back_label: "Home")
     content_for(:title, title) if title.present?
-    concat render(
-      FlatPack::PageNav::Component.new(
-        back_tooltip: back_label,
-        secondary_anchor_href: back_url
-      )
-    )
+    return if back_url.blank?
+
+    concat render(FlatPack::PageNav::Component.new(round: true, style: :default)) { |nav|
+      nav.with_back(href: back_url, tooltip: back_label)
+    }
   end
 
   def dummy_sidebar_pages
