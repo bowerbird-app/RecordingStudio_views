@@ -1,4 +1,5 @@
-<% dummy_page_nav(title: "Recordings tree", back_url: root_path) %>
+<% content_for :title, "Recordings tree" %>
+<% flat_pack_page_nav(round: true, style: :default, back_href: root_path, back_tooltip: "Home") %>
 
 <div class="flex w-full flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(

@@ -383,6 +383,8 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     sign_in @user
     get docs_install_path
     assert_response :success
+    assert_includes response.body, "flat-pack-page-nav"
+    assert_includes response.body, 'href="/"'
     assert_equal false, page_context["dispatch"]
   end
 

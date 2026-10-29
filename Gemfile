@@ -5,10 +5,11 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in recording_studio_views.gemspec
 gemspec
 
-# recording_studio is not published to RubyGems; resolve the gemspec pin from GitHub.
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.7.0"
-gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.0"
-gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.6.1"
+# recording_studio and flat_pack are not published to RubyGems.
+gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.329"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"
+gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.1"
+gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.0"
 
 gem "devise"
 gem "puma"
