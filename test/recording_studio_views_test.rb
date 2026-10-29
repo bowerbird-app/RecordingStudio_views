@@ -4,18 +4,20 @@ require "test_helper"
 
 class RecordingStudioViewsTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.11.0", ::RecordingStudioViews::VERSION
+    assert_equal "0.11.1", ::RecordingStudioViews::VERSION
   end
 
   def test_engine_exists
     assert_kind_of Class, ::RecordingStudioViews::Engine
   end
 
-  def test_gemspec_pins_recording_studio_6_3
+  def test_gemspec_pins_recording_studio_6_1
     gemspec = File.read(File.expand_path("../recording_studio_views.gemspec", __dir__))
 
-    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.3.0"'
+    assert_includes gemspec, 'spec.add_dependency "recording_studio", ">= 6.1.0"'
+    refute_includes gemspec, ">= 6.3.0"
     refute_includes gemspec, "~> 4.2"
+    refute_includes gemspec, ">= 4.2"
     assert_includes gemspec, 'spec.add_dependency "recording_studio_logs", ">= 0.4.0", "< 1.0"'
     assert_includes gemspec, 'spec.add_dependency "device_detector"'
     assert_includes gemspec, 'spec.add_dependency "maxmind-db"'
@@ -247,7 +249,7 @@ class RecordingStudioViewsTest < Minitest::Test
     readme = File.read(File.expand_path("../README.md", __dir__))
 
     assert_includes readme, "RecordingStudio"
-    assert_includes readme, ">= 6.3.0"
+    assert_includes readme, ">= 6.1.0"
     assert_includes readme, "dummy GitHub tag `v6.3.0`"
     refute_includes readme, "dummy GitHub tag `v4.7.0`"
     refute_includes readme, "~> 4.2"

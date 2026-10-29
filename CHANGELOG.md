@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-10-29
+
+### Changed
+- Gemspec `recording_studio` floor is `>= 6.1.0` (core 6.1+ migration floor, matching sibling gems). Dummy and development still pin core `v6.3.0`.
+
+### Upgrade notes
+- See [UPGRADING.md](UPGRADING.md). Hosts may run core 6.1 or 6.2; this repo tests `v6.3.0`. No Views migration.
+
 ## [0.11.0] - 2026-10-29
 
 ### Changed
@@ -269,7 +277,8 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.8.0...v0.9.0

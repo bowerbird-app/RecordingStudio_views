@@ -24,6 +24,8 @@ class RecordingStudioTemplateTest < ActiveSupport::TestCase
     assert connection.table_exists?(:recording_studio_accesses)
     assert connection.table_exists?(:recording_studio_access_constraints)
     assert connection.table_exists?(:recording_studio_access_rules)
+    assert connection.table_exists?(:recording_studio_access_requests)
+    assert connection.table_exists?(:recording_studio_access_request_intents)
     refute connection.table_exists?(:recording_studio_access_boundaries)
     refute connection.table_exists?(:recording_studio_device_sessions)
   end
