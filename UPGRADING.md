@@ -1,5 +1,32 @@
 # Upgrading
 
+## 0.11.0
+
+### Pin Recording Studio 6.3
+
+Require `recording_studio` `>= 6.3.0`. Pin GitHub tag `v6.3.0`. Pin `recording_studio_logs` to tag `v0.7.1`. The gemspec still accepts Logs `>= 0.4.0`, `< 1.0`. Pin `recording_studio_metrics` to tag `v0.7.0`.
+
+Recording Studio 6.3 depends on `flat_pack` `>= 0.1.315`. Flatpack is not on RubyGems, so add a GitHub tag in the host Gemfile. The dummy pins `v0.1.329`.
+
+This release has no Views migration. `ingest_view`, masked IP storage, and `tracking_access_policy` stay the same.
+
+### Update a custom page shell
+
+Set the document title with `content_for :title`. Register back and close with `flat_pack_page_nav`. Round buttons need `style: :default`.
+
+```erb
+<% content_for :title, "Field notes" %>
+<% flat_pack_page_nav(round: true, style: :default, back_href: notes_path, back_tooltip: "Notes", anchor_href: root_path, anchor_tooltip: "Home") %>
+```
+
+Render `flat_pack_page_nav_tag` in the host layout. Skip `register_page_nav` when the screen has no page actions.
+
+`FlatPack::Card` takes `background:` (`:default` or `:shaded`). `FlatPack::PageNav` rejects `secondary_anchor_href`, `back_label`, and `anchor_label`.
+
+`RecordingStudioRootSwitchable` `config.layout` takes a layout name, `nil`, `false`, or a callable invoked as `call(controller:)`.
+
+Optional host tags that already allow Recording Studio 6.x are Accessible `v0.24.0`, Admin `v2.7.2`, Trashable `v0.12.0`, Root Switchable `v0.11.0`, and Cache `v0.6.0`.
+
 ## 0.10.0
 
 ### Logs and Metrics

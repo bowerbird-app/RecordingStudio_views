@@ -5,7 +5,7 @@ Page views for Recording Studio apps. Installing the gem does not start tracking
 V1 records page views only. It does not create sessions, funnels, conversions, unique visitors, or engagement duration. It never writes a Recording, revision, or timeline Event per view.
 
 ```ruby
-gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.10.0"
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.11.0"
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"
 gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.1"
 gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.0"
@@ -142,11 +142,11 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 
 ## What's Included
 
-- **Recording Studio** 4.x gem pinned and configured
+- **Recording Studio** 6.3 gem pinned and configured
 - **Devise** authentication with a pre-seeded admin user
 - **Workspace**, **Folder**, and **Page** recordables seeded into the dummy host app
 - **FlatPack** UI component library for all views
-- **Dummy app** (`test/dummy/`) with a FlatPack sign-in screen, a home page on Recording Studio's default layout, mounted Recording Studio routes, and FlatPack's built-in rounded theme
+- **Dummy app** (`test/dummy/`) with a FlatPack sign-in screen, a sidebar layout, mounted Recording Studio routes, and FlatPack's built-in rounded theme
 
 ### Login Credentials
 
