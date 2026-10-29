@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gemspec `recording_studio` floor is `>= 6.3.0` with no minor ceiling. Root and dummy Gemfiles pin core `v6.3.0`, Logs `v0.7.1`, and Metrics `v0.7.0`.
 - Dummy pins Accessible `v0.24.0`, Admin `v2.7.2`, Trashable `v0.12.0`, Root Switchable `v0.11.0`, Cache `v0.6.0`, and Flatpack `v0.1.329`.
 - Dummy screens set `content_for :title` and call `flat_pack_page_nav`. The sidebar layout renders `flat_pack_page_nav_tag`. Cards use `background:`.
+- Dummy and root lockfiles bump `crass` to `1.0.8`. Dummy also bumps `net-ssh` to `7.3.8` so Bundler Audit is clean.
 
 ### Upgrade notes
 - See [UPGRADING.md](UPGRADING.md). Pin core `>= 6.3.0`, Logs `v0.7.1`, Metrics `v0.7.0`, and a Flatpack tag that satisfies core (`>= 0.1.315`). This release has no Views migration. Page-view collection and privacy fields stay the same.
