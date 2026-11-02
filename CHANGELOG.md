@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-11-02
+
+### Changed
+- Dummy docs Install and Methods pages describe Views setup and `recording_studio_track_views` instead of gem-template placeholders.
+- Root and dummy lockfiles use rack 3.2.8 so Bundler Audit rack advisories clear.
+
+### Removed
+- Echo-only leftover `test_codespaces_setup.sh`.
+
 ## [0.11.1] - 2026-10-29
 
 ### Changed
@@ -277,7 +286,8 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.2...HEAD
+[0.11.2]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.9.0...v0.10.0
