@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Dummy docs Install and Methods pages describe Views setup and `recording_studio_track_views` instead of gem-template placeholders.
-- Root and dummy lockfiles bump `rack` to `>= 3.2.8` so Bundler Audit rack advisories clear.
+- Root and dummy lockfiles use rack 3.2.8 so Bundler Audit rack advisories clear.
 
 ### Removed
 - Echo-only leftover `test_codespaces_setup.sh`.
