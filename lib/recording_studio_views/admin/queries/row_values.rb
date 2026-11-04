@@ -25,7 +25,7 @@ module RecordingStudioViews
         end
 
         def ip_value(row, _context)
-          row.ip
+          row.ip.presence
         end
 
         def user_agent_value(row, _context)

@@ -29,7 +29,7 @@ module RecordingStudioViews
                   :excluded_controller_paths, :store_ip, :geoip_database_path,
                   :maxmind_account_id, :maxmind_license_key, :geoip_max_age,
                   :rate_limiting_enabled, :rate_limit_store, :visitor_rate_limit,
-                  :visitor_root_rate_limit, :rate_limit_window
+                  :visitor_root_rate_limit, :rate_limit_window, :rate_limit_fail_closed
 
     def initialize
       assign_core_defaults
@@ -54,6 +54,7 @@ module RecordingStudioViews
         visitor_rate_limit: visitor_rate_limit,
         visitor_root_rate_limit: visitor_root_rate_limit,
         rate_limit_window: rate_limit_window,
+        rate_limit_fail_closed: rate_limit_fail_closed,
         hooks_registered: hooks.registered_counts
       }
     end
@@ -93,10 +94,11 @@ module RecordingStudioViews
       @visitor_rate_limit = DEFAULT_VISITOR_RATE_LIMIT
       @visitor_root_rate_limit = DEFAULT_VISITOR_ROOT_RATE_LIMIT
       @rate_limit_window = DEFAULT_RATE_LIMIT_WINDOW
+      @rate_limit_fail_closed = true
     end
 
     def assign_capture_defaults
-      @store_ip = true
+      @store_ip = false
       @geoip_database_path = nil
       @maxmind_account_id = nil
       @maxmind_license_key = nil

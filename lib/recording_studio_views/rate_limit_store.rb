@@ -10,7 +10,7 @@ module RecordingStudioViews
     rescue StandardError => e
       Failure.report(e)
       Instrumentation.record(:rate_limit_store)
-      nil
+      fail_closed? ? over_limit_count : nil
     end
 
     def backend
@@ -18,6 +18,16 @@ module RecordingStudioViews
     end
 
     private
+
+    def fail_closed?
+      RecordingStudioViews.configuration.rate_limit_fail_closed
+    end
+
+    def over_limit_count
+      visitor = RecordingStudioViews.configuration.visitor_rate_limit.to_i
+      visitor_root = RecordingStudioViews.configuration.visitor_root_rate_limit.to_i
+      [visitor, visitor_root].max + 1
+    end
 
     def expires_in_seconds
       window = RecordingStudioViews.configuration.rate_limit_window

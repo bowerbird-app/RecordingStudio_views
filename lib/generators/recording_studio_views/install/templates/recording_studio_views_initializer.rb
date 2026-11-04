@@ -24,6 +24,8 @@ RecordingStudioViews.configure do |config|
   # config.visitor_rate_limit = 120
   # config.visitor_root_rate_limit = 30
   # config.rate_limit_window = 1.minute
+  # Cache errors reject the beacon with 429. Set false to keep recording views.
+  # config.rate_limit_fail_closed = true
 
   # Signed context tokens expire after token_ttl (default 2 hours). The TTL
   # must fit any shared-cache lifetime for the page.
@@ -35,7 +37,7 @@ RecordingStudioViews.configure do |config|
   # Optional SHA digest of a host visitor cookie. Off by default. This is not unique-visitor reporting.
   # config.visitor_token_digest_resolver = ->(controller) { ... }
 
-  # Store a masked visitor IP on each raw view (IPv4 last octet zeroed, IPv6 /48). Default true.
+  # Store a masked visitor IP on each raw view (IPv4 last octet zeroed, IPv6 /48). Default false.
   # config.store_ip = true
 
   # Local MaxMind GeoLite2 City .mmdb only. Leave unset to skip geo (geo_enabled is then false).

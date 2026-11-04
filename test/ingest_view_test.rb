@@ -127,6 +127,20 @@ class IngestViewTest < Minitest::Test
     refute_includes captured.inspect, "1.2.3.4"
   end
 
+  def test_geo_uses_raw_ip_when_store_ip_is_off
+    RecordingStudioViews.configuration.store_ip = false
+    RecordingStudioViews.configuration.geoip_database_path =
+      File.expand_path("fixtures/GeoIP2-City-Test.mmdb", __dir__)
+    RecordingStudioViews::GeoLookup.reset!
+    captured = capture_write_view(remote_ip: "81.2.69.142")
+    fields = captured[:captured]
+
+    assert_nil fields[:ip]
+    assert_equal "United Kingdom", fields[:country]
+    assert_equal "London", fields[:city]
+    refute_includes captured.inspect, "81.2.69.142"
+  end
+
   def test_geo_from_full_ip_in_memory_without_persisting_it
     RecordingStudioViews.configuration.geoip_database_path =
       File.expand_path("fixtures/GeoIP2-City-Test.mmdb", __dir__)
