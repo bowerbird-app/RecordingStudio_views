@@ -1,5 +1,9 @@
 # Upgrading
 
+## 0.11.3
+
+Development and dummy GitHub pins: FlatPack `v0.1.341`, Logs `v0.7.3`, Metrics `v0.7.2`. Dummy also pins Admin `v2.8.2`, Trashable `v0.12.2`, Root Switchable `v0.11.4`, and Cache `v0.6.2`. Core stays `v6.3.0`, Accessible `v0.24.0`. Gemspec ranges are unchanged. No Views migration.
+
 ## 0.11.1
 
 ### Recording Studio 6.1+
