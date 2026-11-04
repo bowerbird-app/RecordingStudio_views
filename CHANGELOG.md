@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `config.store_ip` defaults to `false`. Masked IPs are stored only when the host sets `config.store_ip = true`.
 - `config.rate_limit_fail_closed` defaults to `true`. A raising rate-limit cache rejects the collector POST with 429, still reports the error, and still instruments `:rate_limit_store`. Set `config.rate_limit_fail_closed = false` to keep the previous fail-open path.
+- Root and dummy lockfiles use loofah 2.25.3, nokogiri 1.19.7, and rails-html-sanitizer 1.7.2 so Bundler Audit advisories clear.
 
 ### Upgrade notes
 - See [UPGRADING.md](UPGRADING.md). Both defaults changed. Opt back in to masked IP storage with `config.store_ip = true`. Keep recording views when the cache is down with `config.rate_limit_fail_closed = false`. Token TTL stays 2 hours.
