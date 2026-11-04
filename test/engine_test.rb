@@ -99,7 +99,7 @@ class EngineTest < Minitest::Test
     find_initializer("recording_studio_views.load_config").block.call(app)
 
     assert_equal 2.hours, RecordingStudioViews.configuration.token_ttl
-    assert_equal true, RecordingStudioViews.configuration.store_ip
+    assert_equal false, RecordingStudioViews.configuration.store_ip
     assert_equal false, RecordingStudioViews.configuration.site_tracking_enabled
   end
 

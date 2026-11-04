@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-04
+
+### Changed
+- `config.store_ip` defaults to `false`. Masked IPs are stored only when the host sets `config.store_ip = true`.
+- `config.rate_limit_fail_closed` defaults to `true`. A raising rate-limit cache rejects the collector POST with 429, still reports the error, and still instruments `:rate_limit_store`. Set `config.rate_limit_fail_closed = false` to keep the previous fail-open path.
+
+### Upgrade notes
+- See [UPGRADING.md](UPGRADING.md). Both defaults changed. Opt back in to masked IP storage with `config.store_ip = true`. Keep recording views when the cache is down with `config.rate_limit_fail_closed = false`. Token TTL stays 2 hours.
+
 ## [0.11.3] - 2026-11-04
 
 ### Changed
@@ -295,7 +304,8 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.3...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.3...v0.12.0
 [0.11.3]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.0...v0.11.1

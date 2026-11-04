@@ -45,7 +45,8 @@ class ConfigurationTest < Minitest::Test
     assert_equal 120, configuration.visitor_rate_limit
     assert_equal 30, configuration.visitor_root_rate_limit
     assert_equal 1.minute, configuration.rate_limit_window
-    assert_equal true, configuration.store_ip
+    assert_equal true, configuration.rate_limit_fail_closed
+    assert_equal false, configuration.store_ip
     assert_nil configuration.geoip_database_path
     assert_nil configuration.maxmind_account_id
     assert_nil configuration.maxmind_license_key

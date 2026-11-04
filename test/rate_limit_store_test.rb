@@ -15,11 +15,41 @@ class RateLimitStoreTest < Minitest::Test
     RecordingStudioViews.configuration.rate_limit_store = previous
   end
 
-  def test_increment_fails_open_when_the_store_raises
+  def test_increment_fails_closed_when_the_store_raises
     store = Object.new
     store.define_singleton_method(:increment) { |*| raise "unreachable" }
-    previous = RecordingStudioViews.configuration.rate_limit_store
+    previous_store = RecordingStudioViews.configuration.rate_limit_store
+    previous_fail_closed = RecordingStudioViews.configuration.rate_limit_fail_closed
+    previous_visitor = RecordingStudioViews.configuration.visitor_rate_limit
+    previous_visitor_root = RecordingStudioViews.configuration.visitor_root_rate_limit
     RecordingStudioViews.configuration.rate_limit_store = store
+    RecordingStudioViews.configuration.rate_limit_fail_closed = true
+    RecordingStudioViews.configuration.visitor_rate_limit = 120
+    RecordingStudioViews.configuration.visitor_root_rate_limit = 30
+    events = []
+    subscriber = ActiveSupport::Notifications.subscribe(RecordingStudioViews::Instrumentation::EVENT) do |*args|
+      events << ActiveSupport::Notifications::Event.new(*args)
+    end
+
+    count = RecordingStudioViews::RateLimitStore.new.increment("views-test", 1, expires_in: 60)
+    assert_equal 121, count
+    assert_operator count, :>, RecordingStudioViews::RateLimitCeiling.new(:visitor_rate_limit)
+    assert(events.any? { |event| event.payload[:reason] == "rate_limit_store" })
+  ensure
+    RecordingStudioViews.configuration.rate_limit_store = previous_store
+    RecordingStudioViews.configuration.rate_limit_fail_closed = previous_fail_closed
+    RecordingStudioViews.configuration.visitor_rate_limit = previous_visitor
+    RecordingStudioViews.configuration.visitor_root_rate_limit = previous_visitor_root
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  def test_increment_fails_open_when_fail_closed_is_off
+    store = Object.new
+    store.define_singleton_method(:increment) { |*| raise "unreachable" }
+    previous_store = RecordingStudioViews.configuration.rate_limit_store
+    previous_fail_closed = RecordingStudioViews.configuration.rate_limit_fail_closed
+    RecordingStudioViews.configuration.rate_limit_store = store
+    RecordingStudioViews.configuration.rate_limit_fail_closed = false
     events = []
     subscriber = ActiveSupport::Notifications.subscribe(RecordingStudioViews::Instrumentation::EVENT) do |*args|
       events << ActiveSupport::Notifications::Event.new(*args)
@@ -28,7 +58,8 @@ class RateLimitStoreTest < Minitest::Test
     assert_nil RecordingStudioViews::RateLimitStore.new.increment("views-test", 1, expires_in: 60)
     assert(events.any? { |event| event.payload[:reason] == "rate_limit_store" })
   ensure
-    RecordingStudioViews.configuration.rate_limit_store = previous
+    RecordingStudioViews.configuration.rate_limit_store = previous_store
+    RecordingStudioViews.configuration.rate_limit_fail_closed = previous_fail_closed
     ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
   end
 

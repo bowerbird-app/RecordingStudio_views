@@ -71,6 +71,8 @@ class InstallGeneratorTest < Minitest::Test
     assert_includes template, "config.maxmind_license_key = Rails.application.credentials.dig(:maxmind, :license_key)"
     assert_includes template, "config.rate_limiting_enabled"
     assert_includes template, "config.rate_limit_store"
+    assert_includes template, "config.rate_limit_fail_closed"
+    assert_includes template, "config.store_ip = true"
     assert_includes template, "config.token_ttl"
   end
 end

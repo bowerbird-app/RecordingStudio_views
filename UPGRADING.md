@@ -1,5 +1,33 @@
 # Upgrading
 
+## 0.12.0
+
+### Masked IP storage is off by default
+
+`config.store_ip` is now `false`. New view rows store a nil `ip`. Geo still looks up the raw request IP in memory when a MaxMind path is set; only the stored column is skipped.
+
+To keep storing the masked address (IPv4 `/24`, IPv6 `/48`):
+
+```ruby
+RecordingStudioViews.configure do |config|
+  config.store_ip = true
+end
+```
+
+### Rate-limit cache errors fail closed
+
+`config.rate_limit_fail_closed` is now `true`. If the rate-limit store raises, the collector returns 429 and writes nothing. Errors are still reported and instrumented as `:rate_limit_store`.
+
+To keep the previous fail-open behaviour (record the view when the cache is down):
+
+```ruby
+RecordingStudioViews.configure do |config|
+  config.rate_limit_fail_closed = false
+end
+```
+
+Token TTL is unchanged (2 hours).
+
 ## 0.11.3
 
 Development and dummy GitHub pins: FlatPack `v0.1.341`, Logs `v0.7.3`, Metrics `v0.7.2`. Dummy also pins Admin `v2.8.2`, Trashable `v0.12.2`, Root Switchable `v0.11.4`, and Cache `v0.6.2`. Core stays `v6.3.0`, Accessible `v0.24.0`. Gemspec ranges are unchanged. No Views migration.

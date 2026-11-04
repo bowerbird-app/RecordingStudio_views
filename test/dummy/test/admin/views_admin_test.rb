@@ -491,6 +491,13 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_in_delta(-0.0931, queries.longitude_value(row, nil), 0.0001)
   end
 
+  test "empty ip is a blank table value" do
+    row = insert_view(ip: nil)
+    queries = RecordingStudioViews::Admin::Queries
+
+    assert_nil queries.ip_value(row, nil)
+  end
+
   private
 
   def actor_context_for(rows)

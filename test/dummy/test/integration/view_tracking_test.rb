@@ -56,6 +56,8 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
   end
 
   test "collector stores masked ipv4 ipv6 and truncated user agent" do
+    previous = RecordingStudioViews.configuration.store_ip
+    RecordingStudioViews.configuration.store_ip = true
     sign_in @user
     get page_path(@page)
     context = page_context
@@ -79,11 +81,13 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
       extra_headers: { "REMOTE_ADDR" => "2001:db8:85a3:8d3:1319:8a2e:370:7344" }
     )
     assert_equal "2001:db8:85a3::", RecordingStudioViews::ViewLog.find(ipv6_id).ip
+  ensure
+    RecordingStudioViews.configuration.store_ip = previous
   end
 
-  test "store_ip off stores nil ip and still saves user agent" do
+  test "store_ip default writes no ip and still saves user agent" do
     previous = RecordingStudioViews.configuration.store_ip
-    RecordingStudioViews.configuration.store_ip = false
+    RecordingStudioViews.configuration.store_ip = RecordingStudioViews::Configuration.new.store_ip
     sign_in @user
     get page_path(@page)
     event_id = SecureRandom.uuid
@@ -94,6 +98,7 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
       extra_headers: { "REMOTE_ADDR" => "9.8.7.6" }
     )
     view = RecordingStudioViews::ViewLog.find(event_id)
+    assert_equal false, RecordingStudioViews.configuration.store_ip
     assert_nil view.ip
     assert_equal "TestAgent/1.0", view.user_agent
   ensure
@@ -101,7 +106,9 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
   end
 
   test "collector stores device and local geo without the full ip" do
+    previous = RecordingStudioViews.configuration.store_ip
     previous_path = RecordingStudioViews.configuration.geoip_database_path
+    RecordingStudioViews.configuration.store_ip = true
     RecordingStudioViews.configuration.geoip_database_path =
       RecordingStudioViews::Engine.root.join("test/fixtures/GeoIP2-City-Test.mmdb")
     RecordingStudioViews::GeoLookup.reset!
@@ -129,11 +136,14 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     assert_in_delta(-0.0931, view.longitude, 0.0001)
     assert_equal 0, RecordingStudioViews::ViewLog.where(ip: "81.2.69.142").count
   ensure
+    RecordingStudioViews.configuration.store_ip = previous
     RecordingStudioViews.configuration.geoip_database_path = previous_path
     RecordingStudioViews::GeoLookup.reset!
   end
 
   test "geo off stores nil geo fields" do
+    previous = RecordingStudioViews.configuration.store_ip
+    RecordingStudioViews.configuration.store_ip = true
     RecordingStudioViews.configuration.geoip_database_path = nil
     RecordingStudioViews::GeoLookup.reset!
     sign_in @user
@@ -145,6 +155,8 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     assert_nil view.country
     assert_nil view.city
     assert_nil view.latitude
+  ensure
+    RecordingStudioViews.configuration.store_ip = previous
   end
 
   test "collector stores utm fields and keeps path without query" do
@@ -473,11 +485,38 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "raising rate limit store still records the view" do
+  test "raising rate limit store returns 429 when fail closed" do
     store = Object.new
     store.define_singleton_method(:increment) { |*| raise "cache down" }
-    previous = RecordingStudioViews.configuration.rate_limit_store
+    previous_store = RecordingStudioViews.configuration.rate_limit_store
+    previous_fail_closed = RecordingStudioViews.configuration.rate_limit_fail_closed
     RecordingStudioViews.configuration.rate_limit_store = store
+    RecordingStudioViews.configuration.rate_limit_fail_closed = true
+    events = []
+    subscriber = ActiveSupport::Notifications.subscribe(RecordingStudioViews::Instrumentation::EVENT) do |*args|
+      events << ActiveSupport::Notifications::Event.new(*args)
+    end
+    sign_in @user
+    get page_path(@page)
+    assert_no_difference -> { RecordingStudioViews::ViewLog.count } do
+      post_ingest(page_context, event_id: SecureRandom.uuid)
+    end
+    assert_response :too_many_requests
+    assert events.any? { |event| event.payload[:reason] == "rate_limit_store" }
+    assert events.any? { |event| event.payload[:reason] == "throttled" }
+  ensure
+    RecordingStudioViews.configuration.rate_limit_store = previous_store
+    RecordingStudioViews.configuration.rate_limit_fail_closed = previous_fail_closed
+    ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
+  end
+
+  test "raising rate limit store records the view when fail closed is off" do
+    store = Object.new
+    store.define_singleton_method(:increment) { |*| raise "cache down" }
+    previous_store = RecordingStudioViews.configuration.rate_limit_store
+    previous_fail_closed = RecordingStudioViews.configuration.rate_limit_fail_closed
+    RecordingStudioViews.configuration.rate_limit_store = store
+    RecordingStudioViews.configuration.rate_limit_fail_closed = false
     events = []
     subscriber = ActiveSupport::Notifications.subscribe(RecordingStudioViews::Instrumentation::EVENT) do |*args|
       events << ActiveSupport::Notifications::Event.new(*args)
@@ -490,7 +529,8 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     assert_response :no_content
     assert events.any? { |event| event.payload[:reason] == "rate_limit_store" }
   ensure
-    RecordingStudioViews.configuration.rate_limit_store = previous
+    RecordingStudioViews.configuration.rate_limit_store = previous_store
+    RecordingStudioViews.configuration.rate_limit_fail_closed = previous_fail_closed
     ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
   end
 
