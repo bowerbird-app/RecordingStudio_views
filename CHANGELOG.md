@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-11-04
+
+### Changed
+- Development and dummy GitHub pins: FlatPack `v0.1.341`, Logs `v0.7.3`, Metrics `v0.7.2`. Dummy also pins Admin `v2.8.2`, Trashable `v0.12.2`, Root Switchable `v0.11.4`, and Cache `v0.6.2`. Core stays `v6.3.0`, Accessible `v0.24.0`. Gemspec ranges are unchanged.
+- Root and dummy lockfiles bump loofah 2.25.3, nokogiri 1.19.7, and rails-html-sanitizer 1.7.2 so Bundler Audit stays clean. Rack remains 3.2.8. view_component stays 4.20.0.
+
+### Removed
+- Dummy leftover `hello_controller.js` and empty `makeup_artist/custom_examples/.keep`.
+
 ## [0.11.2] - 2026-11-02
 
 ### Changed
@@ -286,7 +295,8 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.2...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.3...HEAD
+[0.11.3]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.10.0...v0.11.0
