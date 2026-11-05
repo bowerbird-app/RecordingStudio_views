@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-11-05
+
+### Changed
+- Root and dummy lockfiles bump Rails to 8.1.4.1. rack 3.2.8, nokogiri 1.19.7, loofah 2.25.3, rails-html-sanitizer 1.7.2, and dummy net-ssh 7.3.8 stay at the current advisory floors. Bundler also moved io-console 0.9.5 and rack-test 2.3.0 with that Rails patch.
+
 ## [0.12.0] - 2026-11-04
 
 ### Changed
@@ -304,7 +309,8 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.3...v0.12.0
 [0.11.3]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.1...v0.11.2
