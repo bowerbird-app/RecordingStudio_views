@@ -15,6 +15,7 @@ class CacheContextTest < ActionDispatch::IntegrationTest
     workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
     Current.actor = user
     root = RecordingStudio.root_recording_for(workspace)
+    allow_admin!(user, workspace)
     folder = Folder.find_or_create_by!(name: "Product Docs")
     folder_recording = RecordingStudio::Recording.find_by(recordable_type: "Folder", recordable_id: folder.id) ||
                        RecordingStudio.record!(
@@ -26,8 +27,6 @@ class CacheContextTest < ActionDispatch::IntegrationTest
         action: "created", recordable: page, root_recording: root, parent_recording: folder_recording,
         actor: user
       )
-
-    allow_view!(user, workspace)
     sign_in user
     get page_path(page)
     script = css_select("script[data-recording-studio-views-context]").first

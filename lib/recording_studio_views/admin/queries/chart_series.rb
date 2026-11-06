@@ -6,7 +6,8 @@ module RecordingStudioViews
       module ChartSeries
         CHART_BUCKETS = %i[day week month].freeze
 
-        def screen_page_views_series(relation, bucket: :day, start_date: nil, end_date: nil, filters: {})
+        def screen_page_views_series(relation, bucket: :day, start_date: nil, end_date: nil, filters: {},
+                                     actor: nil, access_recording: nil)
           bucket = normalize_chart_bucket(bucket)
           range_start = start_date.presence || default_day_range.begin
           range_end = end_date.presence || default_day_range.end
@@ -15,7 +16,9 @@ module RecordingStudioViews
             bucket,
             range_start: range_start,
             range_end: range_end,
-            filters: filters
+            filters: filters,
+            actor: actor,
+            access_recording: access_recording
           )
           data = each_bucket_start(range_start, range_end, bucket).map do |start|
             { x: start, y: counts[start].to_i }
@@ -28,8 +31,16 @@ module RecordingStudioViews
           CHART_BUCKETS.include?(key) ? key : :day
         end
 
-        def views_by_bucket_utc(relation, bucket, range_start: nil, range_end: nil, filters: {})
-          daily = daily_view_counts(relation, range_start: range_start, range_end: range_end, filters: filters)
+        def views_by_bucket_utc(relation, bucket, range_start: nil, range_end: nil, filters: {}, actor: nil,
+                                access_recording: nil)
+          daily = daily_view_counts(
+            relation,
+            range_start: range_start,
+            range_end: range_end,
+            filters: filters,
+            actor: actor,
+            access_recording: access_recording
+          )
           bucketed_daily_counts(daily, bucket)
         end
 

@@ -41,6 +41,7 @@ class RecordingStudioDeclarationsTest < ActiveSupport::TestCase
     root_recording = RecordingStudio.root_recording_for(Workspace.create!(name: unique_name("Child Workspace")))
     folder = Folder.new(name: unique_name("Allowed Folder"))
 
+    grant_edit!(root_recording, @actor)
     event = RecordingStudio.record!(
       action: "created",
       recordable: folder,
@@ -108,6 +109,7 @@ class RecordingStudioDeclarationsTest < ActiveSupport::TestCase
   private
 
   def record_child(recordable, root_recording, parent_recording)
+    grant_edit!(root_recording, @actor)
     RecordingStudio.record!(
       action: "created",
       recordable: recordable,
@@ -115,6 +117,13 @@ class RecordingStudioDeclarationsTest < ActiveSupport::TestCase
       parent_recording: parent_recording,
       actor: @actor
     ).recording
+  end
+
+  def grant_edit!(root_recording, actor)
+    return if RecordingStudioAccessible.authorized?(actor: actor, recording: root_recording, role: :edit)
+
+    result = RecordingStudioAccessible.bootstrap_owner_access!(recording: root_recording, actor: actor)
+    raise result.error.to_s if result.failure?
   end
 
   def unique_name(prefix)

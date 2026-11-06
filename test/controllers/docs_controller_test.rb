@@ -156,6 +156,11 @@ class DocsControllerTest < ActionDispatch::IntegrationTest
   end
 
   def record_child(recordable, root_recording, parent_recording)
+    unless RecordingStudioAccessible.authorized?(actor: @user, recording: root_recording, role: :edit)
+      result = RecordingStudioAccessible.bootstrap_owner_access!(recording: root_recording, actor: @user)
+      raise result.error.to_s if result.failure?
+    end
+
     RecordingStudio.record!(
       action: "created",
       recordable: recordable,

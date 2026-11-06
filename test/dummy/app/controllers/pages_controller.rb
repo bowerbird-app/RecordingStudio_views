@@ -29,13 +29,15 @@ class PagesController < ApplicationController
       return
     end
 
-    @page.save!
-    RecordingStudio.record!(
-      action: "created",
-      recordable: @page,
-      root_recording: root_recording,
-      parent_recording: root_recording
-    )
+    Page.transaction do
+      @page.save!
+      RecordingStudio.record!(
+        action: "created",
+        recordable: @page,
+        root_recording: root_recording,
+        parent_recording: root_recording
+      )
+    end
     redirect_to page_path(@page)
   end
 

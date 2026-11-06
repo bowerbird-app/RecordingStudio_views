@@ -27,7 +27,7 @@ module RecordingStudioViews
         def total_views(actor: nil, access_recording: nil)
           logs = scoped_view_logs(actor: actor, access_recording: access_recording)
           scoped_summaries(actor: actor, access_recording: access_recording).sum(:views).to_i +
-            unsummarized_view_logs(logs).count
+            unsummarized_view_logs(logs, actor: actor, access_recording: access_recording).count
         end
 
         def page_views_over_time_series(day_range: default_day_range, actor: nil, access_recording: nil)
@@ -40,7 +40,14 @@ module RecordingStudioViews
           day_sql = "(#{quoted_occurred_at} AT TIME ZONE 'UTC')::date"
           relation = scoped_view_logs(actor: actor, access_recording: access_recording)
                      .where("#{day_sql} BETWEEN ? AND ?", day_range.begin, day_range.end)
-          views_by_bucket_utc(relation, :day, range_start: day_range.begin, range_end: day_range.end)
+          views_by_bucket_utc(
+            relation,
+            :day,
+            range_start: day_range.begin,
+            range_end: day_range.end,
+            actor: actor,
+            access_recording: access_recording
+          )
         end
 
         def scoped_view_logs(actor: nil, access_recording: nil)

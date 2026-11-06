@@ -27,7 +27,7 @@ A custom policy replaces the Accessible default. Prefer Accessible grants over a
 
 ### Pins
 
-Pin `recording_studio` `v6.5.0`, `recording_studio_accessible` `v0.24.2`, `recording_studio_logs` `v0.7.4`, and `recording_studio_metrics` `v0.7.3`. This repo does not change the Admin pin (`v2.8.2` in dummy). Core 6.5 requires `config.authorize_write` and an actor on `record!`. The dummy sets `authorize_write` to allow a present actor.
+Pin `recording_studio` `v6.5.0`, `recording_studio_accessible` `v0.24.2`, `recording_studio_logs` `v0.7.4`, and `recording_studio_metrics` `v0.7.3`. This repo does not change the Admin pin (`v2.8.2` in dummy). Core 6.5 requires `config.authorize_write` and an actor on `record!`. The dummy sets `authorize_write` so AccessCreationContext may write `RecordingStudio::Access` rows; every other write needs Accessible `:edit` on the root.
 
 ## 0.12.0
 
