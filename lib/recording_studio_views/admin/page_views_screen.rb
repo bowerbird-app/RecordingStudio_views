@@ -9,8 +9,13 @@ module RecordingStudioViews
       subtitle "Each stored view, newest first."
       blast_radius :site
 
-      ROOT_FILTER = lambda { |relation, value, _context|
-        Queries.filter_by_root(relation, value)
+      ROOT_FILTER = lambda { |relation, value, context|
+        Queries.filter_by_root(
+          relation,
+          value,
+          actor: context&.current_actor,
+          access_recording: context&.access_recording
+        )
       }
       RESOURCE_TYPE_FILTER = lambda { |relation, value, _context|
         Queries.filter_by_resource_type(relation, value)
@@ -49,13 +54,23 @@ module RecordingStudioViews
         [:actor, "Actor", false]
       ].freeze
 
-      query { |_context| Queries.view_logs }
+      query { |context| Queries.view_logs(actor: context.current_actor, access_recording: context.access_recording) }
 
       filter_presentation :modal, inline_count: 2
       filter :date_range, field: :occurred_at, default: :last_30_days
       filter :group_by, values: %i[day week month], default: :day
-      filter :root, options: -> { Queries.root_filter_options }, apply: ROOT_FILTER
-      filter :resource_type, options: -> { Queries.resource_type_filter_options }, apply: RESOURCE_TYPE_FILTER
+      filter :root, options: lambda { |context = nil|
+        Queries.root_filter_options(
+          actor: context&.current_actor,
+          access_recording: context&.access_recording
+        )
+      }, apply: ROOT_FILTER
+      filter :resource_type, options: lambda { |context = nil|
+        Queries.resource_type_filter_options(
+          actor: context&.current_actor,
+          access_recording: context&.access_recording
+        )
+      }, apply: RESOURCE_TYPE_FILTER
       filter :visit_kind, options: -> { Queries.visit_kind_filter_options }, apply: VISIT_KIND_FILTER
 
       chart do
@@ -68,7 +83,9 @@ module RecordingStudioViews
             filters: Queries.chart_filters_from_screen(context),
             bucket: context.filter_value(:group_by) || :day,
             start_date: range&.start_date,
-            end_date: range&.end_date
+            end_date: range&.end_date,
+            actor: context.current_actor,
+            access_recording: context.access_recording
           )
         end
       end

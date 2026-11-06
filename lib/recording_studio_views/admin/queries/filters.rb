@@ -4,14 +4,16 @@ module RecordingStudioViews
   module Admin
     module Queries
       module Filters
-        def filter_by_root(relation, value)
+        def filter_by_root(relation, value, actor: nil, access_recording: nil)
           label = value.to_s.strip
           return relation if label.empty?
 
           if label == SITE_ROOT_LABEL
             relation.where(root_recording_id: nil)
           else
-            relation.where(root_recording_id: root_id_for_label(label))
+            relation.where(
+              root_recording_id: root_id_for_label(label, actor: actor, access_recording: access_recording)
+            )
           end
         end
 
@@ -45,18 +47,22 @@ module RecordingStudioViews
 
         def chart_filters_from_screen(context)
           normalize_chart_filters(
-            root: context.filter_value(:root),
-            resource_type: context.filter_value(:resource_type),
-            page_key_contains: context.filter_value(:page_key),
-            path: context.filter_value(:path),
-            visit_kind: context.filter_value(:visit_kind)
+            {
+              root: context.filter_value(:root),
+              resource_type: context.filter_value(:resource_type),
+              page_key_contains: context.filter_value(:page_key),
+              path: context.filter_value(:path),
+              visit_kind: context.filter_value(:visit_kind)
+            },
+            actor: context.try(:current_actor),
+            access_recording: context.try(:access_recording)
           )
         end
 
-        def normalize_chart_filters(filters)
+        def normalize_chart_filters(filters, actor: nil, access_recording: nil)
           filters = (filters || {}).to_h.transform_keys(&:to_sym)
           normalized = {}
-          copy_root_recording_filter(normalized, filters)
+          copy_root_recording_filter(normalized, filters, actor: actor, access_recording: access_recording)
           copy_present_chart_filters(
             normalized,
             filters,
@@ -82,32 +88,6 @@ module RecordingStudioViews
           pattern = "%#{ActiveRecord::Base.sanitize_sql_like(needle)}%"
           quoted = ViewLog.connection.quote_column_name(column.to_s)
           relation.where("#{quoted} ILIKE ?", pattern)
-        end
-
-        def copy_root_recording_filter(normalized, filters)
-          if filters.key?(:root_recording_id)
-            normalized[:root_recording_id] = filters[:root_recording_id]
-          elsif chart_filter_present?(filters[:root])
-            label = filters[:root].to_s.strip
-            normalized[:root_recording_id] = label == SITE_ROOT_LABEL ? nil : root_id_for_label(label)
-          end
-        end
-
-        def copy_present_chart_filters(normalized, filters, keys)
-          keys.each do |key|
-            normalized[key] = filters[key] if chart_filter_present?(filters[key])
-          end
-        end
-
-        def apply_equality_log_filters(relation, filters)
-          %i[root_recording_id recording_id resource_type page_key].each do |column|
-            relation = relation.where(column => filters[column]) if filters.key?(column)
-          end
-          relation
-        end
-
-        def chart_filter_present?(value)
-          !(value.nil? || value.to_s.strip.empty?)
         end
       end
     end

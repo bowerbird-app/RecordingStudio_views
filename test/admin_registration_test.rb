@@ -31,8 +31,10 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes screen, "filter :group_by, values: %i[day week month], default: :day"
     assert_includes screen, "Queries.screen_page_views_series"
     assert_includes screen, "chart_filters_from_screen"
+    assert_includes screen, "access_recording: context.access_recording"
+    assert_includes screen, "Queries.root_filter_options"
     assert_includes chart, "daily_view_counts"
-    assert_includes summaries, "DailyViewSummary"
+    assert_includes summaries, "scoped_summaries"
     assert_includes summaries, "unsummarized_view_logs"
     refute_includes summaries, "to_sql"
     refute_includes summaries, "where_fragment"
@@ -58,6 +60,8 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes widgets, "Queries.total_views"
     queries = File.read(File.expand_path("../lib/recording_studio_views/admin/queries.rb", __dir__))
     filters = File.read(File.expand_path("../lib/recording_studio_views/admin/queries/filters.rb", __dir__))
+    assert_includes queries, "RecordingStudioAccessible"
+    assert_includes queries, "scoped_view_logs"
     refute_includes queries, "PUBLIC ="
     refute_includes queries, "PRIVATE ="
     refute_includes filters, "filter_by_visibility"
