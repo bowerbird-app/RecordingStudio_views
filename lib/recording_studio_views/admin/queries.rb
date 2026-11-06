@@ -39,7 +39,7 @@ module RecordingStudioViews
         def views_by_day_utc(day_range, actor: nil, access_recording: nil)
           day_sql = "(#{quoted_occurred_at} AT TIME ZONE 'UTC')::date"
           relation = scoped_view_logs(actor: actor, access_recording: access_recording)
-                      .where("#{day_sql} BETWEEN ? AND ?", day_range.begin, day_range.end)
+                       .where("#{day_sql} BETWEEN ? AND ?", day_range.begin, day_range.end)
           views_by_bucket_utc(relation, :day, range_start: day_range.begin, range_end: day_range.end)
         end
 
