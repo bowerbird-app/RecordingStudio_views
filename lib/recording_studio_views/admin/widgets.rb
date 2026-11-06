@@ -12,7 +12,12 @@ module RecordingStudioViews
         info "Daily views in UTC from daily summaries, plus raw rows for days not yet aggregated."
         chart_type :line
         hide_change
-        series { Queries.page_views_over_time_series }
+        series { |context|
+          Queries.page_views_over_time_series(
+            actor: context.current_actor,
+            access_recording: context.access_recording
+          )
+        }
         chart_options do
           {
             xaxis: { labels: { show: false } },
@@ -29,7 +34,7 @@ module RecordingStudioViews
         type :number
         title "Total views"
         info "All-time views from daily summaries plus raw rows not yet aggregated."
-        value { Queries.total_views }
+        value { |context| Queries.total_views(actor: context.current_actor, access_recording: context.access_recording) }
         hide_change
         hide_period
         link_to { |context| context.admin_screen_path("views_page_views") }

@@ -49,7 +49,7 @@ module RecordingStudioViews
         [:actor, "Actor", false]
       ].freeze
 
-      query { |_context| Queries.view_logs }
+      query { |context| Queries.view_logs(actor: context.current_actor, access_recording: context.access_recording) }
 
       filter_presentation :modal, inline_count: 2
       filter :date_range, field: :occurred_at, default: :last_30_days

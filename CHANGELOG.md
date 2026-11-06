@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-06
+
+### Changed
+- Default `root_ownership_policy` uses Recording Studio Accessible on the viewed recording (or the root when there is no recording). Missing Accessible, a blank actor, or a denied check skips context and excludes ingest. Hosts can still override the policy.
+- Admin page-view queries, filter options, totals, and charts scope to Accessible `root_recording_ids_for` for the current actor. Staff authorized on the Admin access recording still see every row.
+- Dummy drops its current-root ownership override and uses the Accessible default. Dummy `authorize_write` allows a present actor (core 6.5 fail-closed writes). Development pins: core `v6.5.0`, Accessible `v0.24.2`, Logs `v0.7.4`, Metrics `v0.7.3`, Trashable `v0.12.3`, Root Switchable `v0.11.7`, Cache `v0.6.3`. Admin stays `v2.8.2`.
+
+### Upgrade notes
+- See [UPGRADING.md](UPGRADING.md). Recording and root tokens are no longer minted for every visitor. Public pages still track when `tracking_access_action` allows the recording. Hosts that relied on always-true ownership must grant Accessible access or set `root_ownership_policy`.
+
 ## [0.12.1] - 2026-11-05
 
 ### Changed
@@ -309,7 +319,8 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.3...v0.12.0
 [0.11.3]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.2...v0.11.3

@@ -67,4 +67,38 @@ class RootOwnershipTest < Minitest::Test
       refute RecordingStudioViews::RootOwnership.allowed?(Object.new, recording_context)
     end
   end
+
+  def test_default_policy_denies_without_accessible
+    refute defined?(::RecordingStudioAccessible)
+    RecordingStudioViews.configuration.root_ownership_policy =
+      RecordingStudioViews::Configuration::DEFAULT_ROOT_OWNERSHIP_POLICY
+    root = FakeRoot.new("root-1")
+    RecordingStudioViews::RootOwnership.stub :root_for, root do
+      RecordingStudioViews::RootOwnership.stub :recording_for, nil do
+        refute RecordingStudioViews::RootOwnership.allowed?(Object.new, recording_context)
+      end
+    end
+    refute RecordingStudioViews::RootOwnership.accessible_allowed?(Object.new, root)
+  end
+
+  def test_default_policy_authorizes_the_context_recording
+    refute defined?(::RecordingStudioAccessible)
+    RecordingStudioViews.configuration.root_ownership_policy =
+      RecordingStudioViews::Configuration::DEFAULT_ROOT_OWNERSHIP_POLICY
+    controller = Object.new
+    root = FakeRoot.new("root-1")
+    recording = Object.new
+    seen = nil
+    RecordingStudioViews::RootOwnership.stub :root_for, root do
+      RecordingStudioViews::RootOwnership.stub :recording_for, recording do
+        RecordingStudioViews::RootOwnership.stub :accessible_allowed?, lambda { |passed_controller, passed_recording|
+          seen = [passed_controller, passed_recording]
+          true
+        } do
+          assert RecordingStudioViews::RootOwnership.allowed?(controller, recording_context)
+        end
+      end
+    end
+    assert_equal [controller, recording], seen
+  end
 end

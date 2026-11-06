@@ -19,6 +19,9 @@ module RecordingStudioViews
     GEO_NAME_LIMIT = 128
     UTM_LIMIT = 255
     UTM_KEYS = %i[utm_source utm_medium utm_term utm_content utm_campaign].freeze
+    DEFAULT_ROOT_OWNERSHIP_POLICY = lambda do |controller, root|
+      RootOwnership.accessible_allowed?(controller, root)
+    end
 
     attr_accessor :hooks,
                   :recording_resolver, :root_page_resolver, :site_page_resolver,
@@ -79,7 +82,7 @@ module RecordingStudioViews
       @recording_resolver = ->(controller) { default_recording_resolver(controller) }
       @root_page_resolver = ->(controller) { default_named_resolver(:current_root_page, controller) }
       @site_page_resolver = ->(controller) { default_named_resolver(:current_site_page, controller) }
-      @root_ownership_policy = ->(_controller, _root) { true }
+      @root_ownership_policy = DEFAULT_ROOT_OWNERSHIP_POLICY
       @tracking_access_action = nil
       @tracking_access_policy = default_tracking_access_policy
       @consent_predicate = ->(_request) { true }

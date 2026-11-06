@@ -46,7 +46,7 @@ module RecordingStudioViews
         end
 
         def summary_views_by_day(filters, range_start, range_end)
-          scope = DailyViewSummary.all
+          scope = scoped_summaries
           scope = scope.where(day: range_start..range_end) if range_start && range_end
           apply_summary_filters(scope, filters).group(:day).sum(:views).each_with_object({}) do |(day, views), memo|
             date = coerce_utc_date(day)

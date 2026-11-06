@@ -46,7 +46,9 @@ RecordingStudioViews.configure do |config|
   config.maxmind_account_id = Rails.application.credentials.dig(:maxmind, :account_id)
   config.maxmind_license_key = Rails.application.credentials.dig(:maxmind, :license_key)
 
-  # Shared roots need an explicit ownership check.
+  # Root ownership uses Recording Studio Accessible by default (the tracking
+  # recording, or the root when there is no recording). Fail closed without
+  # Accessible. Override only for an extra host constraint.
   # config.root_ownership_policy = ->(_controller, _root) { true }
 end
 

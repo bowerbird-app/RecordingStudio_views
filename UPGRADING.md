@@ -1,5 +1,34 @@
 # Upgrading
 
+## 0.13.0
+
+### Root ownership uses Accessible
+
+Default `config.root_ownership_policy` no longer allows every root. Context resolution and ingest call Recording Studio Accessible on the viewed recording, or on the root when the page has no recording. Without Accessible, those contexts are skipped or excluded. Site pages are unchanged.
+
+Anonymous public tracking still works when `tracking_access_action` is set and the recording allows that action (for example a public audience). Private pages need a `:view` grant (or the configured action).
+
+To keep a host-specific extra check (for example the current switched root):
+
+```ruby
+RecordingStudioViews.configure do |config|
+  config.root_ownership_policy = lambda do |controller, root|
+    current = controller.respond_to?(:current_root_recording) ? controller.current_root_recording : nil
+    current.blank? || current.id.to_s == root.id.to_s
+  end
+end
+```
+
+A custom policy replaces the Accessible default. Prefer Accessible grants over a always-true policy.
+
+### Admin page views are Accessible-scoped
+
+`Admin::Queries.view_logs` (and totals, charts, and filter options) no longer read every `ViewLog` row. They include roots from `RecordingStudioAccessible.root_recording_ids_for(actor:, minimum_role: :view)`. Pass `access_recording:` when the actor is authorized on the Admin access recording to keep the previous site-wide table.
+
+### Pins
+
+Pin `recording_studio` `v6.5.0`, `recording_studio_accessible` `v0.24.2`, `recording_studio_logs` `v0.7.4`, and `recording_studio_metrics` `v0.7.3`. This repo does not change the Admin pin (`v2.8.2` in dummy). Core 6.5 requires `config.authorize_write` and an actor on `record!`. The dummy sets `authorize_write` to allow a present actor.
+
 ## 0.12.0
 
 ### Masked IP storage is off by default

@@ -10,6 +10,10 @@ class ViewsAdminTest < ActiveSupport::TestCase
       record.password_confirmation = "Password123!"
     end
     Current.actor = @user
+    @studio = Workspace.find_or_create_by!(name: "Studio Workspace")
+    @client = Workspace.find_or_create_by!(name: "Client Workspace")
+    allow_view!(@user, @studio)
+    allow_view!(@user, @client)
     RecordingStudioViews::ViewLog.delete_all
     RecordingStudioViews::DailyViewSummary.delete_all
   end
@@ -50,6 +54,16 @@ class ViewsAdminTest < ActiveSupport::TestCase
     section = File.read(RecordingStudioViews::Engine.root.join("lib/recording_studio_views/admin/section.rb"))
     assert_includes section, "style: :secondary"
     refute_includes section, "style: :primary"
+  end
+
+  test "view logs hide roots the actor cannot access" do
+    private_root = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Private Workspace"))
+    hidden = insert_view(root_recording_id: private_root.id)
+    visible = insert_view
+    ids = RecordingStudioViews::Admin::Queries.view_logs.pluck(:id)
+
+    assert_includes ids, visible.id
+    refute_includes ids, hidden.id
   end
 
   test "table filters match root resource type page key and visit kind" do
@@ -129,12 +143,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
     insert_view(page_key: "one")
     insert_view(page_key: "two")
     insert_view(page_key: "old", occurred_at: older.to_time.utc)
-    RecordingStudioViews::DailyViewSummary.create!(
-      day: older,
-      page_key: "old",
-      resource_type: "Page",
-      views: 10
-    )
+    insert_summary(day: older, page_key: "old", views: 10)
 
     assert_equal 12, RecordingStudioViews::Admin::Queries.total_views
   end
@@ -532,6 +541,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
 
   def insert_view(attributes = {})
     now = Time.now.utc
+    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
     RecordingStudioViews::ViewLog.create!(
       {
         id: SecureRandom.uuid,
@@ -539,18 +549,21 @@ class ViewsAdminTest < ActiveSupport::TestCase
         arrived_at: now,
         page_key: "docs.home",
         path: "/docs/home",
-        resource_type: "Page"
+        resource_type: "Page",
+        root_recording_id: studio.id
       }.merge(attributes)
     )
   end
 
   def insert_summary(attributes = {})
+    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
     RecordingStudioViews::DailyViewSummary.create!(
       {
         day: Time.now.utc.to_date,
         page_key: "docs.home",
         resource_type: "Page",
-        views: 1
+        views: 1,
+        root_recording_id: studio.id
       }.merge(attributes)
     )
   end
