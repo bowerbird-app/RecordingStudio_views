@@ -6,17 +6,14 @@ module RecordingStudioViews
       module ChartSummaries
         SUMMARY_FILTER_COLUMNS = %i[root_recording_id recording_id resource_type page_key].freeze
 
-        def daily_view_counts(relation, range_start: nil, range_end: nil, filters: {}, actor: nil,
-                              access_recording: nil)
-          filters = normalize_chart_filters(filters, actor: actor, access_recording: access_recording)
+        def daily_view_counts(relation, range_start: nil, range_end: nil, filters: {}, **scope)
+          filters = normalize_chart_filters(filters, **scope)
           relation = apply_chart_filters_to_logs(chart_relation(relation), filters)
           return raw_views_by_day_utc(relation) if summary_incompatible?(filters)
 
-          counts = summary_views_by_day(
-            filters, range_start, range_end, actor: actor, access_recording: access_recording
-          )
+          counts = summary_views_by_day(filters, range_start, range_end, **scope)
           raw_views_by_day_utc(
-            unsummarized_view_logs(relation, actor: actor, access_recording: access_recording)
+            unsummarized_view_logs(relation, **scope)
           ).each do |day, count|
             counts[day] = counts[day].to_i + count.to_i
           end

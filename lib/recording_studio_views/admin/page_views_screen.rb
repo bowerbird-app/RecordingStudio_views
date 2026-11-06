@@ -59,13 +59,13 @@ module RecordingStudioViews
       filter_presentation :modal, inline_count: 2
       filter :date_range, field: :occurred_at, default: :last_30_days
       filter :group_by, values: %i[day week month], default: :day
-      filter :root, options: ->(context = nil) {
+      filter :root, options: lambda { |context = nil|
         Queries.root_filter_options(
           actor: context&.current_actor,
           access_recording: context&.access_recording
         )
       }, apply: ROOT_FILTER
-      filter :resource_type, options: ->(context = nil) {
+      filter :resource_type, options: lambda { |context = nil|
         Queries.resource_type_filter_options(
           actor: context&.current_actor,
           access_recording: context&.access_recording

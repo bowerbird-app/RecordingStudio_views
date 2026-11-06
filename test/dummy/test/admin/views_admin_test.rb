@@ -509,14 +509,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
 
   test "explicit actor scopes rows summaries and totals away from Current.actor" do
     other = password_user("views-admin-explicit-actor@example.com")
-    studio_root = RecordingStudio.root_recording_for(@studio)
-    grant = RecordingStudioAccessible.grant_access(
-      recording: studio_root,
-      actor: other,
-      role: :view,
-      manager_actor: @user
-    )
-    assert grant.success?, grant.error.to_s
+    allow_view!(other, @studio)
     studio = RecordingStudio.root_recording_for(@studio)
     client = RecordingStudio.root_recording_for(@client)
     studio_row = insert_view(root_recording_id: studio.id)

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "queries/actor_labels"
+require_relative "queries/chart_filter_copy"
 require_relative "queries/chart_series"
 require_relative "queries/chart_summaries"
 require_relative "queries/filters"
@@ -15,6 +16,7 @@ module RecordingStudioViews
 
       class << self
         include ActorLabels
+        include ChartFilterCopy
         include ChartSeries
         include ChartSummaries
         include Filters
