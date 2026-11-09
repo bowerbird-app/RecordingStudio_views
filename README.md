@@ -89,7 +89,7 @@ recording_studio_admin_sections do
 end
 ```
 
-The hub chart (`widgets.views.page_views_over_time`) and the Page views screen chart both read `DailyViewSummary.views` for UTC days that already have summary rows, and count raw `ViewLog` rows for days that do not (today, before `DailyAggregationJob`). Totals use the same split. Screen filters that match summary columns (`root_recording_id`, `recording_id`, `resource_type`, `page_key`, day range) apply to the summary query. Visit kind and path are not on the summary, so those filters count raw rows for the whole chart. Week and month buckets group those UTC days. The table is still raw `ViewLog` rows, scoped to roots the current actor can access through Accessible (`root_recording_ids_for`). Actors authorized on the Admin access recording still see every row. Date range and group by stay inline; other filters use Admin's filter modal (`filter_presentation :modal, inline_count: 2`). Authorization is Recording Studio Accessible plus the host Admin gate. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
+The hub chart (`widgets.views.page_views_over_time`) and the Page views screen chart both read `DailyViewSummary.views` for UTC days that already have summary rows, and count raw `ViewLog` rows for days that do not (today, before `DailyAggregationJob`). Totals use the same split. Screen filters that match summary columns (`root_recording_id`, `recording_id`, `resource_type`, `page_key`, day range) apply to the summary query. Visit kind and path are not on the summary, so those filters count raw rows for the whole chart. Week and month buckets group those UTC days. The table is still raw `ViewLog` rows, scoped to roots the current actor can access through Accessible (`root_recording_ids_for`). Actors with `:view` on the Admin access recording still see every row. Filter options use Admin's request context (`allowed_values(context)`). A workspace `:view` grant does not unlock site-wide analytics. Date range and group by stay inline; other filters use Admin's filter modal (`filter_presentation :modal, inline_count: 2`). Authorization is Recording Studio Accessible plus the host Admin gate. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
 
 ## Retention and deletion
 
@@ -182,7 +182,7 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 | Metrics         | dummy GitHub tag `v0.7.3` |
 | device_detector | runtime (browser / OS / OS version / device type) |
 | maxmind-db      | runtime (local GeoLite2 City lookup only) |
-| Admin           | dummy GitHub tag `v2.8.2` (optional for hosts) |
+| Admin           | dummy GitHub tag `v2.10.0` (optional for hosts) |
 | FlatPack        | dummy GitHub tag `v0.1.341` |
 | Devise          | latest  |
 

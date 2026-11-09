@@ -66,7 +66,7 @@ class RecordingStudioViewsTest < Minitest::Test
     refute_includes gemfile, 'tag: "v0.6.1"'
     refute_includes root_gemfile, 'tag: "v0.6.1"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.2"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.8.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.10.0"'
     routes = File.read(File.expand_path("dummy/config/routes.rb", __dir__))
     assert_includes routes, "recording_studio_admin_for :admin, at: \"/admin\", root_section: :views"
     assert_includes routes, 'mount RecordingStudioAccessible::Engine, at: "/admin/access"'
@@ -270,7 +270,7 @@ class RecordingStudioViewsTest < Minitest::Test
     assert_includes readme, "dummy GitHub tag `v0.7.4`"
     assert_includes readme, "dummy GitHub tag `v0.7.3`"
     refute_includes readme, "dummy GitHub tag `v0.6.1`"
-    assert_includes readme, "dummy GitHub tag `v2.8.2`"
+    assert_includes readme, "dummy GitHub tag `v2.10.0`"
     refute_includes readme, "dummy GitHub tag `v2.6.2`"
     refute_includes readme, "dummy GitHub tag `v0.8.0`"
     assert_includes readme, "dummy GitHub tag `v0.6.3`"

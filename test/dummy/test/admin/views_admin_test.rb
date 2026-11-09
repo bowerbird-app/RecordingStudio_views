@@ -554,18 +554,20 @@ class ViewsAdminTest < ActiveSupport::TestCase
     insert_summary(day: older, root_recording_id: private_root.id, views: 4)
 
     queries = RecordingStudioViews::Admin::Queries
-    scoped_logs = queries.view_logs(actor: staff)
-    total = queries.total_views(actor: staff)
+    scoped_logs = queries.view_logs(actor: staff, access_recording: admin_recording)
+    total = queries.total_views(actor: staff, access_recording: admin_recording)
     series = queries.screen_page_views_series(
       scoped_logs,
       actor: staff,
+      access_recording: admin_recording,
       start_date: older,
       end_date: Time.now.utc.to_date
     )
-    root_values = screen_filter_allowed_values(:root)
-    resource_values = screen_filter_allowed_values(:resource_type)
+    admin_context = RecordingStudioAdmin::Context.new(current_actor: staff)
+    root_values = screen_filter_allowed_values(:root, admin_context)
+    resource_values = screen_filter_allowed_values(:resource_type, admin_context)
 
-    assert_equal admin_recording, RecordingStudioAdmin::Context.new(current_actor: staff).access_recording
+    assert_equal admin_recording, admin_context.access_recording
     assert_equal 8, scoped_logs.count
     assert_includes scoped_logs.pluck(:root_recording_id), private_root.id
     assert_equal 32, total
@@ -584,12 +586,13 @@ class ViewsAdminTest < ActiveSupport::TestCase
     insert_view(root_recording_id: studio.id)
     insert_view(root_recording_id: private_root.id)
 
-    root_values = screen_filter_allowed_values(:root)
+    workspace_context = RecordingStudioAdmin::Context.new(current_actor: staff)
+    root_values = screen_filter_allowed_values(:root, workspace_context)
     ids = RecordingStudioViews::Admin::Queries.view_logs(actor: staff).pluck(:root_recording_id)
 
     refute RecordingStudioAccessible.authorized?(
       actor: staff,
-      recording: RecordingStudioAdmin::Context.new(current_actor: staff).access_recording,
+      recording: workspace_context.access_recording,
       role: :view
     )
     assert_includes root_values, "Studio Workspace"
@@ -600,11 +603,11 @@ class ViewsAdminTest < ActiveSupport::TestCase
 
   private
 
-  def screen_filter_allowed_values(key)
+  def screen_filter_allowed_values(key, context)
     filter = RecordingStudioViews::Admin::PageViewsScreen.filters_value.find { |entry| entry.key == key }
     assert filter, "expected a #{key.inspect} filter on PageViewsScreen"
-    refute_operator filter.method(:allowed_values).arity, :>, 0
-    filter.allowed_values
+    assert_equal 1, filter.method(:allowed_values).parameters.count { |type, _| type == :opt }
+    filter.allowed_values(context)
   end
 
   def actor_context_for(rows)

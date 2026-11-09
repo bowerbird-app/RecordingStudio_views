@@ -62,6 +62,7 @@ class AdminRegistrationTest < Minitest::Test
     filters = File.read(File.expand_path("../lib/recording_studio_views/admin/queries/filters.rb", __dir__))
     assert_includes queries, "RecordingStudioAccessible"
     assert_includes queries, "scoped_view_logs"
+    refute_includes queries, "RecordingStudioAdmin::Context.new"
     refute_includes queries, "PUBLIC ="
     refute_includes queries, "PRIVATE ="
     refute_includes filters, "filter_by_visibility"

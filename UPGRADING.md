@@ -23,11 +23,15 @@ A custom policy replaces the Accessible default. Prefer Accessible grants over a
 
 ### Admin page views are Accessible-scoped
 
-`Admin::Queries.view_logs` (and totals, charts, and filter options) no longer read every `ViewLog` row. They include roots from `RecordingStudioAccessible.root_recording_ids_for(actor:, minimum_role: :view)`. Pass `access_recording:` when the actor is authorized on the Admin access recording to keep the previous site-wide table. Admin 2.8.2 filter `allowed_values` calls option procs with no arguments; Queries then resolve that recording from the host `access_recording_resolver` via `RecordingStudioAdmin::Context` and still require Accessible `:view`.
+`Admin::Queries.view_logs` (and totals, charts, and filter options) no longer read every `ViewLog` row. They include roots from `RecordingStudioAccessible.root_recording_ids_for(actor:, minimum_role: :view)`. Pass `access_recording:` from Admin's request context when the actor is authorized on the Admin access recording to keep the previous site-wide table. Page-views `root` and `resource_type` option procs take that context as one argument (`allowed_values(context)`). Zero-arg option procs still work. Views no longer builds a `RecordingStudioAdmin::Context` with only `current_actor`.
+
+Site-wide analytics stay visible to `:view` under the Admin root only. A workspace `:view` grant does not unlock Private or other roots.
+
+A signed-in actor with no grant who POSTs to the Views admin screen or filter endpoints gets Admin's usual 403/404, not a 500.
 
 ### Pins
 
-Pin `recording_studio` `v6.5.0`, `recording_studio_accessible` `v0.24.2`, `recording_studio_logs` `v0.7.4`, and `recording_studio_metrics` `v0.7.3`. This repo does not change the Admin pin (`v2.8.2` in dummy). Core 6.5 requires `config.authorize_write` and an actor on `record!`. The dummy sets `authorize_write` so AccessCreationContext may write `RecordingStudio::Access` rows; every other write needs Accessible `:edit` on the root.
+Pin `recording_studio` `v6.5.0`, `recording_studio_accessible` `v0.24.2`, `recording_studio_logs` `v0.7.4`, and `recording_studio_metrics` `v0.7.3`. Dummy Admin is `v2.10.0` (hosts that mount Admin should match that floor; Views still does not gemspec-depend on Admin). Core 6.5 requires `config.authorize_write` and an actor on `record!`. The dummy sets `authorize_write` so AccessCreationContext may write `RecordingStudio::Access` rows; every other write needs Accessible `:edit` on the root.
 
 ## 0.12.0
 

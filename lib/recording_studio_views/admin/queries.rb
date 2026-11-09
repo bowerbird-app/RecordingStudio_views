@@ -66,7 +66,6 @@ module RecordingStudioViews
           actor = resolve_query_actor(actor)
           return relation.none if actor.blank?
 
-          access_recording = resolve_query_access_recording(access_recording, actor: actor)
           if access_recording &&
              RecordingStudioAccessible.authorized?(actor: actor, recording: access_recording, role: :view)
             return relation.all
@@ -83,13 +82,6 @@ module RecordingStudioViews
           return unless defined?(::Current) && ::Current.respond_to?(:actor)
 
           ::Current.actor
-        end
-
-        def resolve_query_access_recording(access_recording, actor:)
-          return access_recording if access_recording.present?
-          return unless defined?(::RecordingStudioAdmin::Context)
-
-          RecordingStudioAdmin::Context.new(current_actor: actor).access_recording
         end
 
         def default_day_range
