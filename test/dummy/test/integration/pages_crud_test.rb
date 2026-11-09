@@ -77,10 +77,9 @@ class PagesCrudTest < ActionDispatch::IntegrationTest
     Current.actor = outsider
 
     assert_no_difference -> { Page.count } do
-      assert_raises(RecordingStudio::AuthorizationError) do
-        post pages_path, params: { page: { title: "Stolen page" } }
-      end
+      post pages_path, params: { page: { title: "Stolen page" } }
     end
+    assert_includes [403, 404], response.status
   end
 
   test "opening a page writes view log receipt and daily summary" do

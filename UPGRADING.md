@@ -23,7 +23,7 @@ A custom policy replaces the Accessible default. Prefer Accessible grants over a
 
 ### Admin page views are Accessible-scoped
 
-`Admin::Queries.view_logs` (and totals, charts, and filter options) no longer read every `ViewLog` row. They include roots from `RecordingStudioAccessible.root_recording_ids_for(actor:, minimum_role: :view)`. Pass `access_recording:` from Admin's request context when the actor is authorized on the Admin access recording to keep the previous site-wide table. Page-views `root` and `resource_type` option procs take that context as one argument (`allowed_values(context)`). Zero-arg option procs still work. Views no longer builds a `RecordingStudioAdmin::Context` with only `current_actor`.
+`Admin::Queries.view_logs` (and totals, charts, and filter options) no longer read every `ViewLog` row. They include roots from `RecordingStudioAccessible.root_recording_ids_for(actor:, minimum_role: :view)`. Pass `access_recording:` from Admin's request context when the actor is authorized on the Admin access recording to keep the previous site-wide table. Page-views `root` and `resource_type` option procs take that context as one argument (`allowed_values(context)`). Zero-arg option procs still work. Views no longer builds a `RecordingStudioAdmin::Context` with only `current_actor`. Hosts that mount Admin need `recording_studio_admin` 2.10.0 or later: older Admin calls the one-arg options proc with zero args and raises `ArgumentError`.
 
 Site-wide analytics stay visible to `:view` under the Admin root only. A workspace `:view` grant does not unlock Private or other roots.
 

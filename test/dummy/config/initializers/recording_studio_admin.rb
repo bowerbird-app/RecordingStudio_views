@@ -14,7 +14,7 @@ RecordingStudioAdmin.configure do |config|
       RecordingStudio::Recording.recording_studio_trashable_kept_sql
     ).find_by(recordable: admin_root)
     current_root = context.controller&.current_root_recording
-    next recording if current_root.nil? || current_root == recording
+    next recording if current_root == recording
 
     nil
   end

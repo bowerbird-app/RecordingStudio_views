@@ -563,7 +563,10 @@ class ViewsAdminTest < ActiveSupport::TestCase
       start_date: older,
       end_date: Time.now.utc.to_date
     )
-    admin_context = RecordingStudioAdmin::Context.new(current_actor: staff)
+    admin_context = RecordingStudioAdmin::Context.new(
+      current_actor: staff,
+      controller: admin_root_controller(admin_recording)
+    )
     root_values = screen_filter_allowed_values(:root, admin_context)
     resource_values = screen_filter_allowed_values(:resource_type, admin_context)
 
@@ -583,10 +586,15 @@ class ViewsAdminTest < ActiveSupport::TestCase
     Current.actor = staff
     studio = RecordingStudio.root_recording_for(@studio)
     private_root = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Private Workspace"))
+    admin_root = AdminRoot.find_or_create_by!(name: "Admin")
+    admin_recording = RecordingStudio.root_recording_for(admin_root)
     insert_view(root_recording_id: studio.id)
     insert_view(root_recording_id: private_root.id)
 
-    workspace_context = RecordingStudioAdmin::Context.new(current_actor: staff)
+    workspace_context = RecordingStudioAdmin::Context.new(
+      current_actor: staff,
+      controller: admin_root_controller(admin_recording)
+    )
     root_values = screen_filter_allowed_values(:root, workspace_context)
     ids = RecordingStudioViews::Admin::Queries.view_logs(actor: staff).pluck(:root_recording_id)
 
@@ -602,6 +610,12 @@ class ViewsAdminTest < ActiveSupport::TestCase
   end
 
   private
+
+  def admin_root_controller(admin_recording)
+    Object.new.tap do |controller|
+      controller.define_singleton_method(:current_root_recording) { admin_recording }
+    end
+  end
 
   def screen_filter_allowed_values(key, context)
     filter = RecordingStudioViews::Admin::PageViewsScreen.filters_value.find { |entry| entry.key == key }
