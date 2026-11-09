@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Default `root_ownership_policy` uses Recording Studio Accessible on the viewed recording (or the root when there is no recording). Missing Accessible, a blank actor, or a denied check skips context and excludes ingest. Hosts can still override the policy.
 - Admin page-view queries, filter options, totals, and charts scope to Accessible `root_recording_ids_for` for the current actor. Staff authorized on the Admin access recording still see every row.
 - Dummy drops its current-root ownership override and uses the Accessible default. Dummy `authorize_write` allows AccessCreationContext only for `RecordingStudio::Access` rows, otherwise Accessible `:edit` on the root. Development pins: core `v6.5.0`, Accessible `v0.24.2`, Logs `v0.7.4`, Metrics `v0.7.3`, Trashable `v0.12.3`, Root Switchable `v0.11.7`, Cache `v0.6.3`. Admin stays `v2.8.2`.
-- Admin chart summaries, totals, and filter options use the same explicit actor / Admin access-recording Accessible scope as the page-view rows.
+- Admin chart summaries, totals, and filter options use the same explicit actor / Admin access-recording Accessible scope as the page-view rows. When Admin 2.8.2 invokes filter `allowed_values` with no arguments, Queries resolve the host `access_recording_resolver` through `RecordingStudioAdmin::Context` and the existing `:view` gate so options match table, chart, and totals.
 
 ### Upgrade notes
 - See [UPGRADING.md](UPGRADING.md). Recording and root tokens are no longer minted for every visitor. Public pages still track when `tracking_access_action` allows the recording. Hosts that relied on always-true ownership must grant Accessible access or set `root_ownership_policy`.

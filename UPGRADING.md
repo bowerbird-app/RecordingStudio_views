@@ -23,7 +23,7 @@ A custom policy replaces the Accessible default. Prefer Accessible grants over a
 
 ### Admin page views are Accessible-scoped
 
-`Admin::Queries.view_logs` (and totals, charts, and filter options) no longer read every `ViewLog` row. They include roots from `RecordingStudioAccessible.root_recording_ids_for(actor:, minimum_role: :view)`. Pass `access_recording:` when the actor is authorized on the Admin access recording to keep the previous site-wide table.
+`Admin::Queries.view_logs` (and totals, charts, and filter options) no longer read every `ViewLog` row. They include roots from `RecordingStudioAccessible.root_recording_ids_for(actor:, minimum_role: :view)`. Pass `access_recording:` when the actor is authorized on the Admin access recording to keep the previous site-wide table. Admin 2.8.2 filter `allowed_values` calls option procs with no arguments; Queries then resolve that recording from the host `access_recording_resolver` via `RecordingStudioAdmin::Context` and still require Accessible `:view`.
 
 ### Pins
 

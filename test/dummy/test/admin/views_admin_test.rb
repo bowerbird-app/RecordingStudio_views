@@ -546,35 +546,66 @@ class ViewsAdminTest < ActiveSupport::TestCase
 
     Current.actor = staff
     studio = RecordingStudio.root_recording_for(@studio)
+    private_root = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Private Workspace"))
     7.times { insert_view(root_recording_id: studio.id) }
+    insert_view(root_recording_id: private_root.id)
     older = Time.now.utc.to_date - 2
     insert_summary(day: older, root_recording_id: studio.id, views: 20)
+    insert_summary(day: older, root_recording_id: private_root.id, views: 4)
 
     queries = RecordingStudioViews::Admin::Queries
-    scoped_logs = queries.view_logs(actor: staff, access_recording: admin_recording)
-    total = queries.total_views(actor: staff, access_recording: admin_recording)
+    scoped_logs = queries.view_logs(actor: staff)
+    total = queries.total_views(actor: staff)
     series = queries.screen_page_views_series(
       scoped_logs,
       actor: staff,
-      access_recording: admin_recording,
       start_date: older,
       end_date: Time.now.utc.to_date
     )
-    options = queries.root_filter_options(actor: staff, access_recording: admin_recording)
-    root_filter = RecordingStudioViews::Admin::PageViewsScreen.filters_value.find { |entry| entry.key == :root }
-    context = Object.new
-    context.define_singleton_method(:current_actor) { staff }
-    context.define_singleton_method(:access_recording) { admin_recording }
+    root_values = screen_filter_allowed_values(:root)
+    resource_values = screen_filter_allowed_values(:resource_type)
 
-    assert_equal 7, scoped_logs.count
-    assert_equal 0, queries.view_logs(actor: staff).count
-    assert_equal 27, total
-    assert_equal 27, series.first.fetch(:data).sum { |point| point.fetch(:y) }
-    assert_includes options, "Studio Workspace"
-    refute_empty root_filter.options[:options].call(context)
+    assert_equal admin_recording, RecordingStudioAdmin::Context.new(current_actor: staff).access_recording
+    assert_equal 8, scoped_logs.count
+    assert_includes scoped_logs.pluck(:root_recording_id), private_root.id
+    assert_equal 32, total
+    assert_equal 32, series.first.fetch(:data).sum { |point| point.fetch(:y) }
+    assert_includes root_values, "Studio Workspace"
+    assert_includes root_values, "Private Workspace"
+    assert_includes resource_values, "Page"
+  end
+
+  test "workspace :view without Admin-root grant excludes Private from allowed_values" do
+    staff = password_user("views-workspace-only@example.com")
+    allow_view!(staff, @studio)
+    Current.actor = staff
+    studio = RecordingStudio.root_recording_for(@studio)
+    private_root = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Private Workspace"))
+    insert_view(root_recording_id: studio.id)
+    insert_view(root_recording_id: private_root.id)
+
+    root_values = screen_filter_allowed_values(:root)
+    ids = RecordingStudioViews::Admin::Queries.view_logs(actor: staff).pluck(:root_recording_id)
+
+    refute RecordingStudioAccessible.authorized?(
+      actor: staff,
+      recording: RecordingStudioAdmin::Context.new(current_actor: staff).access_recording,
+      role: :view
+    )
+    assert_includes root_values, "Studio Workspace"
+    refute_includes root_values, "Private Workspace"
+    assert_includes ids, studio.id
+    refute_includes ids, private_root.id
   end
 
   private
+
+  def screen_filter_allowed_values(key)
+    filter = RecordingStudioViews::Admin::PageViewsScreen.filters_value.find { |entry| entry.key == key }
+    assert filter, "expected a #{key.inspect} filter on PageViewsScreen"
+    refute_operator filter.method(:allowed_values).arity, :>, 0
+    filter.allowed_values
+  end
 
   def actor_context_for(rows)
     table_result = Struct.new(:rows).new(rows)
