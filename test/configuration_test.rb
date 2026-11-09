@@ -53,6 +53,10 @@ class ConfigurationTest < Minitest::Test
     assert_equal 7.days, configuration.geoip_max_age
     assert_equal false, configuration.geo_enabled
     assert_instance_of RecordingStudio::Hooks, configuration.hooks
+    assert_equal RecordingStudioViews::Configuration::DEFAULT_ROOT_OWNERSHIP_POLICY,
+                 configuration.root_ownership_policy
+    refute defined?(::RecordingStudioAccessible)
+    refute configuration.root_ownership_policy.call(Object.new, Object.new)
   end
 
   def test_merge_accepts_string_keys

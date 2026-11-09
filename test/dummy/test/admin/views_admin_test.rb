@@ -10,6 +10,10 @@ class ViewsAdminTest < ActiveSupport::TestCase
       record.password_confirmation = "Password123!"
     end
     Current.actor = @user
+    @studio = Workspace.find_or_create_by!(name: "Studio Workspace")
+    @client = Workspace.find_or_create_by!(name: "Client Workspace")
+    allow_view!(@user, @studio)
+    allow_view!(@user, @client)
     RecordingStudioViews::ViewLog.delete_all
     RecordingStudioViews::DailyViewSummary.delete_all
   end
@@ -50,6 +54,16 @@ class ViewsAdminTest < ActiveSupport::TestCase
     section = File.read(RecordingStudioViews::Engine.root.join("lib/recording_studio_views/admin/section.rb"))
     assert_includes section, "style: :secondary"
     refute_includes section, "style: :primary"
+  end
+
+  test "view logs hide roots the actor cannot access" do
+    private_root = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Private Workspace"))
+    hidden = insert_view(root_recording_id: private_root.id)
+    visible = insert_view
+    ids = RecordingStudioViews::Admin::Queries.view_logs.pluck(:id)
+
+    assert_includes ids, visible.id
+    refute_includes ids, hidden.id
   end
 
   test "table filters match root resource type page key and visit kind" do
@@ -129,12 +143,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
     insert_view(page_key: "one")
     insert_view(page_key: "two")
     insert_view(page_key: "old", occurred_at: older.to_time.utc)
-    RecordingStudioViews::DailyViewSummary.create!(
-      day: older,
-      page_key: "old",
-      resource_type: "Page",
-      views: 10
-    )
+    insert_summary(day: older, page_key: "old", views: 10)
 
     assert_equal 12, RecordingStudioViews::Admin::Queries.total_views
   end
@@ -498,7 +507,122 @@ class ViewsAdminTest < ActiveSupport::TestCase
     assert_nil queries.ip_value(row, nil)
   end
 
+  test "explicit actor scopes rows summaries and totals away from Current.actor" do
+    other = password_user("views-admin-explicit-actor@example.com")
+    allow_view!(other, @studio)
+    studio = RecordingStudio.root_recording_for(@studio)
+    client = RecordingStudio.root_recording_for(@client)
+    studio_row = insert_view(root_recording_id: studio.id)
+    insert_view(root_recording_id: client.id)
+    older = Time.now.utc.to_date - 2
+    insert_summary(day: older, root_recording_id: studio.id, views: 7)
+    insert_summary(day: older, root_recording_id: client.id, views: 20)
+
+    queries = RecordingStudioViews::Admin::Queries
+    ids = queries.view_logs(actor: other).pluck(:id)
+    total = queries.total_views(actor: other)
+    series = queries.screen_page_views_series(
+      queries.view_logs(actor: other),
+      actor: other,
+      start_date: older,
+      end_date: Time.now.utc.to_date
+    )
+
+    assert_includes ids, studio_row.id
+    assert_equal 1, ids.size
+    assert_equal 8, total
+    assert_equal 8, series.first.fetch(:data).sum { |point| point.fetch(:y) }
+  end
+
+  test "Admin-root-only actor sees site-wide rows summaries totals and filter options" do
+    staff = password_user("views-admin-root-only@example.com")
+    admin_root = AdminRoot.find_or_create_by!(name: "Admin")
+    admin_recording = allow_admin!(staff, admin_root)
+    refute RecordingStudioAccessible.authorized?(
+      actor: staff,
+      recording: RecordingStudio.root_recording_for(@studio),
+      role: :view
+    )
+
+    Current.actor = staff
+    studio = RecordingStudio.root_recording_for(@studio)
+    private_root = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Private Workspace"))
+    7.times { insert_view(root_recording_id: studio.id) }
+    insert_view(root_recording_id: private_root.id)
+    older = Time.now.utc.to_date - 2
+    insert_summary(day: older, root_recording_id: studio.id, views: 20)
+    insert_summary(day: older, root_recording_id: private_root.id, views: 4)
+
+    queries = RecordingStudioViews::Admin::Queries
+    scoped_logs = queries.view_logs(actor: staff, access_recording: admin_recording)
+    total = queries.total_views(actor: staff, access_recording: admin_recording)
+    series = queries.screen_page_views_series(
+      scoped_logs,
+      actor: staff,
+      access_recording: admin_recording,
+      start_date: older,
+      end_date: Time.now.utc.to_date
+    )
+    admin_context = RecordingStudioAdmin::Context.new(
+      current_actor: staff,
+      controller: admin_root_controller(admin_recording)
+    )
+    root_values = screen_filter_allowed_values(:root, admin_context)
+    resource_values = screen_filter_allowed_values(:resource_type, admin_context)
+
+    assert_equal admin_recording, admin_context.access_recording
+    assert_equal 8, scoped_logs.count
+    assert_includes scoped_logs.pluck(:root_recording_id), private_root.id
+    assert_equal 32, total
+    assert_equal 32, series.first.fetch(:data).sum { |point| point.fetch(:y) }
+    assert_includes root_values, "Studio Workspace"
+    assert_includes root_values, "Private Workspace"
+    assert_includes resource_values, "Page"
+  end
+
+  test "workspace :view without Admin-root grant excludes Private from allowed_values" do
+    staff = password_user("views-workspace-only@example.com")
+    allow_view!(staff, @studio)
+    Current.actor = staff
+    studio = RecordingStudio.root_recording_for(@studio)
+    private_root = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Private Workspace"))
+    admin_root = AdminRoot.find_or_create_by!(name: "Admin")
+    admin_recording = RecordingStudio.root_recording_for(admin_root)
+    insert_view(root_recording_id: studio.id)
+    insert_view(root_recording_id: private_root.id)
+
+    workspace_context = RecordingStudioAdmin::Context.new(
+      current_actor: staff,
+      controller: admin_root_controller(admin_recording)
+    )
+    root_values = screen_filter_allowed_values(:root, workspace_context)
+    ids = RecordingStudioViews::Admin::Queries.view_logs(actor: staff).pluck(:root_recording_id)
+
+    refute RecordingStudioAccessible.authorized?(
+      actor: staff,
+      recording: workspace_context.access_recording,
+      role: :view
+    )
+    assert_includes root_values, "Studio Workspace"
+    refute_includes root_values, "Private Workspace"
+    assert_includes ids, studio.id
+    refute_includes ids, private_root.id
+  end
+
   private
+
+  def admin_root_controller(admin_recording)
+    Object.new.tap do |controller|
+      controller.define_singleton_method(:current_root_recording) { admin_recording }
+    end
+  end
+
+  def screen_filter_allowed_values(key, context)
+    filter = RecordingStudioViews::Admin::PageViewsScreen.filters_value.find { |entry| entry.key == key }
+    assert filter, "expected a #{key.inspect} filter on PageViewsScreen"
+    assert_equal 1, filter.method(:allowed_values).parameters.count { |type, _| type == :opt }
+    filter.allowed_values(context)
+  end
 
   def actor_context_for(rows)
     table_result = Struct.new(:rows).new(rows)
@@ -508,6 +632,8 @@ class ViewsAdminTest < ActiveSupport::TestCase
   def screen_filter_context(values)
     Object.new.tap do |context|
       context.define_singleton_method(:filter_value) { |key| values[key] }
+      context.define_singleton_method(:current_actor) { @user }
+      context.define_singleton_method(:access_recording) { nil }
     end
   end
 
@@ -532,6 +658,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
 
   def insert_view(attributes = {})
     now = Time.now.utc
+    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
     RecordingStudioViews::ViewLog.create!(
       {
         id: SecureRandom.uuid,
@@ -539,18 +666,21 @@ class ViewsAdminTest < ActiveSupport::TestCase
         arrived_at: now,
         page_key: "docs.home",
         path: "/docs/home",
-        resource_type: "Page"
+        resource_type: "Page",
+        root_recording_id: studio.id
       }.merge(attributes)
     )
   end
 
   def insert_summary(attributes = {})
+    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
     RecordingStudioViews::DailyViewSummary.create!(
       {
         day: Time.now.utc.to_date,
         page_key: "docs.home",
         resource_type: "Page",
-        views: 1
+        views: 1,
+        root_recording_id: studio.id
       }.merge(attributes)
     )
   end

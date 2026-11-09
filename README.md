@@ -5,10 +5,10 @@ Page views for Recording Studio apps. Installing the gem does not start tracking
 V1 records page views only. It does not create sessions, funnels, conversions, unique visitors, or engagement duration. It never writes a Recording, revision, or timeline Event per view.
 
 ```ruby
-gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.11.3"
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"
-gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.3"
-gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.2"
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.13.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.5.0"
+gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.4"
+gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.3"
 ```
 
 ## Install
@@ -53,7 +53,7 @@ Context states:
 - Skipped: no valid context, disabled capability, excluded route, 4xx/5xx response, or denied policy
 - A recording without `:viewable` is skipped. Resolvers do not fall through to a root or site page.
 
-Site pages and unresolved pages are skipped by default. A missing root never grants site-wide access. Shared roots need `root_ownership_policy`.
+Site pages and unresolved pages are skipped by default. A missing root never grants site-wide access. Recording and root pages use Recording Studio Accessible by default (`root_ownership_policy`): the viewed recording, or the root when there is no recording. Without Accessible those pages are skipped. Hosts may replace the policy.
 
 The collector records one view for a visible full page load, a completed Turbo Drive visit, a refresh, and a visible back/forward restore. A page that opens hidden records once when it becomes visible. Turbo preview plus the final render is one view. Turbo Frame and Stream updates, hover prefetch, prerender, hash-only navigation, and later tab switches do not record. Retried POSTs reuse the same event UUID and the captured page context, not a reread of the document.
 
@@ -61,7 +61,7 @@ Delivery is best effort. The collector uses same-origin `fetch` with credentials
 
 ## Ingestion and storage
 
-`POST /recording_studio_views/views` checks method, content type, payload size, same-origin, and CSRF. A CSRF failure returns 403 and instruments `:csrf`. It verifies the token purpose, target, and expiry, re-resolves the Recording or root, checks `:viewable`, re-runs `root_ownership_policy` for recording and root contexts, then runs the host tracking-access policy for the current request actor. When Recording Studio Accessible is loaded, the default policy calls `RecordingStudioAccessible.authorized?(actor:, recording:, role: :view)`, the same check a private page uses. Set `tracking_access_action` to use `authorized_action?` instead when the page uses audiences (for example anonymous public). Accessible stays optional, the same `defined?` pattern as Admin. Without Accessible, recording and root views are denied; site views still follow `site_tracking_enabled`. Opt back in with `tracking_access_policy`. Signed context is not proof of a human view and is not authorization. Deleted or now-private content is not trackable with an old token. Anonymous views store no actor. Browser-supplied user ids are ignored.
+`POST /recording_studio_views/views` checks method, content type, payload size, same-origin, and CSRF. A CSRF failure returns 403 and instruments `:csrf`. It verifies the token purpose, target, and expiry, re-resolves the Recording or root, checks `:viewable`, re-runs root ownership for recording and root contexts, then runs the host tracking-access policy for the current request actor. Default ownership calls Recording Studio Accessible on the viewed recording (or the root). When Accessible is loaded, the default tracking policy calls `RecordingStudioAccessible.authorized?(actor:, recording:, role: :view)`, the same check a private page uses. Set `tracking_access_action` to use `authorized_action?` instead when the page uses audiences (for example anonymous public). Accessible stays optional, the same `defined?` pattern as Admin. Without Accessible, recording and root views are denied; site views still follow `site_tracking_enabled`. Opt back in with `tracking_access_policy` or `root_ownership_policy`. Signed context is not proof of a human view and is not authorization. Deleted or now-private content is not trackable with an old token. Anonymous views store no actor. Browser-supplied user ids are ignored.
 
 The collector POST is rate limited (never host pages or `recording_studio_track_views`). Limits are per visitor (default 120/minute) and per visitor per root (default 30/minute), keyed on a digest of the masked IP. Configure `rate_limiting_enabled`, `rate_limit_store` (default `Rails.cache`), `visitor_rate_limit`, `visitor_root_rate_limit`, `rate_limit_window`, and `rate_limit_fail_closed` (default true). Over the limit the collector returns 429 with `Retry-After` and writes nothing. If the rate-limit store raises, the collector fails closed (429) unless the host sets `rate_limit_fail_closed` to false.
 
@@ -89,7 +89,7 @@ recording_studio_admin_sections do
 end
 ```
 
-The hub chart (`widgets.views.page_views_over_time`) and the Page views screen chart both read `DailyViewSummary.views` for UTC days that already have summary rows, and count raw `ViewLog` rows for days that do not (today, before `DailyAggregationJob`). Totals use the same split. Screen filters that match summary columns (`root_recording_id`, `recording_id`, `resource_type`, `page_key`, day range) apply to the summary query. Visit kind and path are not on the summary, so those filters count raw rows for the whole chart. Week and month buckets group those UTC days. The table is still raw `ViewLog` rows. Date range and group by stay inline; other filters use Admin's filter modal (`filter_presentation :modal, inline_count: 2`). Authorization is the host Admin policy. Views does not add Pundit or a second admin. Installing this gem does not require Admin.
+The hub chart (`widgets.views.page_views_over_time`) and the Page views screen chart both read `DailyViewSummary.views` for UTC days that already have summary rows, and count raw `ViewLog` rows for days that do not (today, before `DailyAggregationJob`). Totals use the same split. Screen filters that match summary columns (`root_recording_id`, `recording_id`, `resource_type`, `page_key`, day range) apply to the summary query. Visit kind and path are not on the summary, so those filters count raw rows for the whole chart. Week and month buckets group those UTC days. The table is still raw `ViewLog` rows, scoped to roots the current actor can access through Accessible (`root_recording_ids_for`). Actors with `:view` on the Admin access recording still see every row. Filter options use Admin's request context (`allowed_values(context)`). A workspace `:view` grant does not unlock site-wide analytics. Date range and group by stay inline; other filters use Admin's filter modal (`filter_presentation :modal, inline_count: 2`). Authorization is Recording Studio Accessible plus the host Admin gate. Views does not add Pundit or a second admin. Installing this gem does not require Admin. Hosts that mount Admin need `recording_studio_admin` 2.10.0 or later: older Admin calls one-arg filter `allowed_values` with zero args and raises `ArgumentError`.
 
 ## Retention and deletion
 
@@ -142,7 +142,7 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 
 ## What's Included
 
-- **Recording Studio** 6.3 gem pinned and configured
+- **Recording Studio** 6.5 gem pinned and configured
 - **Devise** authentication with a pre-seeded admin user
 - **Workspace**, **Folder**, and **Page** recordables seeded into the dummy host app
 - **FlatPack** UI component library for all views
@@ -173,16 +173,16 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 | Rails           | 8.1+    |
 | PostgreSQL      | 16      |
 | TailwindCSS     | 4       |
-| RecordingStudio | `>= 6.1.0` in the gemspec; dummy GitHub tag `v6.3.0` |
-| Accessible      | dummy GitHub tag `v0.24.0` |
-| Trashable       | dummy GitHub tag `v0.12.2` (`require: false`; query-only via Accessible) |
-| Root Switchable | dummy GitHub tag `v0.11.4` |
-| Cache           | dummy GitHub tag `v0.6.2` |
-| Logs            | dummy GitHub tag `v0.7.3` |
-| Metrics         | dummy GitHub tag `v0.7.2` |
+| RecordingStudio | `>= 6.1.0` in the gemspec; dummy GitHub tag `v6.5.0` |
+| Accessible      | dummy GitHub tag `v0.24.2` |
+| Trashable       | dummy GitHub tag `v0.12.3` (`require: false`; query-only via Accessible) |
+| Root Switchable | dummy GitHub tag `v0.11.7` |
+| Cache           | dummy GitHub tag `v0.6.3` |
+| Logs            | dummy GitHub tag `v0.7.4` |
+| Metrics         | dummy GitHub tag `v0.7.3` |
 | device_detector | runtime (browser / OS / OS version / device type) |
 | maxmind-db      | runtime (local GeoLite2 City lookup only) |
-| Admin           | dummy GitHub tag `v2.8.2` (optional for hosts) |
+| Admin           | dummy GitHub tag `v2.10.0` (optional for hosts) |
 | FlatPack        | dummy GitHub tag `v0.1.341` |
 | Devise          | latest  |
 

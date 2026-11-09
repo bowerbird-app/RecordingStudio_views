@@ -38,7 +38,7 @@ module RecordingStudioViews
 
       root = recording_root(recording)
       return PageContext.skipped if root.blank?
-      return PageContext.skipped unless owned_root?(root)
+      return PageContext.skipped unless owned_root?(root, recording: recording)
 
       PageContext.new(
         kind: :recording,
@@ -118,10 +118,8 @@ module RecordingStudioViews
       recording.recordable_type
     end
 
-    def owned_root?(root)
-      @config.root_ownership_policy.call(@controller, root)
-    rescue StandardError
-      false
+    def owned_root?(root, recording: nil)
+      RootOwnership.allows_root?(@controller, root, recording: recording)
     end
 
     def hashify(value)

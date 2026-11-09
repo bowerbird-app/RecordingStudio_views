@@ -15,7 +15,7 @@ class PagesCrudTest < ActionDispatch::IntegrationTest
     Current.actor = @user
     @workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
     @workspace_root = RecordingStudio.root_recording_for(@workspace)
-    allow_view!(@user, @workspace)
+    allow_admin!(@user, @workspace)
     sign_in @user
     switch_root(@workspace_root)
     RecordingStudioViews::ViewLog.delete_all
@@ -69,6 +69,17 @@ class PagesCrudTest < ActionDispatch::IntegrationTest
     assert_redirected_to pages_path
     follow_redirect!
     refute_includes response.body, "Launch notes revised"
+  end
+
+  test "an outsider cannot persist a page" do
+    outsider = password_user("pages-outsider@example.com")
+    sign_in outsider
+    Current.actor = outsider
+
+    assert_no_difference -> { Page.count } do
+      post pages_path, params: { page: { title: "Stolen page" } }
+    end
+    assert_includes [403, 404], response.status
   end
 
   test "opening a page writes view log receipt and daily summary" do

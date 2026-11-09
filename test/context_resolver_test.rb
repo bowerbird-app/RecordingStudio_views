@@ -118,6 +118,25 @@ class ContextResolverTest < Minitest::Test
     end
   end
 
+  def test_default_root_ownership_skips_without_accessible
+    recording = FakeRecording.new(
+      id: "rec-1",
+      root_recording_id: "root-1",
+      recordable_type: "Page",
+      root: false,
+      root_recording: FakeRecording.new(id: "root-1", recordable_type: "Workspace", root: true)
+    )
+    RecordingStudioViews.configuration.consent_predicate = ->(*) { true }
+    RecordingStudioViews.configuration.recording_resolver = ->(*) { recording }
+    RecordingStudioViews.configuration.root_ownership_policy =
+      RecordingStudioViews::Configuration::DEFAULT_ROOT_OWNERSHIP_POLICY
+    refute defined?(::RecordingStudioAccessible)
+    RecordingStudio.stub :capability_enabled?, ->(name, **kwargs) { name == :viewable && kwargs[:for] == "Page" } do
+      controller = FakeController.new(request: FakeRequest.new(path: "/pages/1"), controller_path: "pages")
+      assert RecordingStudioViews::ContextResolver.new(controller).call.skipped?
+    end
+  end
+
   def test_root_ownership_policy_skips_a_foreign_root
     recording = FakeRecording.new(
       id: "rec-1",

@@ -22,8 +22,11 @@ module ViewsAccessHelpers
     bootstrap = RecordingStudioAccessible.bootstrap_owner_access!(recording: root, actor: actor)
     return root if bootstrap.success?
 
-    manager = User.find_by(email: "admin@admin.com")
-    if manager && manager != actor
+    last_error = bootstrap.error
+    managers = [User.find_by(email: "admin@admin.com"), (Current.actor if defined?(Current)), actor].compact.uniq
+    managers.each do |manager|
+      next unless RecordingStudioAccessible.authorized?(actor: manager, recording: root, role: :admin)
+
       grant = RecordingStudioAccessible.grant_access(
         recording: root,
         actor: actor,
@@ -31,25 +34,37 @@ module ViewsAccessHelpers
         manager_actor: manager
       )
       return root if grant.success?
+
+      last_error = grant.error
     end
 
-    raise "could not grant view on #{workspace.name}: #{bootstrap.error}"
+    raise "could not grant view on #{workspace.name}: #{last_error}"
   end
 
   def allow_admin!(actor, workspace)
     root = RecordingStudio.root_recording_for(workspace)
     return root if RecordingStudioAccessible.authorized?(actor: actor, recording: root, role: :admin)
 
-    manager = User.find_by(email: "admin@admin.com")
-    grant = RecordingStudioAccessible.grant_access(
-      recording: root,
-      actor: actor,
-      role: :admin,
-      manager_actor: manager
-    )
-    return root if grant.success?
+    bootstrap = RecordingStudioAccessible.bootstrap_owner_access!(recording: root, actor: actor)
+    return root if bootstrap.success?
 
-    raise "could not grant admin on #{workspace.name}: #{grant.error}"
+    managers = [User.find_by(email: "admin@admin.com"), (Current.actor if defined?(Current)), actor].compact.uniq
+    last_error = bootstrap.error
+    managers.each do |manager|
+      next unless RecordingStudioAccessible.authorized?(actor: manager, recording: root, role: :admin)
+
+      grant = RecordingStudioAccessible.grant_access(
+        recording: root,
+        actor: actor,
+        role: :admin,
+        manager_actor: manager
+      )
+      return root if grant.success?
+
+      last_error = grant.error
+    end
+
+    raise "could not grant admin on #{workspace.name}: #{last_error}"
   end
 
   def publish_page!(page, manager, workspace)

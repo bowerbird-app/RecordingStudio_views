@@ -4,7 +4,7 @@ require "test_helper"
 
 class RecordingStudioViewsTest < Minitest::Test
   def test_version_matches_release
-    assert_equal "0.12.1", ::RecordingStudioViews::VERSION
+    assert_equal "0.13.0", ::RecordingStudioViews::VERSION
   end
 
   def test_engine_exists
@@ -52,33 +52,33 @@ class RecordingStudioViewsTest < Minitest::Test
     gemfile = File.read(File.expand_path("dummy/Gemfile", __dir__))
     root_gemfile = File.read(File.expand_path("../Gemfile", __dir__))
 
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.5.0"'
     assert_includes root_gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.341"'
-    assert_includes root_gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.3"'
-    assert_includes root_gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.3"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.2"'
-    assert_includes root_gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.2"'
+    assert_includes root_gemfile, 'github: "bowerbird-app/RecordingStudio", tag: "v6.5.0"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.4"'
+    assert_includes root_gemfile, 'github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.4"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.3"'
+    assert_includes root_gemfile, 'github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.3"'
     refute_includes gemfile, 'tag: "v4.7.0"'
     refute_includes root_gemfile, 'tag: "v4.7.0"'
     refute_includes gemfile, 'tag: "v4.6.0"'
     refute_includes gemfile, 'tag: "v4.5.0"'
     refute_includes gemfile, 'tag: "v0.6.1"'
     refute_includes root_gemfile, 'tag: "v0.6.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.0"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.8.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.10.0"'
     routes = File.read(File.expand_path("dummy/config/routes.rb", __dir__))
     assert_includes routes, "recording_studio_admin_for :admin, at: \"/admin\", root_section: :views"
     assert_includes routes, 'mount RecordingStudioAccessible::Engine, at: "/admin/access"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.2", require: false'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.12.3", require: false'
     refute_includes gemfile, 'tag: "v0.11.0", require: false'
     refute_includes gemfile, 'tag: "v0.10.0"'
     refute_includes gemfile, 'tag: "v0.17.0"'
     refute_includes gemfile, 'tag: "v0.15.0"'
     refute_includes gemfile, 'tag: "v0.10.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.11.4"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.11.7"'
     refute_includes gemfile, 'tag: "v0.9.7"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.6.2"'
+    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_cache", tag: "v0.6.3"'
     refute_includes gemfile, 'tag: "v0.5.0"'
     refute_includes gemfile, 'tag: "v0.5.1"'
     assert_includes gemfile, 'github: "bowerbird-app/flatpack", tag: "v0.1.341"'
@@ -250,7 +250,7 @@ class RecordingStudioViewsTest < Minitest::Test
 
     assert_includes readme, "RecordingStudio"
     assert_includes readme, ">= 6.1.0"
-    assert_includes readme, "dummy GitHub tag `v6.3.0`"
+    assert_includes readme, "dummy GitHub tag `v6.5.0`"
     refute_includes readme, "dummy GitHub tag `v4.7.0`"
     refute_includes readme, "~> 4.2"
     refute_includes readme, "dummy GitHub tag `v4.6.0`"
@@ -258,22 +258,22 @@ class RecordingStudioViewsTest < Minitest::Test
     assert_includes readme, "dummy GitHub tag `v0.1.341`"
     refute_includes readme, "dummy GitHub tag `v0.1.254`"
     refute_includes readme, "dummy GitHub tag `v0.1.196`"
-    assert_includes readme, "dummy GitHub tag `v0.24.0`"
+    assert_includes readme, "dummy GitHub tag `v0.24.2`"
     refute_includes readme, "dummy GitHub tag `v0.18.0`"
-    assert_includes readme, "dummy GitHub tag `v0.12.2`"
-    assert_includes readme, "dummy GitHub tag `v0.11.4`"
+    assert_includes readme, "dummy GitHub tag `v0.12.3`"
+    assert_includes readme, "dummy GitHub tag `v0.11.7`"
     refute_includes readme, "dummy GitHub tag `v0.10.0`"
     refute_includes readme, "dummy GitHub tag `v0.17.0`"
     refute_includes readme, "dummy GitHub tag `v0.15.0`"
     refute_includes readme, "dummy GitHub tag `v0.10.1`"
     refute_includes readme, "dummy GitHub tag `v0.9.7`"
+    assert_includes readme, "dummy GitHub tag `v0.7.4`"
     assert_includes readme, "dummy GitHub tag `v0.7.3`"
-    assert_includes readme, "dummy GitHub tag `v0.7.2`"
     refute_includes readme, "dummy GitHub tag `v0.6.1`"
-    assert_includes readme, "dummy GitHub tag `v2.8.2`"
+    assert_includes readme, "dummy GitHub tag `v2.10.0`"
     refute_includes readme, "dummy GitHub tag `v2.6.2`"
     refute_includes readme, "dummy GitHub tag `v0.8.0`"
-    assert_includes readme, "dummy GitHub tag `v0.6.2`"
+    assert_includes readme, "dummy GitHub tag `v0.6.3`"
     refute_includes readme, "dummy GitHub tag `v0.5.0`"
     refute_includes readme, "dummy GitHub tag `v0.5.1`"
     refute_includes readme, "dummy GitHub tag `v4.4.0`"

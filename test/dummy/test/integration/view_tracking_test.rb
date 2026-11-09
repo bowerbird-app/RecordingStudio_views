@@ -18,11 +18,11 @@ class ViewTrackingTest < ActionDispatch::IntegrationTest
     @folder = Folder.find_or_create_by!(name: "Product Docs")
     @studio_root = RecordingStudio.root_recording_for(@studio)
     @client_root = RecordingStudio.root_recording_for(@client)
+    allow_admin!(@user, @studio)
+    allow_admin!(@user, @client)
     @folder_recording = find_or_record(@folder, @studio_root, @studio_root)
     @page_recording = find_or_record(@page, @studio_root, @folder_recording)
     @client_page_recording = find_or_record(@client_page, @client_root, @client_root)
-    allow_view!(@user, @studio)
-    allow_view!(@user, @client)
     RecordingStudioViews::ViewLog.delete_all
     RecordingStudioViews::ViewReceipt.delete_all
     RecordingStudioViews::DailyViewSummary.delete_all

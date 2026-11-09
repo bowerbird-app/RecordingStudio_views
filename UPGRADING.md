@@ -1,5 +1,38 @@
 # Upgrading
 
+## 0.13.0
+
+### Root ownership uses Accessible
+
+Default `config.root_ownership_policy` no longer allows every root. Context resolution and ingest call Recording Studio Accessible on the viewed recording, or on the root when the page has no recording. Without Accessible, those contexts are skipped or excluded. Site pages are unchanged.
+
+Anonymous public tracking still works when `tracking_access_action` is set and the recording allows that action (for example a public audience). Private pages need a `:view` grant (or the configured action).
+
+To keep a host-specific extra check (for example the current switched root):
+
+```ruby
+RecordingStudioViews.configure do |config|
+  config.root_ownership_policy = lambda do |controller, root|
+    current = controller.respond_to?(:current_root_recording) ? controller.current_root_recording : nil
+    current.blank? || current.id.to_s == root.id.to_s
+  end
+end
+```
+
+A custom policy replaces the Accessible default. Prefer Accessible grants over a always-true policy.
+
+### Admin page views are Accessible-scoped
+
+`Admin::Queries.view_logs` (and totals, charts, and filter options) no longer read every `ViewLog` row. They include roots from `RecordingStudioAccessible.root_recording_ids_for(actor:, minimum_role: :view)`. Pass `access_recording:` from Admin's request context when the actor is authorized on the Admin access recording to keep the previous site-wide table. Page-views `root` and `resource_type` option procs take that context as one argument (`allowed_values(context)`). Zero-arg option procs still work. Views no longer builds a `RecordingStudioAdmin::Context` with only `current_actor`. Hosts that mount Admin need `recording_studio_admin` 2.10.0 or later: older Admin calls the one-arg options proc with zero args and raises `ArgumentError`.
+
+Site-wide analytics stay visible to `:view` under the Admin root only. A workspace `:view` grant does not unlock Private or other roots.
+
+A signed-in actor with no grant who POSTs to the Views admin screen or filter endpoints gets Admin's usual 403/404, not a 500.
+
+### Pins
+
+Pin `recording_studio` `v6.5.0`, `recording_studio_accessible` `v0.24.2`, `recording_studio_logs` `v0.7.4`, and `recording_studio_metrics` `v0.7.3`. Dummy Admin is `v2.10.0` (hosts that mount Admin should match that floor; Views still does not gemspec-depend on Admin). Core 6.5 requires `config.authorize_write` and an actor on `record!`. The dummy sets `authorize_write` so AccessCreationContext may write `RecordingStudio::Access` rows; every other write needs Accessible `:edit` on the root.
+
 ## 0.12.0
 
 ### Masked IP storage is off by default
