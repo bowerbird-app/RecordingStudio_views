@@ -15,6 +15,9 @@ class AdminRegistrationTest < Minitest::Test
     assert_includes engine, 'initializer "recording_studio_views.admin"'
     assert_includes engine, "defined?(::RecordingStudioAdmin)"
     assert_includes engine, "RecordingStudioViews::Admin.register!"
+    assert_includes engine, 'initializer "recording_studio_views.metrics"'
+    assert_includes engine, "defined?(::RecordingStudioMetrics)"
+    assert_includes engine, "RecordingStudioViews::Metrics.register!"
     assert_includes admin, "RecordingStudioAdmin.register_section(Section)"
     assert_includes admin, "RecordingStudioAdmin.register_screen(PageViewsScreen)"
     assert_includes admin, "RecordingStudioAdmin.register_widget(Widgets::PAGE_VIEWS_OVER_TIME)"
@@ -99,5 +102,11 @@ class AdminRegistrationTest < Minitest::Test
     gemspec = File.read(File.expand_path("../recording_studio_views.gemspec", __dir__))
 
     refute_includes gemspec, "recording_studio_admin"
+  end
+
+  def test_gemspec_does_not_require_metrics
+    gemspec = File.read(File.expand_path("../recording_studio_views.gemspec", __dir__))
+
+    refute_includes gemspec, "recording_studio_metrics"
   end
 end
