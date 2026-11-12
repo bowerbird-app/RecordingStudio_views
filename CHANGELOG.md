@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-12
+
+### Added
+- When Recording Studio Metrics is loaded, Views registers `views.total_views` and `views.page_views_over_time` through `RecordingStudioMetrics.register` (`expose` on the operations API). Totals and the UTC day series call `Admin::Queries.total_views` and `page_views_over_time_series`. `api_authorize` reuses `Admin::Queries.accessible_root_relation`, so only roots the Accessible grant can view are counted. The raw `ViewLog` list and the ingest endpoint stay off the API and MCP.
+
+### Upgrade notes
+- See [UPGRADING.md](UPGRADING.md). Metrics stays optional: this gem still does not add a runtime `recording_studio_metrics` gemspec dependency. Hosts that want the operations API / MCP tools register Metrics endpoints once with `RecordingStudioMetrics::Api.register!(api: :operations)`.
+
 ## [0.13.0] - 2026-11-06
 
 ### Changed

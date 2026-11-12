@@ -130,6 +130,15 @@ module RecordingStudioViews
       end
     end
 
+    initializer "recording_studio_views.metrics" do
+      config.to_prepare do
+        next unless defined?(::RecordingStudioMetrics)
+
+        require "recording_studio_views/metrics"
+        RecordingStudioViews::Metrics.register!
+      end
+    end
+
     initializer "recording_studio_views.apply_controller_extensions" do
       config.to_prepare do
         next unless defined?(ActionController::Base)

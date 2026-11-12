@@ -5,7 +5,7 @@ Page views for Recording Studio apps. Installing the gem does not start tracking
 V1 records page views only. It does not create sessions, funnels, conversions, unique visitors, or engagement duration. It never writes a Recording, revision, or timeline Event per view.
 
 ```ruby
-gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.13.0"
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.14.0"
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.5.0"
 gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.4"
 gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.3"
@@ -77,7 +77,20 @@ Views registers the raw model with Logs: `occurred_at`, root column `root_record
 
 Daily summary `RecordingStudioViews::DailyViewSummary`, aggregation name `views/page_views`. Groups by root, recording, resource type, and page key. Rebuilding a day replaces counts. Days are UTC `[day, next day)`. Do not sum daily distinct counts. Unique visitors, hourly totals, and local-day totals are out of scope. Summary tables are ordinary tables. Summary freshness is yesterday plus whatever the host reconciles. Raw rows can exist for today before that job runs.
 
-When Metrics is installed, Logs registers eligible rooted count summaries. Views does not patch Metrics. You can read summary models directly without Metrics. Site pages (NULL root) need a separate reporting definition. The rooted Metrics bridge will not expose those rows.
+When Metrics is installed, Logs registers eligible rooted count summaries. You can read summary models directly without Metrics. Site pages (NULL root) need a separate reporting definition. The rooted Metrics bridge will not expose those rows.
+
+Views also registers its own Metrics resource when that gem is loaded (same optional `defined?` pattern as Admin). There is no new gemspec dependency on Metrics.
+
+```ruby
+RecordingStudioMetrics::Api.register!(api: :operations)
+```
+
+| Identifier | MCP tool | Meaning |
+| --- | --- | --- |
+| `views.total_views` | `views-total_views` | All-time views from daily summaries plus raw rows not yet aggregated |
+| `views.page_views_over_time` | `views-page_views_over_time` | Daily UTC series used by the Admin hub chart |
+
+`api_authorize` reuses `Admin::Queries.accessible_root_relation` (Accessible `:view` on roots the grant can see). Views does not register a `ViewLog` list or the ingest endpoint. This gem does not call `RecordingStudioMetrics::Api.register!`. RecordingStudio MCP names each tool from the identifier with the first dot replaced by a hyphen. `from`, `to`, and `interval` are not used by these two metrics: totals are all-time, and the series uses the same default UTC day window as `Admin::Queries.page_views_over_time_series`.
 
 ## Admin
 

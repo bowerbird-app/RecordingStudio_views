@@ -1,5 +1,26 @@
 # Upgrading
 
+## 0.14.0
+
+### Page-view metrics on API and MCP
+
+When `recording_studio_metrics` is installed, Views registers two metrics on reload:
+
+| Identifier | MCP tool | Meaning |
+| --- | --- | --- |
+| `views.total_views` | `views-total_views` | All-time views from daily summaries plus raw rows not yet aggregated |
+| `views.page_views_over_time` | `views-page_views_over_time` | The Admin hub UTC day series (summaries plus unsummarized raw days) |
+
+`api_authorize` calls `Admin::Queries.accessible_root_relation`. An actor with no viewable roots is denied (403 on the API). Roots outside the grant are excluded from the count. Views still does not expose `ViewLog` rows or `POST /recording_studio_views/views`.
+
+This gem does not gemspec-depend on Metrics and does not call `RecordingStudioMetrics::Api.register!`. Hosts that already pin Metrics (dummy tag `v0.7.3`) and want API/MCP:
+
+```ruby
+RecordingStudioMetrics::Api.register!(api: :operations)
+```
+
+No Views migration.
+
 ## 0.13.0
 
 ### Root ownership uses Accessible
