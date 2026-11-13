@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Development and dummy GitHub pins: FlatPack `v0.1.356`, core `v6.7.0`, Metrics `v0.8.0`. Dummy also pins Accessible `v0.32.0`, Admin `v2.13.0`, Trashable `v0.14.0`, and Root Switchable `v0.15.0`. Logs stay `v0.7.4` and Cache stays `v0.6.3`. Gemspec ranges are unchanged.
+- Dummy schema adds Trashable `purge_at` on `recording_studio_recordings` (`idx_rs_recordings_due_purge_at`). Root Switchable 0.12+ still requires Accessible `:view` on the current root for the mounted switch page. Dummy `authorize_write` is unchanged.
+
 ## [0.13.0] - 2026-11-06
 
 ### Changed
