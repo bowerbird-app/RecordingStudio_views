@@ -33,8 +33,21 @@ RecordingStudioRootSwitchable.configure do |config|
     end
     scope.access_check = ->(**) { true }
 
-    scope.default_root = lambda do |roots:, **|
-      roots.find { |recording| recording.recordable&.try(:name) == "Studio Workspace" } || roots.first
+    # Root Switchable 0.12+ requires Accessible :view on the current root before
+    # the mounted switch page renders. Prefer Studio Workspace when the actor
+    # can view it; otherwise the first root they can view. A signed-out request
+    # still prefers Studio Workspace.
+    scope.default_root = lambda do |roots:, actor: nil, **|
+      preferred = roots.find { |recording| recording.recordable&.try(:name) == "Studio Workspace" }
+      viewable = lambda do |recording|
+        actor.blank? || RecordingStudioAccessible.authorized?(actor: actor, recording: recording, role: :view)
+      end
+
+      if preferred && viewable.call(preferred)
+        preferred
+      else
+        roots.find { |recording| viewable.call(recording) }
+      end
     end
   end
 end

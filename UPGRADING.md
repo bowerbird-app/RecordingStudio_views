@@ -1,5 +1,15 @@
 # Upgrading
 
+## Unreleased
+
+Development and dummy pins move to Recording Studio `v6.7.0`, Accessible `v0.32.0`, Metrics `v0.8.0`, Trashable `v0.14.0`, Root Switchable `v0.15.0`, Admin `v2.13.0`, and FlatPack `v0.1.356`. Logs stay `v0.7.4`. Cache stays `v0.6.3`. Gemspec floors are unchanged.
+
+Copy Trashable's `purge_at` migration (`bin/rails generate recording_studio_trashable:migrations`) and migrate. Rows trashed before that column exists keep a null `purge_at` until `bin/rails recording_studio_trashable:restamp_purge_at`. The dummy already includes that migration.
+
+Root Switchable 0.12 and later requires Accessible `:view` on the current root before the mounted switch page renders. A blank current root still renders for a signed-in actor. Dummy `access_check` stays open so the demo can list every workspace; the page gate does not.
+
+Core 6.5+ still requires `config.authorize_write` and an actor on `record!`. The dummy authorizer is unchanged.
+
 ## 0.13.0
 
 ### Root ownership uses Accessible
