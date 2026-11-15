@@ -13,9 +13,9 @@ class AdminRootSwitchTest < ActionDispatch::IntegrationTest
       record.password_confirmation = "Password"
     end
     @workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
-    @workspace_root = RecordingStudio.root_recording_for(@workspace)
+    @workspace_root = RecordingStudio.create_root_recording!(@workspace, actor: @user)
     @admin_root = AdminRoot.find_or_create_by!(name: "Admin")
-    @admin_root_recording = RecordingStudio.root_recording_for(@admin_root)
+    @admin_root_recording = RecordingStudio.create_root_recording!(@admin_root, actor: @user)
     bootstrap_admin_access!(@admin_root_recording, @user)
     sign_in @user
   end

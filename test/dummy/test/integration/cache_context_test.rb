@@ -14,7 +14,7 @@ class CacheContextTest < ActionDispatch::IntegrationTest
     page = Page.find_or_create_by!(title: "Getting Started")
     workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
     Current.actor = user
-    root = RecordingStudio.root_recording_for(workspace)
+    root = RecordingStudio.create_root_recording!(workspace)
     allow_admin!(user, workspace)
     folder = Folder.find_or_create_by!(name: "Product Docs")
     folder_recording = RecordingStudio::Recording.find_by(recordable_type: "Folder", recordable_id: folder.id) ||

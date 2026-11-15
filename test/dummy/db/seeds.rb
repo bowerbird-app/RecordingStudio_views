@@ -14,7 +14,7 @@ bootstrap_owner_access = lambda do |recording, actor|
 end
 
 find_or_record_child = lambda do |recordable, root_recording, parent_recording|
-  RecordingStudio::Recording.where(RecordingStudio::Recording.recording_studio_trashable_kept_sql).find_by(
+  RecordingStudio::Recording.kept.find_by(
     root_recording: root_recording,
     parent_recording: parent_recording,
     recordable: recordable
@@ -44,18 +44,19 @@ previous_actor = Current.actor
 Current.actor = user
 
 begin
-  # Create the root recording
-  root_recording = RecordingStudio.root_recording_for(workspace)
-  accessible_root_recording = RecordingStudio.root_recording_for(accessible_workspace)
-  private_root_recording = RecordingStudio.root_recording_for(private_workspace)
+  # Create the root recording. root_recording_for only finds one.
+  root_recording = RecordingStudio.create_root_recording!(workspace, actor: user)
+  accessible_root_recording = RecordingStudio.create_root_recording!(accessible_workspace, actor: user)
+  private_root_recording = RecordingStudio.create_root_recording!(private_workspace, actor: user)
 
-  # Accessible grants must exist before child writes. Core 6.5 authorize_write
+  # Accessible grants must exist before child writes. authorize_write
   # checks :edit on the root; Access rows themselves use AccessCreationContext.
+  # A persisted user may create a root when root_recording is nil.
   bootstrap_owner_access.call(root_recording, user)
   bootstrap_owner_access.call(accessible_root_recording, user)
 
   admin_root = AdminRoot.find_or_create_by!(name: "Admin")
-  admin_root_recording = RecordingStudio.root_recording_for(admin_root)
+  admin_root_recording = RecordingStudio.create_root_recording!(admin_root, actor: user)
   bootstrap_owner_access.call(admin_root_recording, user)
 
   folder_recording = find_or_record_child.call(folder, root_recording, root_recording)

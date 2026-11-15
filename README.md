@@ -5,10 +5,10 @@ Page views for Recording Studio apps. Installing the gem does not start tracking
 V1 records page views only. It does not create sessions, funnels, conversions, unique visitors, or engagement duration. It never writes a Recording, revision, or timeline Event per view.
 
 ```ruby
-gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.13.0"
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.7.0"
-gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.7.4"
-gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.8.0"
+gem "recording_studio_views", github: "bowerbird-app/RecordingStudio_views", tag: "v0.14.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.0.0"
+gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.8.0"
+gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.9.0"
 ```
 
 ## Install
@@ -173,16 +173,16 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 | Rails           | 8.1+    |
 | PostgreSQL      | 16      |
 | TailwindCSS     | 4       |
-| RecordingStudio | `>= 6.1.0` in the gemspec; dummy GitHub tag `v6.7.0` |
-| Accessible      | dummy GitHub tag `v0.32.0` |
-| Trashable       | dummy GitHub tag `v0.14.0` (`require: false`; query-only via Accessible) |
-| Root Switchable | dummy GitHub tag `v0.15.0` |
+| RecordingStudio | `>= 7.0`, `< 8.0` in the gemspec; dummy GitHub tag `v7.0.0` |
+| Accessible      | dummy GitHub tag `v0.43.1` |
+| Trashable       | dummy GitHub tag `v0.17.0` (`require: false`; query-only via Accessible) |
+| Root Switchable | dummy GitHub tag `v0.15.1` |
 | Cache           | dummy GitHub tag `v0.6.3` |
-| Logs            | dummy GitHub tag `v0.7.4` |
-| Metrics         | dummy GitHub tag `v0.8.0` |
+| Logs            | `>= 0.8.0`, `< 1.0` in the gemspec; dummy GitHub tag `v0.8.0` |
+| Metrics         | dummy GitHub tag `v0.9.0` |
 | device_detector | runtime (browser / OS / OS version / device type) |
 | maxmind-db      | runtime (local GeoLite2 City lookup only) |
-| Admin           | dummy GitHub tag `v2.13.0` (optional for hosts) |
+| Admin           | dummy GitHub tag `v2.16.0` (optional for hosts) |
 | FlatPack        | dummy GitHub tag `v0.1.356` |
 | Devise          | latest  |
 

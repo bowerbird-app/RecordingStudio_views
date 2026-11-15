@@ -16,7 +16,7 @@ module ViewsAccessHelpers
   end
 
   def allow_view!(actor, workspace)
-    root = RecordingStudio.root_recording_for(workspace)
+    root = RecordingStudio.create_root_recording!(workspace, actor: actor)
     return root if RecordingStudioAccessible.authorized?(actor: actor, recording: root, role: :view)
 
     bootstrap = RecordingStudioAccessible.bootstrap_owner_access!(recording: root, actor: actor)
@@ -42,7 +42,7 @@ module ViewsAccessHelpers
   end
 
   def allow_admin!(actor, workspace)
-    root = RecordingStudio.root_recording_for(workspace)
+    root = RecordingStudio.create_root_recording!(workspace, actor: actor)
     return root if RecordingStudioAccessible.authorized?(actor: actor, recording: root, role: :admin)
 
     bootstrap = RecordingStudioAccessible.bootstrap_owner_access!(recording: root, actor: actor)
@@ -80,7 +80,7 @@ module ViewsAccessHelpers
   end
 
   def revoke_view!(actor, workspace, manager:)
-    root = RecordingStudio.root_recording_for(workspace)
+    root = RecordingStudio.create_root_recording!(workspace, actor: actor)
     access_recording = RecordingStudioAccessible.access_recordings_for_actor(
       recording: root,
       actor: actor
