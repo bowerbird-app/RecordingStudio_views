@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-15
+
 ### Changed
-- Development and dummy GitHub pins: FlatPack `v0.1.356`, core `v6.7.0`, Metrics `v0.8.0`. Dummy also pins Accessible `v0.32.0`, Admin `v2.13.0`, Trashable `v0.14.0`, and Root Switchable `v0.15.0`. Logs stay `v0.7.4` and Cache stays `v0.6.3`. Gemspec ranges are unchanged.
-- Dummy schema adds Trashable `purge_at` on `recording_studio_recordings` (`idx_rs_recordings_due_purge_at`). Root Switchable 0.12+ still requires Accessible `:view` on the current root for the mounted switch page. Dummy `authorize_write` is unchanged.
+- Gemspec `recording_studio` is `>= 7.0`, `< 8.0`. `recording_studio_logs` is `>= 0.8.0`, `< 1.0`.
+- Development and dummy GitHub pins: core `v7.0.0`, Logs `v0.8.0`, Metrics `v0.9.0`. Dummy also pins Accessible `v0.43.1`, Admin `v2.16.0`, Trashable `v0.17.0`, and Root Switchable `v0.15.1`. Cache stays `v0.6.3` (it already accepts core 7). FlatPack stays `v0.1.356`.
+- Dummy seeds and tests that created a root call `create_root_recording!`. Lookups stay on `root_recording_for`. Dummy `authorize_write` allows a persisted user to start a root when `recording`, `root_recording`, and `parent_recording` are nil. Later writes still use Accessible. The dummy does not set `allow_unauthorized_writes`.
+- Dummy copies Recording Studio 6.9's `recording_studio_events.root_recording_id` migration. Seeds and the admin access-recording lookup use `Recording.kept`. Trashable 0.16 removed `recording_studio_trashable_kept_sql`.
+- Dummy lockfile `msgpack` is `1.8.7` and `puma` is `8.1.0` so Bundler Audit stays clean.
+
+### Upgrade notes
+- See [UPGRADING.md](UPGRADING.md). Hosts need Recording Studio 7 and Logs 0.8. `root_recording_for` no longer creates a root.
 
 ## [0.13.0] - 2026-11-06
 
@@ -324,7 +332,8 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.11.3...v0.12.0

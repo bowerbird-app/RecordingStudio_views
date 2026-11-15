@@ -14,7 +14,7 @@ class PagesCrudTest < ActionDispatch::IntegrationTest
     end
     Current.actor = @user
     @workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
-    @workspace_root = RecordingStudio.root_recording_for(@workspace)
+    @workspace_root = RecordingStudio.create_root_recording!(@workspace)
     allow_admin!(@user, @workspace)
     sign_in @user
     switch_root(@workspace_root)

@@ -8,4 +8,13 @@ RecordingStudioAccessible.configure do |config|
     granted_roles: %i[view edit admin],
     manage_role: :admin
   }
+
+  # Kept admin root. Site-wide admin screens resolve when the current access
+  # recording is this root and the actor can view it. Optional context: keyword.
+  config.admin_root_resolver = lambda do |context: nil|
+    admin_root = AdminRoot.find_by(name: "Admin")
+    next unless admin_root
+
+    RecordingStudio::Recording.kept.find_by(recordable: admin_root)
+  end
 end

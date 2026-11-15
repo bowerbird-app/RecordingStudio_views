@@ -9,12 +9,13 @@ class ViewsAdminFilterContextTest < ActionDispatch::IntegrationTest
 
   setup do
     RecordingStudioViews::ViewLog.delete_all
+    @owner = password_user("views-filter-roots@example.com")
     @admin_root = AdminRoot.find_or_create_by!(name: "Admin")
-    @admin_root_recording = RecordingStudio.root_recording_for(@admin_root)
+    @admin_root_recording = RecordingStudio.create_root_recording!(@admin_root, actor: @owner)
     @studio = Workspace.find_or_create_by!(name: "Studio Workspace")
-    @studio_root = RecordingStudio.root_recording_for(@studio)
+    @studio_root = RecordingStudio.create_root_recording!(@studio, actor: @owner)
     @private_workspace = Workspace.find_or_create_by!(name: "Private Workspace")
-    @private_root = RecordingStudio.root_recording_for(@private_workspace)
+    @private_root = RecordingStudio.create_root_recording!(@private_workspace, actor: @owner)
   end
 
   test "page views filter options and applied root come from the request Admin context" do

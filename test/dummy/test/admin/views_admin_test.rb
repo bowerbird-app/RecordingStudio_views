@@ -57,7 +57,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
   end
 
   test "view logs hide roots the actor cannot access" do
-    private_root = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Private Workspace"))
+    private_root = RecordingStudio.create_root_recording!(Workspace.find_or_create_by!(name: "Private Workspace"))
     hidden = insert_view(root_recording_id: private_root.id)
     visible = insert_view
     ids = RecordingStudioViews::Admin::Queries.view_logs.pluck(:id)
@@ -67,8 +67,8 @@ class ViewsAdminTest < ActiveSupport::TestCase
   end
 
   test "table filters match root resource type page key and visit kind" do
-    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
-    client = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Client Workspace"))
+    studio = RecordingStudio.create_root_recording!(Workspace.find_or_create_by!(name: "Studio Workspace"))
+    client = RecordingStudio.create_root_recording!(Workspace.find_or_create_by!(name: "Client Workspace"))
 
     matching = insert_view(
       root_recording_id: studio.id,
@@ -250,7 +250,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
   test "screen chart sums summaries for aggregated days and raw rows for today" do
     today = Time.now.utc.to_date
     older = today - 2
-    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
+    studio = RecordingStudio.create_root_recording!(Workspace.find_or_create_by!(name: "Studio Workspace"))
     insert_view(
       root_recording_id: studio.id,
       page_key: "docs.home",
@@ -370,7 +370,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
   end
 
   test "chart filters from the screen map page key search and root labels" do
-    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
+    studio = RecordingStudio.create_root_recording!(Workspace.find_or_create_by!(name: "Studio Workspace"))
     insert_view(root_recording_id: studio.id, page_key: "docs.getting-started")
     queries = RecordingStudioViews::Admin::Queries
     context = screen_filter_context(
@@ -510,8 +510,8 @@ class ViewsAdminTest < ActiveSupport::TestCase
   test "explicit actor scopes rows summaries and totals away from Current.actor" do
     other = password_user("views-admin-explicit-actor@example.com")
     allow_view!(other, @studio)
-    studio = RecordingStudio.root_recording_for(@studio)
-    client = RecordingStudio.root_recording_for(@client)
+    studio = RecordingStudio.create_root_recording!(@studio)
+    client = RecordingStudio.create_root_recording!(@client)
     studio_row = insert_view(root_recording_id: studio.id)
     insert_view(root_recording_id: client.id)
     older = Time.now.utc.to_date - 2
@@ -540,13 +540,13 @@ class ViewsAdminTest < ActiveSupport::TestCase
     admin_recording = allow_admin!(staff, admin_root)
     refute RecordingStudioAccessible.authorized?(
       actor: staff,
-      recording: RecordingStudio.root_recording_for(@studio),
+      recording: RecordingStudio.create_root_recording!(@studio),
       role: :view
     )
 
     Current.actor = staff
-    studio = RecordingStudio.root_recording_for(@studio)
-    private_root = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Private Workspace"))
+    studio = RecordingStudio.create_root_recording!(@studio)
+    private_root = RecordingStudio.create_root_recording!(Workspace.find_or_create_by!(name: "Private Workspace"))
     7.times { insert_view(root_recording_id: studio.id) }
     insert_view(root_recording_id: private_root.id)
     older = Time.now.utc.to_date - 2
@@ -584,10 +584,10 @@ class ViewsAdminTest < ActiveSupport::TestCase
     staff = password_user("views-workspace-only@example.com")
     allow_view!(staff, @studio)
     Current.actor = staff
-    studio = RecordingStudio.root_recording_for(@studio)
-    private_root = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Private Workspace"))
+    studio = RecordingStudio.create_root_recording!(@studio)
+    private_root = RecordingStudio.create_root_recording!(Workspace.find_or_create_by!(name: "Private Workspace"))
     admin_root = AdminRoot.find_or_create_by!(name: "Admin")
-    admin_recording = RecordingStudio.root_recording_for(admin_root)
+    admin_recording = RecordingStudio.create_root_recording!(admin_root)
     insert_view(root_recording_id: studio.id)
     insert_view(root_recording_id: private_root.id)
 
@@ -640,8 +640,8 @@ class ViewsAdminTest < ActiveSupport::TestCase
   def summary_filter_fixtures
     today = Time.now.utc.to_date
     older = today - 3
-    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
-    client = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Client Workspace"))
+    studio = RecordingStudio.create_root_recording!(Workspace.find_or_create_by!(name: "Studio Workspace"))
+    client = RecordingStudio.create_root_recording!(Workspace.find_or_create_by!(name: "Client Workspace"))
     [today, older, studio, client]
   end
 
@@ -658,7 +658,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
 
   def insert_view(attributes = {})
     now = Time.now.utc
-    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
+    studio = RecordingStudio.create_root_recording!(Workspace.find_or_create_by!(name: "Studio Workspace"))
     RecordingStudioViews::ViewLog.create!(
       {
         id: SecureRandom.uuid,
@@ -673,7 +673,7 @@ class ViewsAdminTest < ActiveSupport::TestCase
   end
 
   def insert_summary(attributes = {})
-    studio = RecordingStudio.root_recording_for(Workspace.find_or_create_by!(name: "Studio Workspace"))
+    studio = RecordingStudio.create_root_recording!(Workspace.find_or_create_by!(name: "Studio Workspace"))
     RecordingStudioViews::DailyViewSummary.create!(
       {
         day: Time.now.utc.to_date,

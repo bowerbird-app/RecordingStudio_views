@@ -2,13 +2,35 @@
 
 ## Unreleased
 
-Development and dummy pins move to Recording Studio `v6.7.0`, Accessible `v0.32.0`, Metrics `v0.8.0`, Trashable `v0.14.0`, Root Switchable `v0.15.0`, Admin `v2.13.0`, and FlatPack `v0.1.356`. Logs stay `v0.7.4`. Cache stays `v0.6.3`. Gemspec floors are unchanged.
+## 0.14.0
 
-Copy Trashable's `purge_at` migration (`bin/rails generate recording_studio_trashable:migrations`) and migrate. Rows trashed before that column exists keep a null `purge_at` until `bin/rails recording_studio_trashable:restamp_purge_at`. The dummy already includes that migration.
+### Recording Studio 7
 
-Root Switchable 0.12 and later requires Accessible `:view` on the current root before the mounted switch page renders. A blank current root still renders for a signed-in actor. Dummy `access_check` stays open so the demo can list every workspace; the page gate does not.
+Require `recording_studio` `>= 7.0`, `< 8.0` and `recording_studio_logs` `>= 0.8.0`, `< 1.0`. Logs 0.8 needs Metrics `>= 0.9.0`, `< 1.0`.
 
-Core 6.5+ still requires `config.authorize_write` and an actor on `record!`. The dummy authorizer is unchanged.
+`RecordingStudio.root_recording_for` only finds a root. It returns `nil` when the recordable has none, and it does not write. Create a root with `RecordingStudio.create_root_recording!(recordable, actor:)`. A second call returns the same root and does not append another event.
+
+That create calls `authorize_write` with `action: "created"`, `recordable:`, and `recording:`, `root_recording:`, and `parent_recording:` all `nil`. Allow it for actors who may start a root. Do not set `allow_unauthorized_writes`.
+
+```ruby
+config.authorize_write = lambda { |actor:, root_recording:, recordable:, **context|
+  next false unless actor.is_a?(User) && actor.persisted?
+
+  if root_recording.nil? && context[:recording].nil? && context[:parent_recording].nil?
+    next RecordingStudio.root_allowed?(recordable)
+  end
+
+  # existing root checks
+}
+```
+
+Copy Recording Studio migration `20261114090000_add_root_recording_id_to_recording_studio_events` if `recording_studio_events` has no `root_recording_id`. Core 7.0.0 adds no migration of its own. Event writes need that column. The dummy app includes the copy.
+
+Trashable 0.16 removed `recording_studio_trashable_kept_sql`. Use `Recording.kept` (or `RecordingStudio.kept_sql` when you need SQL text).
+
+Development and dummy pins: core `v7.0.0`, Logs `v0.8.0`, Metrics `v0.9.0`, Accessible `v0.43.1`, Trashable `v0.17.0`, Root Switchable `v0.15.1`, Admin `v2.16.0`. Cache stays `v0.6.3`. FlatPack stays `v0.1.356`.
+
+Page-view collection is unchanged. This gem adds no Views migration. The dummy lockfile uses `msgpack` 1.8.7 and `puma` 8.1.0.
 
 ## 0.13.0
 
