@@ -30,7 +30,7 @@ Trashable 0.16 removed `recording_studio_trashable_kept_sql`. Use `Recording.kep
 
 Development and dummy pins: core `v7.0.0`, Logs `v0.8.0`, Metrics `v0.9.0`, Accessible `v0.43.1`, Trashable `v0.17.0`, Root Switchable `v0.15.1`, Admin `v2.16.0`. Cache stays `v0.6.3`. FlatPack stays `v0.1.356`.
 
-Page-view collection is unchanged. This gem adds no Views migration.
+Page-view collection is unchanged. This gem adds no Views migration. The dummy lockfile uses `msgpack` 1.8.7 and `puma` 8.1.0.
 
 ## 0.13.0
 
