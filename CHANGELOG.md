@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-11-17
+
+### Changed
+- Development and dummy GitHub pins: core `v7.3.0` → `v7.7.0`, Logs `v0.8.0` → `v0.8.1`, Metrics `v0.9.0` → `v0.9.1`. Dummy also pins Accessible `v0.45.1` → `v0.48.0` and Trashable `v1.0.0` → `v1.0.2`. FlatPack stays `v0.1.377`, Admin `v2.18.0`, Cache `v0.7.0`, and Root Switchable `v0.16.0`. Gemspec ranges are unchanged.
+- Recording Studio 7.4, 7.5, and 7.7 migrations are intentionally not copied into the dummy app.
+
 ## [0.14.0] - 2026-11-15
 
 ### Changed
@@ -332,7 +338,8 @@ New addons copied from this template are born on Recording Studio 4.x.
 - Comprehensive README and documentation
 - Basic test suite with Minitest
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/bowerbird-app/RecordingStudio_views/compare/v0.12.0...v0.12.1
