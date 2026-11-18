@@ -182,7 +182,7 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 | Metrics         | dummy GitHub tag `v0.9.2` |
 | device_detector | runtime (browser / OS / OS version / device type) |
 | maxmind-db      | runtime (local GeoLite2 City lookup only) |
-| Admin           | dummy GitHub tag `v2.19.0` (optional for hosts) |
+| Admin           | dummy GitHub tag `v2.19.1` (optional for hosts) |
 | FlatPack        | dummy GitHub tag `v0.1.379` |
 | Devise          | latest  |
 
