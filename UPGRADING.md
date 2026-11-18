@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.14.2
+
+Development and dummy GitHub pins: core `v7.7.2`, FlatPack `v0.1.379`, Logs `v0.8.2`, Metrics `v0.9.2`. Dummy also pins Accessible `v0.54.1`, Admin `v2.19.0`, Trashable `v1.2.3`, Root Switchable `v0.16.1`, and Cache `v0.7.1`. Gemspec floors are unchanged. This release has no Views migration.
+
+Host apps MUST run the Recording Studio 7.4, 7.5 and 7.7 migrations. Those migrations are intentionally not copied into the dummy app.
+
 ## 0.14.1
 
 Development and dummy GitHub pins: core `v7.7.0`, Logs `v0.8.1`, Metrics `v0.9.1`. Dummy also pins Accessible `v0.48.0` and Trashable `v1.0.2`. FlatPack stays `v0.1.377`, Admin `v2.18.0`, Root Switchable `v0.16.0`, and Cache `v0.7.0`. Gemspec floors are unchanged. Hosts do not need a new Views migration.
