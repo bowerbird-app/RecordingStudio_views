@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+Dummy GitHub pin: Admin `v2.19.1` (was `v2.19.0`). Other development and dummy pins stay at the 0.14.2 tags. Gemspec floors are unchanged. This re-pin has no Views migration.
+
 ## 0.14.2
 
 Development and dummy GitHub pins: core `v7.7.2`, FlatPack `v0.1.379`, Logs `v0.8.2`, Metrics `v0.9.2`. Dummy also pins Accessible `v0.54.1`, Admin `v2.19.0`, Trashable `v1.2.3`, Root Switchable `v0.16.1`, and Cache `v0.7.1`. Gemspec floors are unchanged. This release has no Views migration.
