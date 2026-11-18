@@ -6,10 +6,10 @@ source "https://rubygems.org"
 gemspec
 
 # recording_studio and flat_pack are not published to RubyGems.
-gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.377"
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.7.0"
-gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.8.1"
-gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.9.1"
+gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.379"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v7.7.2"
+gem "recording_studio_logs", github: "bowerbird-app/RecordingStudio_logs", tag: "v0.8.2"
+gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.9.2"
 
 gem "devise"
 gem "puma"
