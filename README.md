@@ -174,7 +174,7 @@ Open port 3000 and sign in at `/users/sign_in` with `admin@admin.com` / `Passwor
 | PostgreSQL      | 16      |
 | TailwindCSS     | 4       |
 | RecordingStudio | `>= 7.0`, `< 8.0` in the gemspec; dummy GitHub tag `v7.8.0` |
-| Accessible      | dummy GitHub tag `v0.57.0` |
+| Accessible      | dummy GitHub tag `v0.58.0` |
 | Trashable       | dummy GitHub tag `v1.3.0` (`require: false`; query-only via Accessible) |
 | Root Switchable | dummy GitHub tag `v0.17.0` |
 | Cache           | dummy GitHub tag `v0.8.0` |

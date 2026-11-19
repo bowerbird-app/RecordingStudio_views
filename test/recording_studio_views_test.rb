@@ -94,7 +94,7 @@ class RecordingStudioViewsTest < Minitest::Test
     refute_includes gemfile, 'tag: "v4.5.0"'
     refute_includes gemfile, 'tag: "v0.6.1"'
     refute_includes root_gemfile, 'tag: "v0.6.1"'
-    assert_includes gemfile, gem_pin("recording_studio_accessible", "~> 0.57", "RecordingStudio_accessible", "v0.57.0")
+    assert_includes gemfile, gem_pin("recording_studio_accessible", "~> 0.58", "RecordingStudio_accessible", "v0.58.0")
     refute_includes gemfile, 'tag: "v0.48.0"'
     refute_includes gemfile, 'tag: "v0.45.1"'
     assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.19.1"'
@@ -330,7 +330,7 @@ class RecordingStudioViewsTest < Minitest::Test
     refute_includes readme, "dummy GitHub tag `v0.1.341`"
     refute_includes readme, "dummy GitHub tag `v0.1.254`"
     refute_includes readme, "dummy GitHub tag `v0.1.196`"
-    assert_includes readme, "dummy GitHub tag `v0.57.0`"
+    assert_includes readme, "dummy GitHub tag `v0.58.0`"
     refute_includes readme, "dummy GitHub tag `v0.48.0`"
     refute_includes readme, "dummy GitHub tag `v0.45.1`"
     refute_includes readme, "dummy GitHub tag `v0.43.1`"
