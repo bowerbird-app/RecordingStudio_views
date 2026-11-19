@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-Dummy GitHub pin: Admin `v2.19.1` (was `v2.19.0`). Other development and dummy pins stay at the 0.14.2 tags. Gemspec floors are unchanged. This re-pin has no Views migration.
+## 0.15.0
+
+Development and dummy GitHub pins: core `v7.8.0` (`~> 7.8`), FlatPack `v0.2.0` (`~> 0.2`), Logs `v0.9.0` (`~> 0.9`), Metrics `v0.10.0` (`~> 0.10`). Dummy also pins Accessible `v0.58.0` (`~> 0.58`), Trashable `v1.3.0` (`~> 1.3`), Root Switchable `v0.17.0` (`~> 0.17`), and Cache `v0.8.0` (`~> 0.8`). Admin is `v2.19.1` (`~> 2.19`; re-pin from `v2.19.0`). Gemspec floors are unchanged. This release has no Views migration.
+
+Host apps MUST run the Recording Studio 7.4, 7.5 and 7.7 migrations if they have not. Those migrations are intentionally not copied into the dummy app.
+
+flat_pack 0.2.0 is supported; hosts moving to 0.2 must remove the manual `flat_pack/heroicons` importmap pin and any `flat-pack--icon` controller registration.
 
 ## 0.14.2
 
