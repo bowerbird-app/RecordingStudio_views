@@ -524,7 +524,7 @@ DEPENDENCIES
   rails (~> 8.1.1)
   recording_studio (~> 7.8)!
   recording_studio_accessible (~> 0.58)!
-  recording_studio_admin!
+  recording_studio_admin (~> 2.19)!
   recording_studio_cache (~> 0.8)!
   recording_studio_logs (~> 0.9)!
   recording_studio_metrics (~> 0.10)!

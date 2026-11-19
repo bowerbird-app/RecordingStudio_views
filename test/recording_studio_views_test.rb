@@ -97,7 +97,8 @@ class RecordingStudioViewsTest < Minitest::Test
     assert_includes gemfile, gem_pin("recording_studio_accessible", "~> 0.58", "RecordingStudio_accessible", "v0.58.0")
     refute_includes gemfile, 'tag: "v0.48.0"'
     refute_includes gemfile, 'tag: "v0.45.1"'
-    assert_includes gemfile, 'github: "bowerbird-app/RecordingStudio_admin", tag: "v2.19.1"'
+    admin = gem_pin("recording_studio_admin", "~> 2.19", "RecordingStudio_admin", "v2.19.1")
+    assert_includes gemfile, admin
     refute_includes gemfile, 'tag: "v2.19.0"'
     refute_includes gemfile, 'tag: "v2.18.0"'
     refute_includes gemfile, 'tag: "v0.43.1"'

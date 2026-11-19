@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.15.0] - 2026-11-19
 
 ### Changed
-- Development and dummy GitHub pins: core `v7.7.2` → `v7.8.0` (`~> 7.8`), FlatPack `v0.1.379` → `v0.2.0` (`~> 0.2`), Logs `v0.8.2` → `v0.9.0` (`~> 0.9`), Metrics `v0.9.2` → `v0.10.0` (`~> 0.10`). Dummy also pins Accessible `v0.54.1` → `v0.58.0` (`~> 0.58`), Trashable `v1.2.3` → `v1.3.0` (`~> 1.3`), Root Switchable `v0.16.1` → `v0.17.0` (`~> 0.17`), and Cache `v0.7.1` → `v0.8.0` (`~> 0.8`). Admin stays `v2.19.1` (already the latest tag; the previous unreleased re-pin from `v2.19.0` ships here). Gemspec ranges are unchanged.
+- Development and dummy GitHub pins: core `v7.7.2` → `v7.8.0` (`~> 7.8`), FlatPack `v0.1.379` → `v0.2.0` (`~> 0.2`), Logs `v0.8.2` → `v0.9.0` (`~> 0.9`), Metrics `v0.9.2` → `v0.10.0` (`~> 0.10`). Dummy also pins Accessible `v0.54.1` → `v0.58.0` (`~> 0.58`), Trashable `v1.2.3` → `v1.3.0` (`~> 1.3`), Root Switchable `v0.16.1` → `v0.17.0` (`~> 0.17`), and Cache `v0.7.1` → `v0.8.0` (`~> 0.8`). Admin is `v2.19.1` (`~> 2.19`). Gemspec ranges are unchanged.
+- Dummy GitHub pin: Admin `v2.19.0` → `v2.19.1`. Gemspec ranges are unchanged.
 - Host apps MUST run the Recording Studio 7.4, 7.5 and 7.7 migrations if they have not. Those migrations are intentionally not copied into the dummy app.
 - Dummy importmap drops the `flat_pack/heroicons` pin. `test/dummy/install_page.html` drops that pin and the `flat_pack/icon_controller` registration.
 
