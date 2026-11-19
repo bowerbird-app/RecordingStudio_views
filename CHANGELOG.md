@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Replaced real-looking MaxMind credentials in the dummy app's encrypted credentials with placeholders.
+- The dummy ignores placeholder MaxMind creds.
 
 ## [0.15.0] - 2026-11-19
 
